@@ -7,6 +7,7 @@ import com.zaneschepke.wireguardautotunnel.data.repository.AppDataRepository
 import com.zaneschepke.wireguardautotunnel.module.ApplicationScope
 import com.zaneschepke.wireguardautotunnel.service.foreground.ServiceManager
 import com.zaneschepke.wireguardautotunnel.service.tunnel.TunnelService
+import com.zaneschepke.wireguardautotunnel.util.extensions.startTunnelBackground
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -35,7 +36,7 @@ class BootReceiver : BroadcastReceiver() {
 			val settings = appDataRepository.settings.getSettings()
 			if (settings.isRestoreOnBootEnabled) {
 				appDataRepository.getStartTunnelConfig()?.let {
-					tunnelService.get().startTunnel(it)
+					context.startTunnelBackground(it.id)
 				}
 			}
 			if (settings.isAutoTunnelEnabled) {
