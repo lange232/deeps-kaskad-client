@@ -155,9 +155,7 @@
           "columnNames": [
             "id"
           ]
-        },
-        "indices": [],
-        "foreignKeys": []
+        }
       },
       {
         "tableName": "TunnelConfig",
@@ -227,21 +225,18 @@
             "fieldPath": "pingInterval",
             "columnName": "ping_interval",
             "affinity": "INTEGER",
-            "notNull": false,
             "defaultValue": "null"
           },
           {
             "fieldPath": "pingCooldown",
             "columnName": "ping_cooldown",
             "affinity": "INTEGER",
-            "notNull": false,
             "defaultValue": "null"
           },
           {
             "fieldPath": "pingIp",
             "columnName": "ping_ip",
             "affinity": "TEXT",
-            "notNull": false,
             "defaultValue": "null"
           },
           {
@@ -275,11 +270,9 @@
             "orders": [],
             "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_TunnelConfig_name` ON `${TABLE_NAME}` (`name`)"
           }
-        ],
-        "foreignKeys": []
+        ]
       }
     ],
-    "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
       "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ae51793c4d09ea3194ecd26f0606f35c')"
