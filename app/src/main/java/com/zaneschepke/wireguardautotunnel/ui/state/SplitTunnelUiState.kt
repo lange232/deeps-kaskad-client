@@ -5,6 +5,6 @@ import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConf
 
 data class SplitTunnelUiState(
     val installedPackages: List<InstalledPackage> = emptyList(),
-    val stateInitialized: Boolean = false,
-    val tunnels: List<TunnelConf> = emptyList(),
+    val isLoading: Boolean = true,
+    val tunnel: TunnelConf? = null,
 )
