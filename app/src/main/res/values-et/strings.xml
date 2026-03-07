@@ -322,7 +322,7 @@
     <string name="locked_down">Rakendus on lukustatud</string>
     <string name="lockdown">Lukusta rakendus</string>
     <string name="debounce_delay">Rahunemisviivitus (debounce delay)</string>
-    <string name="app_permission_title">WG tunneli juhtsild</string>
+    <string name="app_permission_title">Halda tunneleid ja automaatset tunneldust.</string>
     <string name="dual_stack">Kahepinuline</string>
     <string name="kernel_name_dots">Kernelirežiimis ei tohi tunneli nimi olla „.“ või „..“</string>
     <string name="save_changes">Salvesta muudatused</string>
