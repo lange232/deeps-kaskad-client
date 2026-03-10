@@ -240,4 +240,4 @@ jobs:
       - name: Distribute app to Prod track 🚀
         run: |
           track=${{ github.event_name == 'push' && 'production' || inputs.track }}
-          (cd ${{ github.workspace }} && bundle install && bundle exec fastlane $track)
+          (cd ${{ github.workspace }} && bundle install && bundle exec fastlane $track --verbose)
