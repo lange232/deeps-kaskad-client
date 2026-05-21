@@ -16,29 +16,37 @@ import com.zaneschepke.wireguardautotunnel.ui.common.sheet.SheetOption
 import com.zaneschepke.wireguardautotunnel.util.Constants
 import com.zaneschepke.wireguardautotunnel.util.FileUtils
 import com.zaneschepke.wireguardautotunnel.util.extensions.hasSAFSupport
+import com.zaneschepke.wireguardautotunnel.util.extensions.toUserFriendlyTimestamp
+import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LogsBottomSheet(onExport: (file: Uri?) -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit) {
+fun LogsBottomSheet(
+    onExport: (Uri) -> Unit,
+    onDelete: () -> Unit,
+    onCanceled: () -> Unit,
+    onUnsupported: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     val context = LocalContext.current
 
-    val selectedTunnelsExportLauncher =
+    val exportLauncher =
         rememberFileExportLauncherForResult(
             mimeType = FileUtils.ZIP_FILE_MIME_TYPE,
-            onResult = { file ->
-                if (file != null) {
-                    onExport(file)
-                } else onDismiss()
-            },
+            onSuccess = { uri -> onExport(uri) },
+            onCanceled = onCanceled,
+            onUnsupported = onUnsupported,
         )
 
     fun handleFileExport() {
         if (context.hasSAFSupport(FileUtils.ZIP_FILE_MIME_TYPE)) {
-            selectedTunnelsExportLauncher.launch(
-                "${Constants.BASE_LOG_FILE_NAME}_${BuildConfig.VERSION_NAME}_${BuildConfig.FLAVOR}.zip"
-            )
+            val timestamp = Instant.now().toUserFriendlyTimestamp()
+            val fileName =
+                "${Constants.BASE_LOG_FILE_NAME}_${timestamp}_${BuildConfig.VERSION_NAME}_${BuildConfig.FLAVOR}.zip"
+
+            exportLauncher.launch(fileName)
         } else {
-            onExport(null)
+            onUnsupported()
         }
     }
 

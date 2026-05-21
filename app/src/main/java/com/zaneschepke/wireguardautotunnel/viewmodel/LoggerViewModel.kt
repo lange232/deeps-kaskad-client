@@ -11,6 +11,8 @@ import com.zaneschepke.wireguardautotunnel.ui.state.LoggerUiState
 import com.zaneschepke.wireguardautotunnel.util.Constants
 import com.zaneschepke.wireguardautotunnel.util.FileUtils
 import com.zaneschepke.wireguardautotunnel.util.StringValue
+import com.zaneschepke.wireguardautotunnel.util.extensions.toUserFriendlyTimestamp
+import java.time.Instant
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
@@ -48,10 +50,19 @@ class LoggerViewModel(
     }
 
     fun exportLogs(uri: Uri?) = intent {
+        if (uri == null) {
+            postSideEffect(
+                GlobalSideEffect.Toast(StringValue.StringResource(R.string.export_unsupported))
+            )
+            return@intent
+        }
+
+        val timestamp = Instant.now().toUserFriendlyTimestamp()
         val result =
             fileUtils.createNewShareFile(
-                "${Constants.BASE_LOG_FILE_NAME}_${BuildConfig.VERSION_NAME}_${BuildConfig.FLAVOR}.zip"
+                "${Constants.BASE_LOG_FILE_NAME}_${timestamp}_${BuildConfig.VERSION_NAME}_${BuildConfig.FLAVOR}.zip"
             )
+
         val onFailure = { action: Throwable ->
             Timber.e(action)
             intent {
@@ -66,6 +77,7 @@ class LoggerViewModel(
             }
             Unit
         }
+
         result.fold(
             onSuccess = { file ->
                 try {

@@ -1,6 +1,6 @@
 package com.zaneschepke.wireguardautotunnel.util.extensions
 
-import java.util.*
+import java.util.Locale
 import timber.log.Timber
 
 val hasNumberInParentheses = """^(.+?)\((\d+)\)$""".toRegex()
@@ -111,6 +111,6 @@ inline fun String?.ifNotBlank(block: (String) -> Unit): String? {
     return this
 }
 
-fun String.isTextTooLargeForQr(maxBytes: Int = 1200): Boolean {
+fun String.isTextTooLargeForQr(maxBytes: Int = 1500): Boolean {
     return toByteArray(Charsets.UTF_8).size > maxBytes
 }

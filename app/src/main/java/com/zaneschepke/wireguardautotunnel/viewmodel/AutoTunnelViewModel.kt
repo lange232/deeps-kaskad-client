@@ -3,20 +3,23 @@ package com.zaneschepke.wireguardautotunnel.viewmodel
 import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
 import androidx.lifecycle.ViewModel
 import com.zaneschepke.networkmonitor.NetworkMonitor
+import com.zaneschepke.networkmonitor.StableNetworkEngine
+import com.zaneschepke.tunnel.backend.RootShell
 import com.zaneschepke.wireguardautotunnel.R
+import com.zaneschepke.wireguardautotunnel.core.orchestration.AutoTunnelCoordinator
 import com.zaneschepke.wireguardautotunnel.core.service.ServiceManager
-import com.zaneschepke.wireguardautotunnel.data.model.AppMode
-import com.zaneschepke.wireguardautotunnel.data.model.WifiDetectionMethod
+import com.zaneschepke.wireguardautotunnel.core.service.autotunnel.AutoTunnelStateHolder
+import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
+import com.zaneschepke.wireguardautotunnel.domain.enums.WifiDetectionMethod
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig
 import com.zaneschepke.wireguardautotunnel.domain.repository.AutoTunnelSettingsRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.GlobalEffectRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
 import com.zaneschepke.wireguardautotunnel.domain.sideeffect.GlobalSideEffect
 import com.zaneschepke.wireguardautotunnel.ui.state.AutoTunnelUiState
-import com.zaneschepke.wireguardautotunnel.util.RootShellUtils
 import com.zaneschepke.wireguardautotunnel.util.StringValue
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import rikka.shizuku.Shizuku
@@ -24,10 +27,12 @@ import rikka.shizuku.Shizuku
 class AutoTunnelViewModel(
     private val autoTunnelRepository: AutoTunnelSettingsRepository,
     private val serviceManager: ServiceManager,
-    private val networkMonitor: NetworkMonitor,
+    private val stableNetworkEngine: StableNetworkEngine,
+    networkMonitor: NetworkMonitor,
     private val globalEffectRepository: GlobalEffectRepository,
+    private val autoTunnelCoordinator: AutoTunnelCoordinator,
     private val tunnelsRepository: TunnelRepository,
-    private val rootShellUtils: RootShellUtils,
+    private val autoTunnelStateHolder: AutoTunnelStateHolder,
 ) : ContainerHost<AutoTunnelUiState, Nothing>, ViewModel() {
 
     init {
@@ -41,11 +46,11 @@ class AutoTunnelViewModel(
         ) {
             intent {
                 combine(
-                        networkMonitor.connectivityStateFlow,
-                        serviceManager.autoTunnelService.map { it != null },
+                        stableNetworkEngine.stableState.mapNotNull { it?.state },
                         autoTunnelRepository.flow,
                         tunnelsRepository.userTunnelsFlow,
-                    ) { connectivity, active, autoTunnel, tunnels ->
+                        autoTunnelStateHolder.active,
+                    ) { connectivity, autoTunnel, tunnels, active ->
                         state.copy(
                             autoTunnelActive = active,
                             connectivityState = connectivity,
@@ -62,20 +67,19 @@ class AutoTunnelViewModel(
         globalEffectRepository.post(globalSideEffect)
     }
 
-    fun toggleAutoTunnel(appMode: AppMode) = intent {
+    fun toggleAutoTunnel(tunnelMode: TunnelMode) = intent {
         if (!state.autoTunnelActive) {
-            when (appMode) {
-                AppMode.VPN ->
+            when (tunnelMode) {
+                TunnelMode.VPN ->
                     if (!serviceManager.hasVpnPermission())
                         return@intent postSideEffect(
-                            GlobalSideEffect.RequestVpnPermission(AppMode.VPN, null)
+                            GlobalSideEffect.RequestVpnPermission(TunnelMode.VPN, null)
                         )
+
                 else -> Unit
             }
-            autoTunnelRepository.upsert(state.autoTunnelSettings.copy(isAutoTunnelEnabled = true))
-        } else {
-            autoTunnelRepository.upsert(state.autoTunnelSettings.copy(isAutoTunnelEnabled = false))
         }
+        autoTunnelCoordinator.toggle()
     }
 
     fun setAutoTunnelOnWifiEnabled(to: Boolean) = intent {
@@ -123,10 +127,6 @@ class AutoTunnelViewModel(
         autoTunnelRepository.upsert(state.autoTunnelSettings.copy(startOnBoot = to))
     }
 
-    fun setDebounceDelay(to: Int) = intent {
-        autoTunnelRepository.upsert(state.autoTunnelSettings.copy(debounceDelaySeconds = to))
-    }
-
     fun setPreferredMobileDataTunnel(tunnel: TunnelConfig?) = intent {
         tunnelsRepository.updateMobileDataTunnel(tunnel)
     }
@@ -152,7 +152,7 @@ class AutoTunnelViewModel(
     fun setWifiDetectionMethod(method: WifiDetectionMethod) = intent {
         when (method) {
             WifiDetectionMethod.ROOT -> {
-                val accepted = rootShellUtils.requestRoot()
+                val accepted = RootShell.requestRootPermission()
                 val message =
                     if (!accepted) StringValue.StringResource(R.string.error_root_denied)
                     else StringValue.StringResource(R.string.root_accepted)

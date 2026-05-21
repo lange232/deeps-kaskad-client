@@ -3,27 +3,26 @@ package com.zaneschepke.wireguardautotunnel.viewmodel
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.wireguard.android.backend.WgQuickBackend
 import com.zaneschepke.wireguardautotunnel.R
+import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelCoordinator
+import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelModeCoordinator
 import com.zaneschepke.wireguardautotunnel.core.service.ServiceManager
-import com.zaneschepke.wireguardautotunnel.core.tunnel.TunnelManager
-import com.zaneschepke.wireguardautotunnel.data.model.AppMode
-import com.zaneschepke.wireguardautotunnel.domain.enums.ConfigType
+import com.zaneschepke.wireguardautotunnel.core.service.autotunnel.AutoTunnelStateHolder
+import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig
 import com.zaneschepke.wireguardautotunnel.domain.repository.AppStateRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.GeneralSettingRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.GlobalEffectRepository
-import com.zaneschepke.wireguardautotunnel.domain.repository.MonitoringSettingsRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.SelectedTunnelsRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
 import com.zaneschepke.wireguardautotunnel.domain.sideeffect.GlobalSideEffect
+import com.zaneschepke.wireguardautotunnel.parser.ConfigParseException
 import com.zaneschepke.wireguardautotunnel.ui.sideeffect.LocalSideEffect
 import com.zaneschepke.wireguardautotunnel.ui.state.GlobalAppUiState
 import com.zaneschepke.wireguardautotunnel.ui.state.TunnelsUiState
 import com.zaneschepke.wireguardautotunnel.ui.theme.Theme
 import com.zaneschepke.wireguardautotunnel.util.FileUtils
 import com.zaneschepke.wireguardautotunnel.util.LocaleUtil
-import com.zaneschepke.wireguardautotunnel.util.RootShellUtils
 import com.zaneschepke.wireguardautotunnel.util.StringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.QuickConfig
 import com.zaneschepke.wireguardautotunnel.util.extensions.TunnelName
@@ -45,9 +44,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.plus
 import kotlinx.coroutines.withContext
-import org.amnezia.awg.config.BadConfigException
 import org.orbitmvi.orbit.ContainerHost
 import org.orbitmvi.orbit.viewmodel.container
 import timber.log.Timber
@@ -56,13 +53,13 @@ import xyz.teamgravity.pin_lock_compose.PinManager
 class SharedAppViewModel(
     private val appStateRepository: AppStateRepository,
     private val serviceManager: ServiceManager,
-    private val tunnelManager: TunnelManager,
+    private val tunnelCoordinator: TunnelCoordinator,
     private val globalEffectRepository: GlobalEffectRepository,
     private val tunnelRepository: TunnelRepository,
     private val settingsRepository: GeneralSettingRepository,
+    private val autoTunnelStateHolder: AutoTunnelStateHolder,
     private val selectedTunnelsRepository: SelectedTunnelsRepository,
-    monitoringSettingsRepository: MonitoringSettingsRepository,
-    private val rootShellUtils: RootShellUtils,
+    private val tunnelModeCoordinator: TunnelModeCoordinator,
     private val httpClient: HttpClient,
     private val fileUtils: FileUtils,
     private val networkUtils: NetworkUtils,
@@ -73,15 +70,12 @@ class SharedAppViewModel(
     val tunnelsUiState =
         combine(
                 tunnelRepository.userTunnelsFlow,
-                monitoringSettingsRepository.flow,
-                tunnelManager.activeTunnels,
+                tunnelCoordinator.backendStatus,
                 selectedTunnelsRepository.flow,
-            ) { tunnels, monitoringSettings, activeTuns, selectedTuns ->
+            ) { tunnels, backendStatus, selectedTuns ->
                 TunnelsUiState(
                     tunnels = tunnels,
-                    isPingEnabled = monitoringSettings.isPingEnabled,
-                    showPingStats = monitoringSettings.showDetailedPingStats,
-                    activeTunnels = activeTuns,
+                    backendStatus = backendStatus,
                     selectedTunnels = selectedTuns,
                     isLoading = false,
                 )
@@ -98,53 +92,43 @@ class SharedAppViewModel(
                         tunnelRepository.userTunnelsFlow
                             .map { tuns -> tuns.associate { it.id to it.name } }
                             .distinctUntilChanged(),
-                        serviceManager.autoTunnelService.map { it != null }.distinctUntilChanged(),
                         settingsRepository.flow,
+                        autoTunnelStateHolder.active,
                         tunnelsUiState
                             .map { Pair(it.isLoading, it.selectedTunnels.size) }
                             .distinctUntilChanged(),
                         appStateRepository.flow,
-                    ) { tunNames, autoTunnelActive, settings, (loading, selectedTunCount), appState
+                    ) { tunNames, settings, autoTunnelActive, (loading, selectedTunCount), appState
                         ->
                         state.copy(
                             theme = settings.theme,
-                            appMode = settings.appMode,
+                            tunnelMode = settings.tunnelMode,
                             locale = settings.locale ?: LocaleUtil.OPTION_PHONE_LANGUAGE,
                             tunnelNames = tunNames,
                             alreadyDonated = settings.alreadyDonated,
+                            isAutoTunnelActive = autoTunnelActive,
                             isLocationDisclosureShown = appState.isLocationDisclosureShown,
                             isBatteryOptimizationShown = appState.isBatteryOptimizationDisableShown,
                             shouldShowDonationSnackbar = appState.shouldShowDonationSnackbar,
                             selectedTunnelCount = selectedTunCount,
                             pinLockEnabled = settings.isPinLockEnabled,
-                            isAutoTunnelActive = autoTunnelActive,
+                            isScreenRecordingProtectionEnabled =
+                                settings.screenRecordingSecurityEnabled,
                             isAppLoaded = !loading,
                         )
                     }
                     .collect { newState -> reduce { newState } }
             }
-
-            intent {
-                tunnelManager.errorEvents.collect { (tunnel, message) ->
-                    postSideEffect(GlobalSideEffect.Snackbar(message.toStringValue()))
-                }
-            }
-
-            intent {
-                tunnelManager.messageEvents.collect { (_, message) ->
-                    postSideEffect(GlobalSideEffect.Snackbar(message.toStringValue()))
-                }
-            }
         }
 
     fun startTunnel(tunnelConfig: TunnelConfig) = intent {
-        if (state.appMode == AppMode.VPN) {
+        if (state.tunnelMode == TunnelMode.VPN) {
             if (!serviceManager.hasVpnPermission())
                 return@intent postSideEffect(
-                    GlobalSideEffect.RequestVpnPermission(AppMode.VPN, tunnelConfig)
+                    GlobalSideEffect.RequestVpnPermission(TunnelMode.VPN, tunnelConfig)
                 )
         }
-        tunnelManager.startTunnel(tunnelConfig)
+        tunnelCoordinator.startTunnel(tunnelConfig)
     }
 
     fun postSideEffect(localSideEffect: LocalSideEffect) = intent {
@@ -168,45 +152,17 @@ class SharedAppViewModel(
     }
 
     fun stopTunnel(tunnelConfig: TunnelConfig) = intent {
-        tunnelManager.stopTunnel(tunnelConfig.id)
+        tunnelCoordinator.stopTunnel(tunnelConfig.id)
     }
 
-    fun setAppMode(appMode: AppMode) = intent {
-        when (appMode) {
-            AppMode.VPN,
-            AppMode.PROXY -> Unit
-            AppMode.LOCK_DOWN -> {
-                if (!serviceManager.hasVpnPermission()) {
-                    return@intent postSideEffect(
-                        GlobalSideEffect.RequestVpnPermission(appMode, null)
-                    )
-                }
-            }
-            AppMode.KERNEL -> {
-                val accepted = rootShellUtils.requestRoot()
-                val message =
-                    if (!accepted) StringValue.StringResource(R.string.error_root_denied)
-                    else StringValue.StringResource(R.string.root_accepted)
-                postSideEffect(GlobalSideEffect.Snackbar(message))
-                if (!accepted) return@intent
-                if (WgQuickBackend.hasKernelSupport())
-                    Timber.i(
-                        "Device supports kernel backend. WireGuard module is built in, switching to kernel backend."
-                    )
-                else {
-                    Timber.e("Device does not support kernel backend!")
-                    intent {
-                        postSideEffect(
-                            GlobalSideEffect.Snackbar(
-                                StringValue.StringResource(R.string.kernel_wireguard_unsupported)
-                            )
-                        )
-                    }
-                    return@intent
-                }
+    fun setAppMode(mode: TunnelMode) = intent {
+        if (mode == TunnelMode.VPN || mode == TunnelMode.LOCK_DOWN) {
+            if (!serviceManager.hasVpnPermission()) {
+                return@intent postSideEffect(GlobalSideEffect.RequestVpnPermission(mode, null))
             }
         }
-        settingsRepository.updateAppMode(appMode)
+
+        tunnelModeCoordinator.changeMode(mode)
     }
 
     fun setShouldShowDonationSnackbar(to: Boolean) = intent {
@@ -252,12 +208,11 @@ class SharedAppViewModel(
                         async {
                             val config =
                                 try {
-                                    tunnel.toAmConfig()
+                                    tunnel.getConfig()
                                 } catch (e: Exception) {
                                     null
                                 }
-                            val endpoint =
-                                config?.peers?.firstOrNull()?.endpoint?.orElse(null)?.host
+                            val endpoint = config?.peers?.firstOrNull()?.host
                             if (endpoint != null) {
                                 val latency =
                                     try {
@@ -282,14 +237,15 @@ class SharedAppViewModel(
 
     fun importTunnelConfigs(configs: Map<QuickConfig, TunnelName>) = intent {
         try {
-            val tunnelConfigs =
-                configs.map { (config, name) -> TunnelConfig.tunnelConfFromQuick(config, name) }
+            val tunnelConfigs = configs.map { (config, name) ->
+                TunnelConfig.tunnelConfFromQuick(config, name)
+            }
             tunnelRepository.saveTunnelsUniquely(tunnelConfigs, state.tunnelNames.map { it.value })
         } catch (_: IOException) {
             postSideEffect(
                 GlobalSideEffect.Snackbar(StringValue.StringResource(R.string.read_failed))
             )
-        } catch (e: BadConfigException) {
+        } catch (e: ConfigParseException) {
             postSideEffect(GlobalSideEffect.Snackbar(e.asStringValue()))
         }
     }
@@ -356,7 +312,8 @@ class SharedAppViewModel(
     }
 
     fun deleteSelectedTunnels() = intent {
-        val activeTunIds = tunnelManager.activeTunnels.firstOrNull()?.map { it.key }
+        val activeTunIds =
+            tunnelCoordinator.backendStatus.firstOrNull()?.activeTunnels?.map { it.key }
         val selectedTuns = tunnelsUiState.value.selectedTunnels
         if (selectedTuns.any { activeTunIds?.contains(it.id) == true })
             return@intent postSideEffect(
@@ -370,26 +327,15 @@ class SharedAppViewModel(
 
     fun copySelectedTunnel() = intent {
         val selected = tunnelsUiState.value.selectedTunnels.firstOrNull() ?: return@intent
-        val copy = TunnelConfig.tunnelConfFromQuick(selected.amQuick, selected.name)
+        val copy = TunnelConfig.tunnelConfFromQuick(selected.quickConfig, selected.name)
         tunnelRepository.saveTunnelsUniquely(listOf(copy), state.tunnelNames.map { it.value })
         clearSelectedTunnels()
     }
 
-    fun exportSelectedTunnels(configType: ConfigType, uri: Uri?) = intent {
+    fun exportSelectedTunnels(uri: Uri?) = intent {
         val selectedTunnels = tunnelsUiState.value.selectedTunnels
-        val (files, shareFileName) =
-            when (configType) {
-                ConfigType.AM ->
-                    Pair(
-                        createAmFiles(selectedTunnels),
-                        "am-export_${Instant.now().epochSecond}.zip",
-                    )
-                ConfigType.WG ->
-                    Pair(
-                        createWgFiles(selectedTunnels),
-                        "wg-export_${Instant.now().epochSecond}.zip",
-                    )
-            }
+        val files = createConfFiles(selectedTunnels)
+        val shareFileName = "wgtunnel-export_${Instant.now().epochSecond}.zip"
         val onFailure = { action: Throwable ->
             intent {
                 postSideEffect(
@@ -420,17 +366,14 @@ class SharedAppViewModel(
             .onFailure(onFailure)
     }
 
-    suspend fun createWgFiles(tunnels: Collection<TunnelConfig>): List<File> =
-        tunnels.mapNotNull { config ->
-            if (config.wgQuick.isNotBlank()) {
-                fileUtils.createFile(config.name, config.wgQuick)
-            } else null
-        }
+    fun setScreenRecordingSecurity(to: Boolean) = intent {
+        settingsRepository.updateScreenRecordingSecurity(to)
+    }
 
-    suspend fun createAmFiles(tunnels: Collection<TunnelConfig>): List<File> =
+    suspend fun createConfFiles(tunnels: Collection<TunnelConfig>): List<File> =
         tunnels.mapNotNull { config ->
-            if (config.amQuick.isNotBlank()) {
-                fileUtils.createFile(config.name, config.amQuick)
+            if (config.quickConfig.isNotBlank()) {
+                fileUtils.createFile(config.name, config.quickConfig)
             } else null
         }
 }

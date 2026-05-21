@@ -1,108 +1,106 @@
 package com.zaneschepke.wireguardautotunnel.di
 
-import com.wireguard.android.backend.WgQuickBackend
-import com.wireguard.android.util.RootShell
-import com.wireguard.android.util.ToolsInstaller
+import android.app.Notification
 import com.zaneschepke.networkmonitor.AndroidNetworkMonitor
 import com.zaneschepke.networkmonitor.NetworkMonitor
-import com.zaneschepke.wireguardautotunnel.core.tunnel.TunnelManager
-import com.zaneschepke.wireguardautotunnel.core.tunnel.backend.KernelTunnel
-import com.zaneschepke.wireguardautotunnel.core.tunnel.backend.RunConfigHelper
-import com.zaneschepke.wireguardautotunnel.core.tunnel.backend.TunnelBackend
-import com.zaneschepke.wireguardautotunnel.core.tunnel.backend.UserspaceTunnel
+import com.zaneschepke.networkmonitor.StableNetworkEngine
+import com.zaneschepke.tunnel.NotificationProvider
+import com.zaneschepke.tunnel.backend.RootShell
+import com.zaneschepke.tunnel.util.RootShellException
+import com.zaneschepke.wireguardautotunnel.R
+import com.zaneschepke.wireguardautotunnel.core.event.TunnelEventDispatcher
+import com.zaneschepke.wireguardautotunnel.core.notification.AndroidNotificationService.NotificationChannels
+import com.zaneschepke.wireguardautotunnel.core.notification.AndroidTunnelNotificationService
+import com.zaneschepke.wireguardautotunnel.core.notification.NotificationService
+import com.zaneschepke.wireguardautotunnel.core.notification.NotificationService.Companion.PROXY_GROUP_KEY
+import com.zaneschepke.wireguardautotunnel.core.notification.NotificationService.Companion.VPN_GROUP_KEY
+import com.zaneschepke.wireguardautotunnel.core.notification.TunnelNotificationService
+import com.zaneschepke.wireguardautotunnel.core.tunnel.TunnelBackendProvider
+import com.zaneschepke.wireguardautotunnel.core.tunnel.TunnelProvider
 import com.zaneschepke.wireguardautotunnel.domain.repository.AutoTunnelSettingsRepository
-import com.zaneschepke.wireguardautotunnel.util.RootShellUtils
 import com.zaneschepke.wireguardautotunnel.util.extensions.to
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.map
-import org.amnezia.awg.backend.Backend
-import org.amnezia.awg.backend.GoBackend
-import org.amnezia.awg.backend.ProxyGoBackend
-import org.amnezia.awg.backend.RootTunnelActionHandler
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
+import timber.log.Timber
 
-val tunnelModule = module {
-    single(named(Shell.TUNNEL)) { RootShell(androidContext()) }
-    single(named(Shell.APP)) { RootShell(androidContext()) }
+val tunnelBackendProviderModule = module {
+    single<TunnelNotificationService> { AndroidTunnelNotificationService(get(), get()) }
+    singleOf(::TunnelEventDispatcher)
 
-    single { RootShellUtils(get(named(Shell.APP)), get(named(Dispatcher.IO))) }
+    single<NotificationProvider> {
+        val notificationService = get<NotificationService>()
+        val context = androidContext()
+        object : NotificationProvider {
+            override val vpnInitNotification: Notification
+                get() =
+                    notificationService.createNotification(
+                        channel = NotificationChannels.VPN,
+                        title = context.getString(R.string.initializing),
+                        onGoing = true,
+                        groupKey = VPN_GROUP_KEY,
+                    )
 
-    singleOf(::RunConfigHelper)
+            override val proxyInitNotification: Notification
+                get() =
+                    notificationService.createNotification(
+                        channel = NotificationChannels.PROXY,
+                        title = context.getString(R.string.initializing),
+                        onGoing = true,
+                        groupKey = PROXY_GROUP_KEY,
+                    )
 
-    single<Backend>(named(Core.USERSPACE)) {
-        GoBackend(
-            androidContext(),
-            RootTunnelActionHandler(org.amnezia.awg.util.RootShell(androidContext())),
+            override val vpnNotificationId: Int
+                get() = NotificationService.VPN_NOTIFICATION_ID
+
+            override val proxyNotificationId: Int
+                get() = NotificationService.PROXY_NOTIFICATION_ID
+        }
+    }
+
+    single {
+        StableNetworkEngine(
+            get<CoroutineScope>(named(Scope.APPLICATION)),
+            get<NetworkMonitor>().connectivityStateFlow,
         )
-    }
-
-    single<Backend>(named(Core.PROXY_USERSPACE)) {
-        ProxyGoBackend(
-            androidContext(),
-            RootTunnelActionHandler(org.amnezia.awg.util.RootShell(androidContext())),
-        )
-    }
-
-    single<com.wireguard.android.backend.Backend> {
-        val shell = get<RootShell>(named(Shell.TUNNEL))
-        WgQuickBackend(
-                androidContext(),
-                shell,
-                ToolsInstaller(androidContext(), shell),
-                com.wireguard.android.backend.RootTunnelActionHandler(shell),
-            )
-            .apply { setMultipleTunnels(true) }
-    }
-
-    single<TunnelBackend>(named(Core.KERNEL)) {
-        KernelTunnel(get(), get<com.wireguard.android.backend.Backend>())
-    }
-
-    single<TunnelBackend>(qualifier = named(Core.USERSPACE)) {
-        UserspaceTunnel(get<Backend>(named(Core.USERSPACE)), get())
-    }
-
-    single<TunnelBackend>(qualifier = named(Core.PROXY_USERSPACE)) {
-        UserspaceTunnel(get<Backend>(named(Core.PROXY_USERSPACE)), get())
     }
 
     single<NetworkMonitor> {
         AndroidNetworkMonitor(
             androidContext(),
             object : AndroidNetworkMonitor.ConfigurationListener {
+                override suspend fun runRootShellCommand(cmd: String): String? {
+                    return try {
+                        withTimeout(3_000) {
+                            withContext(Dispatchers.IO) {
+                                val result = RootShell.run(cmd)
+                                result.output
+                            }
+                        }
+                    } catch (e: RootShellException) {
+                        Timber.e(e)
+                        null
+                    }
+                }
+
                 override val detectionMethod =
                     get<AutoTunnelSettingsRepository>()
                         .flow
                         .distinctUntilChangedBy { it.wifiDetectionMethod }
                         .map { it.wifiDetectionMethod.to() }
-
-                override val rootShell = get<RootShell>(named(Shell.APP))
             },
             get<CoroutineScope>(named(Scope.APPLICATION)),
         )
     }
 
-    single {
-        TunnelManager(
-            get(named(Core.KERNEL)),
-            get(named(Core.USERSPACE)),
-            get(named(Core.PROXY_USERSPACE)),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(named(Scope.APPLICATION)),
-            get(named(Dispatcher.IO)),
-        )
+    single<TunnelProvider> {
+        TunnelBackendProvider(get(), get(named(Scope.APPLICATION)), get(named(Dispatcher.IO)))
     }
 }

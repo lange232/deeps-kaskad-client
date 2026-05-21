@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.database.ContentObserver
 import android.location.LocationManager
 import android.net.ConnectivityManager
 import android.net.Network
@@ -11,17 +12,37 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.net.wifi.WifiManager
 import android.os.Build
-import com.wireguard.android.util.RootShell
-import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.*
+import android.provider.Settings
+import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.DEFAULT
+import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.LEGACY
+import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.ROOT
+import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.SHIZUKU
 import com.zaneschepke.networkmonitor.shizuku.ShizukuShell
-import com.zaneschepke.networkmonitor.util.*
+import com.zaneschepke.networkmonitor.util.getCurrentSecurityType
+import com.zaneschepke.networkmonitor.util.getWifiSsid
+import com.zaneschepke.networkmonitor.util.hasRequiredLocationPermissions
+import com.zaneschepke.networkmonitor.util.isAirplaneModeOn
+import com.zaneschepke.networkmonitor.util.isLocationServicesEnabled
+import java.net.Inet6Address
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.shareIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
@@ -35,12 +56,16 @@ class AndroidNetworkMonitor(
 
     interface ConfigurationListener {
         val detectionMethod: Flow<WifiDetectionMethod>
-        val rootShell: RootShell
+
+        // maybe this shouldn't just be a string result
+        suspend fun runRootShellCommand(cmd: String): String?
     }
 
     companion object {
         const val LOCATION_SERVICES_FILTER: String = "android.location.PROVIDERS_CHANGED"
         const val ANDROID_UNKNOWN_SSID: String = "<unknown ssid>"
+        const val WIFI_SSID_SHELL_COMMAND =
+            "cmd wifi status | grep -i 'connected to' | cut -d'\"' -f2"
         const val SHELL_COMMAND_TIMEOUT_MS = 2_000L
     }
 
@@ -83,8 +108,80 @@ class AndroidNetworkMonitor(
     // location queries in Legacy mode
     private val lastKnownActiveNetwork = MutableStateFlow<ActiveNetwork>(ActiveNetwork.Disconnected)
 
-    // recreate defaultNetwork flow on permission/detection method changes to get newly available
-    // network info
+    private val privateDnsFlow: Flow<PrivateDnsSettings> = callbackFlow {
+        val contentResolver = appContext.contentResolver
+
+        val modeUri = Settings.Global.getUriFor("private_dns_mode")
+        val specifierUri = Settings.Global.getUriFor("private_dns_specifier")
+
+        val observer =
+            object : ContentObserver(null) {
+                override fun onChange(selfChange: Boolean) {
+                    trySend(getCurrentPrivateDnsSettings())
+                }
+            }
+
+        contentResolver.registerContentObserver(modeUri, false, observer)
+        contentResolver.registerContentObserver(specifierUri, false, observer)
+
+        // initial value
+        trySend(getCurrentPrivateDnsSettings())
+
+        awaitClose { contentResolver.unregisterContentObserver(observer) }
+    }
+
+    private data class PrivateDnsSettings(val mode: PrivateDnsMode, val hostname: String?)
+
+    private fun getCurrentPrivateDnsSettings(): PrivateDnsSettings {
+        val modeStr =
+            Settings.Global.getString(appContext.contentResolver, "private_dns_mode") ?: "off"
+
+        val mode =
+            when (modeStr) {
+                "hostname" -> PrivateDnsMode.HOSTNAME
+                "opportunistic" -> PrivateDnsMode.AUTOMATIC
+                else -> PrivateDnsMode.OFF
+            }
+
+        val hostname =
+            Settings.Global.getString(appContext.contentResolver, "private_dns_specifier")
+
+        return PrivateDnsSettings(mode, hostname)
+    }
+
+    private fun getDnsServers(network: Network?): List<String> {
+        if (network == null) return emptyList()
+        val linkProperties = connectivityManager?.getLinkProperties(network) ?: return emptyList()
+        return linkProperties.dnsServers.map { it.hostAddress }
+    }
+
+    fun hasIpv6Support(network: Network?, activeNetwork: ActiveNetwork): Boolean {
+        if (network == null || activeNetwork is ActiveNetwork.Disconnected) return false
+
+        val lp = connectivityManager?.getLinkProperties(network) ?: return false
+
+        val hasGlobalIpv6 =
+            lp.linkAddresses.any {
+                val addr = it.address
+                addr is Inet6Address &&
+                    !addr.isLinkLocalAddress &&
+                    !addr.isLoopbackAddress &&
+                    !addr.isMulticastAddress
+            }
+
+        val hasIpv6DefaultRoute =
+            lp.routes.any { route -> route.isDefaultRoute && (route.gateway is Inet6Address) }
+
+        val hasNat64Prefix =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                lp.nat64Prefix != null
+            } else false
+
+        val hasSupport = (hasGlobalIpv6 && hasIpv6DefaultRoute) || hasNat64Prefix
+
+        return hasSupport
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     private val defaultNetworkFlow: Flow<TransportEvent> =
         combine(configurationListener.detectionMethod, permissionsChangedFlow) { detectionMethod, _
@@ -100,8 +197,6 @@ class AndroidNetworkMonitor(
                             object :
                                 ConnectivityManager.NetworkCallback(FLAG_INCLUDE_LOCATION_INFO) {
                                 override fun onAvailable(network: Network) {
-                                    // ignore onAvailable has it doesn't contain detailed network
-                                    // information in capabilities
                                     Timber.d("Default onAvailable: $network")
                                 }
 
@@ -152,8 +247,6 @@ class AndroidNetworkMonitor(
                 }
             }
 
-    // recreate Wi-Fi flow on permission/detection method changes to get newly available network
-    // info
     @OptIn(ExperimentalCoroutinesApi::class)
     private val wifiFlow: Flow<TransportEvent> =
         combine(configurationListener.detectionMethod, permissionsChangedFlow) { detectionMethod, _
@@ -296,28 +389,6 @@ class AndroidNetworkMonitor(
         }
     }
 
-    private val cellularStateFlow: Flow<NetworkCapabilities?> =
-        cellularFlow
-            .map { event ->
-                when (event) {
-                    is TransportEvent.CapabilitiesChanged -> event.networkCapabilities
-                    is TransportEvent.Lost -> null
-                    else -> null
-                }
-            }
-            .stateIn(applicationScope, SharingStarted.Eagerly, null)
-
-    private val ethernetStateFlow: Flow<NetworkCapabilities?> =
-        ethernetFlow
-            .map { event ->
-                when (event) {
-                    is TransportEvent.CapabilitiesChanged -> event.networkCapabilities
-                    is TransportEvent.Lost -> null
-                    else -> null
-                }
-            }
-            .stateIn(applicationScope, SharingStarted.Eagerly, null)
-
     private suspend fun getSsidByDetectionMethod(
         detectionMethod: WifiDetectionMethod?,
         networkCapabilities: NetworkCapabilities?,
@@ -347,11 +418,11 @@ class AndroidNetworkMonitor(
                             wifiManager?.getWifiSsid() ?: ANDROID_UNKNOWN_SSID
                         }
                         ROOT ->
-                            withTimeoutOrNull(SHELL_COMMAND_TIMEOUT_MS) {
-                                configurationListener.rootShell.getCurrentWifiName()
+                            withTimeoutOrNull(SHELL_COMMAND_TIMEOUT_MS.milliseconds) {
+                                configurationListener.runRootShellCommand(WIFI_SSID_SHELL_COMMAND)
                             } ?: ANDROID_UNKNOWN_SSID
                         SHIZUKU ->
-                            withTimeoutOrNull(SHELL_COMMAND_TIMEOUT_MS) {
+                            withTimeoutOrNull(SHELL_COMMAND_TIMEOUT_MS.milliseconds) {
                                 ShizukuShell(applicationScope)
                                     .singleResponseCommand(WIFI_SSID_SHELL_COMMAND)
                             } ?: ANDROID_UNKNOWN_SSID
@@ -370,33 +441,31 @@ class AndroidNetworkMonitor(
     private data class NetworkData(
         val defaultNetworkEvent: TransportEvent,
         val wifiNetworkEvent: TransportEvent,
-        val cellularCaps: NetworkCapabilities?,
-        val ethernetCaps: NetworkCapabilities?,
+        val cellularEvent: TransportEvent,
+        val ethernetEvent: TransportEvent,
     )
 
     // combine our network flows to keep sync
     private val networkFlows: Flow<NetworkData> =
-        combine(defaultNetworkFlow, wifiFlow, cellularStateFlow, ethernetStateFlow) {
+        combine(defaultNetworkFlow, wifiFlow, cellularFlow, ethernetFlow) {
             defaultEvent,
-            wifiCaps,
-            cellularCaps,
-            ethernetCaps ->
-            NetworkData(defaultEvent, wifiCaps, cellularCaps, ethernetCaps)
+            wifiEvent,
+            cellularEvent,
+            ethernetEvent ->
+            NetworkData(defaultEvent, wifiEvent, cellularEvent, ethernetEvent)
         }
 
     @OptIn(ExperimentalAtomicApi::class) private val vpnActiveState = AtomicReference(false)
 
     @OptIn(ExperimentalCoroutinesApi::class, ExperimentalAtomicApi::class, FlowPreview::class)
     override val connectivityStateFlow: SharedFlow<ConnectivityState> =
-        combine(networkFlows, airplaneModeFlow, configurationListener.detectionMethod) {
-                networkData,
-                isAirplaneOn,
-                detectionMethod ->
+        combine(
+                networkFlows,
+                airplaneModeFlow,
+                configurationListener.detectionMethod,
+                privateDnsFlow,
+            ) { networkData, isAirplaneOn, detectionMethod, privateDnsSettings ->
                 val defaultEvent = networkData.defaultNetworkEvent
-                val wifiEvent = networkData.wifiNetworkEvent
-                val cellularCaps = networkData.cellularCaps
-                val ethernetCaps = networkData.ethernetCaps
-
                 val permissions =
                     when (defaultEvent) {
                         is TransportEvent.Permissions -> defaultEvent.permissions
@@ -427,13 +496,8 @@ class AndroidNetworkMonitor(
                     )
                 }
 
-                val vpnPreviouslyActive =
-                    vpnActiveState.exchange(
-                        defaultCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
-                    )
-                val isVpnActive = vpnActiveState.load()
+                val isVpnActive = defaultCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
 
-                // determine vpn state
                 val vpnState: VpnState =
                     if (!isVpnActive) {
                         VpnState.Inactive
@@ -446,74 +510,85 @@ class AndroidNetworkMonitor(
                         )
                     }
 
-                val activeNetwork: ActiveNetwork =
-                    run {
-                            if (!isVpnActive) {
-                                when {
-                                    defaultCaps.hasTransport(
-                                        NetworkCapabilities.TRANSPORT_ETHERNET
-                                    ) -> ActiveNetwork.Ethernet
-                                    defaultCaps.hasTransport(
-                                        NetworkCapabilities.TRANSPORT_WIFI
-                                    ) -> {
-                                        val ssid =
-                                            getSsidByDetectionMethod(
-                                                detectionMethod,
-                                                defaultCaps,
-                                                defaultNetwork,
-                                            )
-                                        ActiveNetwork.Wifi(
-                                            ssid,
-                                            wifiManager?.getCurrentSecurityType(),
-                                            defaultNetwork.toString(),
-                                        )
-                                    }
-                                    defaultCaps.hasTransport(
-                                        NetworkCapabilities.TRANSPORT_CELLULAR
-                                    ) && !isAirplaneOn -> ActiveNetwork.Cellular
-                                    else -> ActiveNetwork.Disconnected
-                                }
-                            } else {
-                                val fromCaps =
-                                    when {
-                                        ethernetCaps != null -> ActiveNetwork.Ethernet
-                                        wifiEvent is TransportEvent.CapabilitiesChanged -> {
-                                            val ssid =
-                                                getSsidByDetectionMethod(
-                                                    detectionMethod,
-                                                    wifiEvent.networkCapabilities,
-                                                    wifiEvent.network,
-                                                )
-                                            ActiveNetwork.Wifi(
-                                                ssid,
-                                                wifiManager?.getCurrentSecurityType(),
-                                                wifiEvent.network.toString(),
-                                            )
-                                        }
-                                        cellularCaps != null && !isAirplaneOn ->
-                                            ActiveNetwork.Cellular
-                                        else -> null
-                                    }
+                val physicalNetwork: ActiveNetwork =
+                    when {
+                        // Ethernet
+                        networkData.ethernetEvent is TransportEvent.CapabilitiesChanged &&
+                            networkData.ethernetEvent.networkCapabilities?.hasTransport(
+                                NetworkCapabilities.TRANSPORT_ETHERNET
+                            ) == true -> ActiveNetwork.Ethernet(networkData.ethernetEvent.network)
 
-                                fromCaps
-                                    ?: if (!vpnPreviouslyActive) {
-                                        lastKnownActiveNetwork.value
-                                    } else {
-                                        ActiveNetwork.Disconnected
-                                    }
-                            }
+                        // WiFi
+                        networkData.wifiNetworkEvent is TransportEvent.CapabilitiesChanged -> {
+                            val wifiEvent = networkData.wifiNetworkEvent
+                            val ssid =
+                                getSsidByDetectionMethod(
+                                    detectionMethod,
+                                    wifiEvent.networkCapabilities,
+                                    wifiEvent.network,
+                                )
+                            ActiveNetwork.Wifi(
+                                ssid,
+                                wifiManager?.getCurrentSecurityType(),
+                                wifiEvent.network.toString(),
+                                wifiEvent.network,
+                            )
                         }
-                        .also { network -> lastKnownActiveNetwork.value = network }
+
+                        networkData.cellularEvent is TransportEvent.CapabilitiesChanged &&
+                            networkData.cellularEvent.networkCapabilities?.hasTransport(
+                                NetworkCapabilities.TRANSPORT_CELLULAR
+                            ) == true &&
+                            !isAirplaneOn ->
+                            ActiveNetwork.Cellular(networkData.cellularEvent.network)
+
+                        else -> ActiveNetwork.Disconnected
+                    }
+
+                val activeNetwork: ActiveNetwork =
+                    if (!isVpnActive) {
+                        physicalNetwork
+                    } else {
+                        lastKnownActiveNetwork.value
+                    }
+
+                if (physicalNetwork != ActiveNetwork.Disconnected) {
+                    lastKnownActiveNetwork.value = physicalNetwork
+                }
+
+                val underlyingNetwork: Network? =
+                    when (val last = lastKnownActiveNetwork.value) {
+                        is ActiveNetwork.Wifi -> last.network
+                        is ActiveNetwork.Cellular -> last.network
+                        is ActiveNetwork.Ethernet -> last.network
+                        else -> null
+                    }
+
+                val effectiveDns =
+                    DnsInfo(
+                        servers = getDnsServers(defaultNetwork),
+                        privateDnsMode = privateDnsSettings.mode,
+                        privateDnsHostname = privateDnsSettings.hostname,
+                    )
+                val underlyingDns =
+                    DnsInfo(
+                        servers = getDnsServers(underlyingNetwork),
+                        privateDnsMode = privateDnsSettings.mode,
+                        privateDnsHostname = privateDnsSettings.hostname,
+                    )
 
                 ConnectivityState(
                     activeNetwork = activeNetwork,
                     locationPermissionsGranted = permissions.locationPermissionGranted,
                     locationServicesEnabled = permissions.locationServicesEnabled,
                     vpnState = vpnState,
+                    effectiveDnsInfo = effectiveDns,
+                    underlyingDnsInfo = underlyingDns,
+                    hasIpv6 = hasIpv6Support(underlyingNetwork, activeNetwork),
                 )
             }
             .distinctUntilChanged()
-            .debounce { 300L }
+            .debounce(300.milliseconds)
             .shareIn(applicationScope, SharingStarted.Eagerly, replay = 1)
 
     // utility to send local broadcast to trigger a recheck of location permissions onResume,
@@ -613,7 +688,6 @@ class AndroidNetworkMonitor(
                 permissionReceiver?.let { appContext.unregisterReceiver(it) }
                 locationServicesReceiver?.let { appContext.unregisterReceiver(it) }
                 airplaneReceiver?.let { appContext.unregisterReceiver(it) }
-
                 defaultNetworkCallback?.let { connectivityManager?.unregisterNetworkCallback(it) }
                 wifiCallback?.let { connectivityManager?.unregisterNetworkCallback(it) }
                 cellularCallback?.let { connectivityManager?.unregisterNetworkCallback(it) }
