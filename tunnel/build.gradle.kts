@@ -53,6 +53,7 @@ android {
                 }
             }
         }
+        create(Constants.NIGHTLY) { initWith(getByName(Constants.RELEASE)) }
     }
 
     compileOptions {

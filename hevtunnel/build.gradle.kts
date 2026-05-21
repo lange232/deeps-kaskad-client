@@ -42,6 +42,7 @@ android {
                 "proguard-rules.pro"
             )
         }
+        create(Constants.NIGHTLY) { initWith(getByName(Constants.RELEASE)) }
     }
 
     externalNativeBuild {
