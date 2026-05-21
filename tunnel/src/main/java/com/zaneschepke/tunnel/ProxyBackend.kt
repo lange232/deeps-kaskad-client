@@ -1,8 +1,10 @@
 package com.zaneschepke.tunnel
 
+import androidx.annotation.Keep
 import com.zaneschepke.tunnel.backend.SocketProtector
 import timber.log.Timber
 
+@Keep
 internal object ProxyBackend {
     external fun awgStartProxy(ifName: String, config: String, uapiPath: String, bypass: Int): Int
 

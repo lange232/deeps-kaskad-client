@@ -1,7 +1,9 @@
 package com.zaneschepke.tunnel
 
+import androidx.annotation.Keep
 import timber.log.Timber
 
+@Keep
 internal object VpnBackend {
 
     fun setStatusCallback(callback: StatusCallback?) {

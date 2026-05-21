@@ -1,4 +1,5 @@
 import com.android.build.api.dsl.ApplicationExtension
+import com.android.build.api.variant.FilterConfiguration
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -154,42 +155,24 @@ androidComponents {
                 "x86_64" to "x64",
             )
 
-        val variantCap =
-            variant.name.replaceFirstChar { it.uppercase() }
+        variant.outputs.forEach { output ->
+            val abi = output.filters.find { it.filterType == FilterConfiguration.FilterType.ABI }?.identifier
 
-        tasks.register<Copy>("rename${variantCap}Apk") {
+            val flavorName = variant.productFlavors.joinToString("-") { it.second }
 
-            val apkFolder =
-                layout.buildDirectory.dir("outputs/apk/${variant.name}")
+            val versionName = output.versionName.get()
 
-            from(apkFolder)
+            val baseFileName = "${Constants.APP_NAME}-${flavorName}-v${versionName}"
 
-            include("*.apk")
-
-            into(layout.buildDirectory.dir("renamed-apks"))
-
-            rename { originalName ->
-
-                val abi =
-                    abiNameMap.entries.find { entry ->
-                        originalName.contains(entry.key)
-                    }?.value
-
-                val versionName =
-                    variant.outputs.single().versionName.get()
-
-                val flavorName =
-                    variant.productFlavors.joinToString("-") { it.second }
-
-                val baseName =
-                    "${Constants.APP_NAME}-${flavorName}-v$versionName"
-
-                if (abi != null) {
-                    "$baseName-$abi.apk"
+            val outputFileName =
+                if (!abi.isNullOrEmpty()) {
+                    val shortAbiName = abiNameMap.getOrDefault(abi, abi)
+                    "${baseFileName}-${shortAbiName}.apk"
                 } else {
-                    "$baseName.apk"
+                    "${baseFileName}.apk"
                 }
-            }
+            
+            output.outputFileName.set(outputFileName)
         }
     }
 }

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.system.OsConstants
+import androidx.annotation.Keep
 import androidx.core.app.ServiceCompat
 import com.zaneschepke.hevtunnel.HevTunnelConfig
 import com.zaneschepke.hevtunnel.TProxyService
