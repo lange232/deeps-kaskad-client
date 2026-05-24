@@ -3,54 +3,51 @@
 
 struct go_string { const char *str; long n; };
 
-extern void SetDNSConfig(struct go_string handle);
-extern char* ResolveBootstrap(const char* host, int bypass);
-
-JNIEXPORT void JNICALL Java_com_zaneschepke_tunnel_DnsConfigManager_setDNSConfig(
-        JNIEnv* env, jclass clazz, jstring json)
-{
-    if (json == NULL) {
-        return;
-    }
-
-    const char* cjson = (*env)->GetStringUTFChars(env, json, 0);
-    if (cjson != NULL) {
-        size_t len = (*env)->GetStringUTFLength(env, json);
-
-        SetDNSConfig((struct go_string){
-            .str = cjson,
-            .n = (long)len
-        });
-
-        (*env)->ReleaseStringUTFChars(env, json, cjson);
-    }
-}
+extern char* ResolveBootstrap(
+        const char* host,
+        const char* protocol,
+        const char* upstream,
+        const char* underlyingDnsServers,
+        int bypass);
 
 JNIEXPORT jstring JNICALL
 Java_com_zaneschepke_tunnel_DnsConfigManager_resolveBootstrap(
         JNIEnv* env,
         jclass clazz,
         jstring host,
-        jboolean bypass)
+        jstring protocol,
+        jstring upstream,
+        jstring underlyingDnsServers,
+        jint bypass)
 {
-    if (host == NULL) {
-        return (*env)->NewStringUTF(env, "{\"error\":\"invalid host\"}");
+    if (host == NULL || protocol == NULL || upstream == NULL || underlyingDnsServers == NULL) {
+        return (*env)->NewStringUTF(env, "ERR|invalid arguments");
     }
 
-    const char* chost = (*env)->GetStringUTFChars(env, host, NULL);
-    if (chost == NULL) {
-        return (*env)->NewStringUTF(env, "{\"error\":\"out of memory\"}");
+    const char* chost       = (*env)->GetStringUTFChars(env, host, NULL);
+    const char* cprotocol   = (*env)->GetStringUTFChars(env, protocol, NULL);
+    const char* cupstream   = (*env)->GetStringUTFChars(env, upstream, NULL);
+    const char* cunderlying = (*env)->GetStringUTFChars(env, underlyingDnsServers, NULL);
+
+    if (chost == NULL || cprotocol == NULL || cupstream == NULL || cunderlying == NULL) {
+        return (*env)->NewStringUTF(env, "ERR|out of memory");
     }
 
     char* resultC = ResolveBootstrap(
-        (char*)chost,
-        bypass ? 1 : 0
+            chost,
+            cprotocol,
+            cupstream,
+            cunderlying,
+            bypass ? 1 : 0
     );
 
     (*env)->ReleaseStringUTFChars(env, host, chost);
+    (*env)->ReleaseStringUTFChars(env, protocol, cprotocol);
+    (*env)->ReleaseStringUTFChars(env, upstream, cupstream);
+    (*env)->ReleaseStringUTFChars(env, underlyingDnsServers, cunderlying);
 
     if (resultC == NULL) {
-        return (*env)->NewStringUTF(env, "{\"error\":\"null response\"}");
+        return (*env)->NewStringUTF(env, "ERR|null response");
     }
 
     jstring jresult = (*env)->NewStringUTF(env, resultC);

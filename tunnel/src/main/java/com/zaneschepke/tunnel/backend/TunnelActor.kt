@@ -5,6 +5,7 @@ import com.zaneschepke.tunnel.DnsConfigManager
 import com.zaneschepke.tunnel.Tunnel
 import com.zaneschepke.tunnel.event.ActorEvent
 import com.zaneschepke.tunnel.event.ActorEvent.ActiveConfigUpdated
+import com.zaneschepke.tunnel.event.ActorEvent.BootstrapConfigUpdated
 import com.zaneschepke.tunnel.event.ActorEvent.BootstrapStateChanged
 import com.zaneschepke.tunnel.event.ActorEvent.EngineStatus
 import com.zaneschepke.tunnel.event.ActorEvent.KillSwitchStateChanged
@@ -12,7 +13,9 @@ import com.zaneschepke.tunnel.event.ActorEvent.PeersUpdated
 import com.zaneschepke.tunnel.event.ActorEvent.ResolvedPeersApplied
 import com.zaneschepke.tunnel.event.ActorEvent.TunnelStarted
 import com.zaneschepke.tunnel.event.ActorEvent.TunnelStopped
+import com.zaneschepke.tunnel.event.ActorEvent.UnderlyingDnsServersUpdated
 import com.zaneschepke.tunnel.event.TunnelEvent
+import com.zaneschepke.tunnel.event.TunnelEvent.NoRootShellAccess
 import com.zaneschepke.tunnel.model.BackendMode
 import com.zaneschepke.tunnel.model.DnsBootstrapResult
 import com.zaneschepke.tunnel.model.PublicKey
@@ -122,6 +125,10 @@ internal class TunnelActor(
                             engine.stop(runtime.running.handle, runtime.running.mode)
                         }
 
+                        is TunnelCommand.SetBootstrapConfig -> {
+                            apply(BootstrapConfigUpdated(cmd.config))
+                        }
+
                         is TunnelCommand.UpdatePeers -> {
                             val runtime = _state.value.byTunnelId[cmd.tunnelId] ?: continue
                             val running = runtime.running
@@ -209,15 +216,17 @@ internal class TunnelActor(
                             } catch (t: Throwable) {
                                 Timber.w(t, "Root shell commands failed")
                                 if (t is RootShellException.NoRootAccess) {
-                                    _events.emit(
-                                        TunnelEvent.NoRootShellAccess(tunnelId = cmd.tunnelId)
-                                    )
+                                    _events.emit(NoRootShellAccess(tunnelId = cmd.tunnelId))
                                 }
                             } finally {
                                 if (isPostDown) {
                                     _runningPostDownHooks.update { (it - 1).coerceAtLeast(0) }
                                 }
                             }
+                        }
+
+                        is TunnelCommand.UpdateUnderlyingDnsServers -> {
+                            apply(UnderlyingDnsServersUpdated(cmd.servers))
                         }
                     }
                 } catch (t: Throwable) {
@@ -621,6 +630,14 @@ internal class TunnelActor(
             is KillSwitchStateChanged -> {
                 state.copy(killSwitchEnabled = event.enabled)
             }
+
+            is BootstrapConfigUpdated -> {
+                state.copy(dnsConfig = event.config)
+            }
+
+            is UnderlyingDnsServersUpdated -> {
+                state.copy(dnsConfig = state.dnsConfig.copy(underlyingDnsServers = event.servers))
+            }
         }
     }
 
@@ -667,9 +684,17 @@ internal class TunnelActor(
                 val endpoint = peer.endpoint ?: continue
                 val host = endpoint.substringBeforeLast(":")
 
+                val dnsConfig = state.value.dnsConfig
+
                 val dnsResult =
                     try {
-                        DnsConfigManager.resolveHostBootstrap(host = host, bypass = bypassNeeded)
+                        DnsConfigManager.resolveHostBootstrap(
+                            host = host,
+                            dnsConfig.protocol,
+                            dnsConfig.upstream,
+                            dnsConfig.underlyingDnsServers,
+                            bypass = bypassNeeded,
+                        )
                     } catch (e: Exception) {
                         Timber.w(e, "DNS failed for $host")
                         continue

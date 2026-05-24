@@ -2,6 +2,7 @@ package com.zaneschepke.tunnel.model
 
 import com.zaneschepke.tunnel.Tunnel
 import com.zaneschepke.tunnel.state.BootstrapState
+import com.zaneschepke.tunnel.state.RuntimeDnsConfig
 import com.zaneschepke.wireguardautotunnel.parser.PeerSection
 
 sealed class TunnelCommand {
@@ -23,6 +24,10 @@ sealed class TunnelCommand {
     data class UpdatePeers(val tunnelId: Int, val preferIpv6: Boolean) : TunnelCommand()
 
     data class SetBootstrapState(val tunnelId: Int, val state: BootstrapState) : TunnelCommand()
+
+    data class SetBootstrapConfig(val config: RuntimeDnsConfig) : TunnelCommand()
+
+    data class UpdateUnderlyingDnsServers(val servers: String) : TunnelCommand()
 
     data class RunHook(val tunnelId: Int, val phase: Phase, val cmds: List<String>?) :
         TunnelCommand() {

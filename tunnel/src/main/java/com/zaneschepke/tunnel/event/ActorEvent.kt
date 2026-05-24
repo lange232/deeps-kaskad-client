@@ -6,6 +6,7 @@ import com.zaneschepke.tunnel.model.TunnelCommand
 import com.zaneschepke.tunnel.state.BootstrapState
 import com.zaneschepke.tunnel.state.EngineStartResult
 import com.zaneschepke.tunnel.state.NativeTunnelStatus
+import com.zaneschepke.tunnel.state.RuntimeDnsConfig
 import com.zaneschepke.wireguardautotunnel.parser.ActiveConfig
 import com.zaneschepke.wireguardautotunnel.parser.PeerSection
 
@@ -22,6 +23,10 @@ sealed class ActorEvent {
         val peers: List<PeerSection>,
         val preferIpv6: Boolean,
     ) : ActorEvent()
+
+    data class BootstrapConfigUpdated(val config: RuntimeDnsConfig) : ActorEvent()
+
+    data class UnderlyingDnsServersUpdated(val servers: String) : ActorEvent()
 
     data class ResolvedPeersApplied(
         val tunnelId: Int,

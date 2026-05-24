@@ -17,7 +17,7 @@ sealed class DnsBoostrapConfig(open val upstream: String?) {
 
     data class DoH(override val upstream: String?) : DnsBoostrapConfig(upstream) {
         override val protocol: String
-            get() = "dot"
+            get() = "doh"
     }
 
     data class DoT(override val upstream: String?) : DnsBoostrapConfig(upstream) {

@@ -32,6 +32,7 @@ import kotlinx.coroutines.sync.withLock
 class TunnelCoordinator(
     private val tunnelProvider: TunnelProvider,
     private val serviceManager: ServiceManager,
+    private val bootstrapCoordinator: AppBoostrapCoordinator,
     settingsRepository: GeneralSettingRepository,
     private val tunnelRepository: TunnelRepository,
     dnsSettingsRepository: RoomDnsSettingsRepository,
@@ -86,7 +87,11 @@ class TunnelCoordinator(
     suspend fun startTunnel(
         config: TunnelConfig,
         source: TunnelActionSource = TunnelActionSource.USER,
-    ) = tunnelMutex.withLock { startTunnelInternal(config, source) }
+    ) = tunnelMutex.withLock {
+        // wait for app to be bootstrapped
+        bootstrapCoordinator.isReady.first { it }
+        startTunnelInternal(config, source)
+    }
 
     suspend fun stopTunnel(id: Int, source: TunnelActionSource = TunnelActionSource.USER) =
         tunnelMutex.withLock {
