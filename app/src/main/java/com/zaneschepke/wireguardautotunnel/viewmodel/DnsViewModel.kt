@@ -3,6 +3,7 @@ package com.zaneschepke.wireguardautotunnel.viewmodel
 import androidx.lifecycle.ViewModel
 import com.zaneschepke.networkmonitor.NetworkMonitor
 import com.zaneschepke.wireguardautotunnel.R
+import com.zaneschepke.wireguardautotunnel.core.orchestration.DnsSettingsCoordinator
 import com.zaneschepke.wireguardautotunnel.domain.enums.DnsProtocol
 import com.zaneschepke.wireguardautotunnel.domain.repository.DnsSettingsRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.GlobalEffectRepository
@@ -22,6 +23,7 @@ class DnsViewModel(
     private val tunnelRepository: TunnelRepository,
     private val networkMonitor: NetworkMonitor,
     private val globalEffectRepository: GlobalEffectRepository,
+    private val dnsSettingsCoordinator: DnsSettingsCoordinator,
 ) : ContainerHost<DnsUiState, Nothing>, ViewModel() {
 
     override val container =
@@ -76,10 +78,12 @@ class DnsViewModel(
         }
 
         val normalizedEndpoint = DnsValidator.normalize(protocol, endpoint)
-
-        dnsSettingsRepository.upsert(
+        val updatedSettings =
             state.dnsSettings.copy(dnsEndpoint = normalizedEndpoint, dnsProtocol = protocol)
-        )
+
+        dnsSettingsRepository.upsert(updatedSettings)
+
+        dnsSettingsCoordinator.appyDnsSettings(updatedSettings)
 
         postSideEffect(GlobalSideEffect.PopBackStack)
         postSideEffect(

@@ -66,8 +66,6 @@ fun SupportScreen(viewModel: SupportViewModel = koinViewModel()) {
 
     val supportState by viewModel.collectAsState()
 
-    if (supportState.isLoading) return
-
     val clipboardManager = rememberClipboardHelper()
 
     val version = remember {
