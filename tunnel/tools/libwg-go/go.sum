@@ -1,7 +1,5 @@
 github.com/MakeNowJust/heredoc/v2 v2.0.1 h1:rlCHh70XXXv7toz95ajQWOWQnN4WNLt0TdpZYIR/J6A=
 github.com/MakeNowJust/heredoc/v2 v2.0.1/go.mod h1:6/2Abh5s+hc3g9nbWLe9ObDIOhaRrqsyY9MWy+4JdRM=
-github.com/cenkalti/backoff/v5 v5.0.3 h1:ZN+IMa753KfX5hd8vVaMixjnqRZ3y8CuJKRKj1xcsSM=
-github.com/cenkalti/backoff/v5 v5.0.3/go.mod h1:rkhZdG3JZukswDf7f0cwqPNk4K0sa+F97BxZthm/crw=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-ini/ini v1.67.0 h1:z6ZrTEZqSWOTyH2FlglNbNgARyHG8oLW9gMELqKr06A=
@@ -16,8 +14,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/wgtunnel/amneziawg-go v0.0.0-20260309041639-0569d899c9bf h1:uBuzF4PYzGsH2qswDPHPwCvobmTamPUgBtvtXMjNvPc=
-github.com/wgtunnel/amneziawg-go v0.0.0-20260309041639-0569d899c9bf/go.mod h1:34ORGpgqg0Zthlumd0Vd3WCOjMlesLc+n5lhk7CHk+U=
+github.com/wgtunnel/amneziawg-go v0.0.0-20260525064146-0cd8162779c4 h1:rKB4a+T6EKIKakDYYh10aZiq4tyVWeKMz4IFRMur08A=
+github.com/wgtunnel/amneziawg-go v0.0.0-20260525064146-0cd8162779c4/go.mod h1:7rLgWAawRZYFyi6prnQqYq4qu8NabW90fpSkE4xVYfc=
 github.com/wgtunnel/go-socks5 v0.0.0-20260307052555-86f8d93b9534 h1:hpF1TN8okGWv9j4lwPcWVMNDeu+1o52HB6NcEYw0WPs=
 github.com/wgtunnel/go-socks5 v0.0.0-20260307052555-86f8d93b9534/go.mod h1:1YBHVYG7Oli5ae+Pwkp630cPAwY1pjUPmohO1n0Emg0=
 github.com/wgtunnel/wireproxy-awg v0.0.0-20260309043206-ff4200f20ff2 h1:5U3FgY+o072foLwxWDg5T2XGHc/z1ixm6vEH4a1vC7k=

@@ -5,7 +5,6 @@ go 1.24.4
 require (
 	github.com/amnezia-vpn/amneziawg-go v0.2.16
 	github.com/artem-russkikh/wireproxy-awg v1.0.12
-	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/miekg/dns v1.1.69
 	golang.org/x/sys v0.38.0
 )
@@ -25,7 +24,7 @@ require (
 	gvisor.dev/gvisor v0.0.0-20231202080848-1f7806d17489 // indirect
 )
 
-replace github.com/amnezia-vpn/amneziawg-go => github.com/wgtunnel/amneziawg-go v0.0.0-20260309041639-0569d899c9bf
+replace github.com/amnezia-vpn/amneziawg-go => github.com/wgtunnel/amneziawg-go v0.0.0-20260525064146-0cd8162779c4
 
 replace github.com/artem-russkikh/wireproxy-awg => github.com/wgtunnel/wireproxy-awg v0.0.0-20260309043206-ff4200f20ff2
 
