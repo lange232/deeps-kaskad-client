@@ -26,8 +26,6 @@ sealed class ActorEvent {
 
     data class BootstrapConfigUpdated(val config: RuntimeDnsConfig) : ActorEvent()
 
-    data class UnderlyingDnsServersUpdated(val servers: String) : ActorEvent()
-
     data class ResolvedPeersApplied(
         val tunnelId: Int,
         val cache: Map<PublicKey, DnsBootstrapResult>,

@@ -1,6 +1,7 @@
 package com.zaneschepke.wireguardautotunnel.ui.common.textbox
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -98,7 +99,7 @@ fun CustomTextField(
                 }
                 it.invoke()
             },
-            contentPadding = OutlinedTextFieldDefaults.contentPadding(top = 0.dp, bottom = 0.dp),
+            contentPadding = OutlinedTextFieldDefaults.contentPadding(top = 14.dp, bottom = 14.dp),
             leadingIcon = leading,
             trailingIcon =
                 if (trailing != null) {
@@ -168,6 +169,7 @@ fun CustomTextField(
                     shape = RoundedCornerShape(8.dp),
                     focusedBorderThickness = 0.5.dp,
                     unfocusedBorderThickness = 0.5.dp,
+                    modifier = Modifier.height(48.dp),
                 )
             },
         )

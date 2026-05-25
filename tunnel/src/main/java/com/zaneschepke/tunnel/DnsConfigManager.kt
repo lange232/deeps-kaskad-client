@@ -1,5 +1,6 @@
 package com.zaneschepke.tunnel
 
+import com.zaneschepke.tunnel.model.DnsBoostrapConfig
 import com.zaneschepke.tunnel.model.DnsBootstrapResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,7 +19,7 @@ internal object DnsConfigManager {
         host: String,
         protocol: String,
         upstream: String,
-        underlyingDnsServers: String,
+        underlyingDnsServers: String = DnsBoostrapConfig.DEFAULT_UNDERLYING_SERVERS,
         bypass: Boolean,
     ): DnsBootstrapResult =
         withContext(Dispatchers.IO) {

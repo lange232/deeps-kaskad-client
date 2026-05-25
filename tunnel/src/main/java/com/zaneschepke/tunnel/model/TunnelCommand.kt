@@ -27,8 +27,6 @@ sealed class TunnelCommand {
 
     data class SetBootstrapConfig(val config: RuntimeDnsConfig) : TunnelCommand()
 
-    data class UpdateUnderlyingDnsServers(val servers: String) : TunnelCommand()
-
     data class RunHook(val tunnelId: Int, val phase: Phase, val cmds: List<String>?) :
         TunnelCommand() {
         enum class Phase {

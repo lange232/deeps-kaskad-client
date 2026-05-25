@@ -1,8 +1,8 @@
 package com.zaneschepke.wireguardautotunnel.ui.common.textbox
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
@@ -40,7 +40,7 @@ fun ConfigurationTextBox(
         isError = isError,
         textStyle =
             MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurface),
-        modifier = modifier.fillMaxWidth().heightIn(48.dp),
+        modifier = modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp),
         value = value,
         visualTransformation = visualTransformation,
         singleLine = singleLine,

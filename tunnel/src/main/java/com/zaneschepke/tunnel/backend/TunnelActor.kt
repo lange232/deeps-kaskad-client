@@ -13,7 +13,6 @@ import com.zaneschepke.tunnel.event.ActorEvent.PeersUpdated
 import com.zaneschepke.tunnel.event.ActorEvent.ResolvedPeersApplied
 import com.zaneschepke.tunnel.event.ActorEvent.TunnelStarted
 import com.zaneschepke.tunnel.event.ActorEvent.TunnelStopped
-import com.zaneschepke.tunnel.event.ActorEvent.UnderlyingDnsServersUpdated
 import com.zaneschepke.tunnel.event.TunnelEvent
 import com.zaneschepke.tunnel.event.TunnelEvent.NoRootShellAccess
 import com.zaneschepke.tunnel.model.BackendMode
@@ -223,10 +222,6 @@ internal class TunnelActor(
                                     _runningPostDownHooks.update { (it - 1).coerceAtLeast(0) }
                                 }
                             }
-                        }
-
-                        is TunnelCommand.UpdateUnderlyingDnsServers -> {
-                            apply(UnderlyingDnsServersUpdated(cmd.servers))
                         }
                     }
                 } catch (t: Throwable) {
@@ -634,10 +629,6 @@ internal class TunnelActor(
             is BootstrapConfigUpdated -> {
                 state.copy(dnsConfig = event.config)
             }
-
-            is UnderlyingDnsServersUpdated -> {
-                state.copy(dnsConfig = state.dnsConfig.copy(underlyingDnsServers = event.servers))
-            }
         }
     }
 
@@ -692,7 +683,6 @@ internal class TunnelActor(
                             host = host,
                             dnsConfig.protocol,
                             dnsConfig.upstream,
-                            dnsConfig.underlyingDnsServers,
                             bypass = bypassNeeded,
                         )
                     } catch (e: Exception) {

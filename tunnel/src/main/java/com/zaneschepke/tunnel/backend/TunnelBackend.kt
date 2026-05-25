@@ -205,28 +205,26 @@ class TunnelBackend(
     override suspend fun setBootstrapDnsMode(mode: DnsBoostrapMode) {
         _status.update { it.copy(dnsMode = mode) }
 
-        dnsConfigJob?.cancel()
-        dnsConfigJob = null
-
         when (mode) {
             is DnsBoostrapMode.Custom -> {
                 Timber.d(
                     "DNS Bootstrap mode set to custom: ${mode.config.protocol} -> ${mode.config.upstream}"
                 )
 
-                emitInitialDnsConfig(mode.config.protocol, mode.config.upstream)
-                startUnderlyingDnsMonitoring()
-            }
+                dnsConfigJob?.cancel()
+                dnsConfigJob = null
 
+                actor.send(TunnelCommand.SetBootstrapConfig(RuntimeDnsConfig.from(mode.config)))
+            }
             DnsBoostrapMode.System -> {
                 Timber.d("DNS Bootstrap mode set to System")
-                emitInitialDnsConfig()
+                emitInitialSystemDnsConfig()
                 startSystemDnsMonitoring()
             }
         }
     }
 
-    private suspend fun emitInitialDnsConfig(protocol: String? = null, upstream: String? = null) {
+    private suspend fun emitInitialSystemDnsConfig() {
         val state =
             withTimeoutOrNull(2_500L) {
                 networkMonitor.connectivityStateFlow.first { connectivityState ->
@@ -238,55 +236,11 @@ class TunnelBackend(
 
         val dns = state?.underlyingDnsInfo ?: DnsInfo()
 
-        val finalProtocol =
-            protocol
-                ?: when (dns.privateDnsMode) {
-                    PrivateDnsMode.HOSTNAME -> "dot"
-                    else -> "plain"
-                }
+        val config = determineSystemDnsBoostrapConfig(dns)
 
-        val finalUpstream =
-            upstream
-                ?: when (dns.privateDnsMode) {
-                    PrivateDnsMode.HOSTNAME ->
-                        dns.privateDnsHostname?.takeIf { it.isNotBlank() }
-                            ?: DnsBoostrapConfig.DEFAULT_UPSTREAM
-                    else -> dns.servers.firstOrNull() ?: DnsBoostrapConfig.DEFAULT_UPSTREAM
-                }
+        Timber.d("DNS initial emission: protocol=${config.protocol} upstream=${config.upstream}")
 
-        val underlying =
-            dns.servers.joinToString(",").ifBlank { DnsBoostrapConfig.DEFAULT_UPSTREAM }
-
-        Timber.d(
-            "DNS initial emission: protocol=$finalProtocol upstream=$finalUpstream underlying=$underlying"
-        )
-
-        actor.send(
-            TunnelCommand.SetBootstrapConfig(
-                RuntimeDnsConfig(
-                    protocol = finalProtocol,
-                    upstream = finalUpstream,
-                    underlyingDnsServers = underlying,
-                )
-            )
-        )
-    }
-
-    private fun startUnderlyingDnsMonitoring() {
-        if (dnsConfigJob?.isActive == true) return
-
-        dnsConfigJob = scope.launch {
-            networkMonitor.connectivityStateFlow
-                .distinctUntilChangedBy { it.underlyingDnsInfo.servers }
-                .collect { state ->
-                    val dns = state.underlyingDnsInfo
-                    val underlying = dns.servers.joinToString(",")
-
-                    Timber.d("Underlying DNS servers changed: $underlying")
-
-                    actor.send(TunnelCommand.UpdateUnderlyingDnsServers(underlying))
-                }
-        }
+        actor.send(TunnelCommand.SetBootstrapConfig(RuntimeDnsConfig.from(config)))
     }
 
     override fun emergencyStopAllOfTypeSync(modeClass: KClass<out BackendMode>) {
@@ -301,6 +255,32 @@ class TunnelBackend(
         notificationProvider.refreshTile(serviceHolder.context)
     }
 
+    private fun determineSystemDnsBoostrapConfig(dnsInfo: DnsInfo): DnsBoostrapConfig {
+        return when (dnsInfo.privateDnsMode) {
+            PrivateDnsMode.OFF,
+            PrivateDnsMode.AUTOMATIC ->
+                DnsBoostrapConfig.Plain(
+                    dnsInfo.servers.firstOrNull() ?: DnsBoostrapConfig.DEFAULT_PLAIN_UPSTREAM
+                )
+
+            PrivateDnsMode.HOSTNAME ->
+                dnsInfo.privateDnsHostname
+                    ?.takeIf { it.isNotBlank() }
+                    ?.let { upstream ->
+                        // handle special cases of DoH for private DNS on Android
+                        val dohUpstream = DnsBoostrapConfig.SPECIAL_ANDROID_DOH_SERVERS[upstream]
+                        if (dohUpstream != null) {
+                            DnsBoostrapConfig.DoH(dohUpstream)
+                        } else {
+                            DnsBoostrapConfig.DoT(upstream)
+                        }
+                    }
+                    ?: DnsBoostrapConfig.Plain(
+                        dnsInfo.servers.firstOrNull() ?: DnsBoostrapConfig.DEFAULT_PLAIN_UPSTREAM
+                    )
+        }
+    }
+
     private fun startSystemDnsMonitoring() {
         if (dnsConfigJob?.isActive == true) return
 
@@ -311,39 +291,14 @@ class TunnelBackend(
                     val dns = state.underlyingDnsInfo
 
                     Timber.d(
-                        "PrivateDNS mode=%s hostname=%s servers=%s",
+                        "PrivateDNS mode=%s hostname=%s",
                         dns.privateDnsMode,
                         dns.privateDnsHostname,
-                        dns.servers,
                     )
 
-                    val config =
-                        when (dns.privateDnsMode) {
-                            PrivateDnsMode.OFF,
-                            PrivateDnsMode.AUTOMATIC ->
-                                DnsBoostrapConfig.Plain(
-                                    dns.servers.firstOrNull() ?: DnsBoostrapConfig.DEFAULT_UPSTREAM
-                                )
+                    val config = determineSystemDnsBoostrapConfig(dns)
 
-                            PrivateDnsMode.HOSTNAME ->
-                                dns.privateDnsHostname
-                                    ?.takeIf { it.isNotBlank() }
-                                    ?.let { DnsBoostrapConfig.DoT(it) }
-                                    ?: DnsBoostrapConfig.Plain(
-                                        dns.servers.firstOrNull()
-                                            ?: DnsBoostrapConfig.DEFAULT_UPSTREAM
-                                    )
-                        }
-
-                    actor.send(
-                        TunnelCommand.SetBootstrapConfig(
-                            RuntimeDnsConfig(
-                                protocol = config.protocol,
-                                upstream = config.upstream ?: DnsBoostrapConfig.DEFAULT_UPSTREAM,
-                                underlyingDnsServers = dns.servers.joinToString(","),
-                            )
-                        )
-                    )
+                    actor.send(TunnelCommand.SetBootstrapConfig(RuntimeDnsConfig.from(config)))
                 }
         }
     }
