@@ -24,7 +24,6 @@ import com.zaneschepke.networkmonitor.util.hasRequiredLocationPermissions
 import com.zaneschepke.networkmonitor.util.isAirplaneModeOn
 import com.zaneschepke.networkmonitor.util.isLocationServicesEnabled
 import java.net.Inet6Address
-import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
@@ -455,8 +454,6 @@ class AndroidNetworkMonitor(
             NetworkData(defaultEvent, wifiEvent, cellularEvent, ethernetEvent)
         }
 
-    @OptIn(ExperimentalAtomicApi::class) private val vpnActiveState = AtomicReference(false)
-
     @OptIn(ExperimentalCoroutinesApi::class, ExperimentalAtomicApi::class, FlowPreview::class)
     override val connectivityStateFlow: SharedFlow<ConnectivityState> =
         combine(
@@ -547,7 +544,8 @@ class AndroidNetworkMonitor(
                         }
 
                         // only count cellular as connected if validated AND not in airplane mode
-                        networkData.cellularEvent is TransportEvent.CapabilitiesChanged &&
+                        !isAirplaneOn &&
+                            networkData.cellularEvent is TransportEvent.CapabilitiesChanged &&
                             networkData.cellularEvent.networkCapabilities?.let { caps ->
                                 caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) &&
                                     caps.hasCapability(
@@ -559,32 +557,20 @@ class AndroidNetworkMonitor(
                                     caps.hasCapability(
                                         NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED
                                     )
-                                // NOT_SUSPENDED need to properly tell when we've lost mobile data
-                                // connectivity
-                            } == true &&
-                            !isAirplaneOn -> {
+                            } == true -> {
                             ActiveNetwork.Cellular(networkData.cellularEvent.network)
                         }
 
                         else -> ActiveNetwork.Disconnected
                     }
 
-                val activeNetwork: ActiveNetwork =
-                    if (!isVpnActive) {
-                        physicalNetwork
-                    } else {
-                        lastKnownActiveNetwork.value
-                    }
-
-                if (physicalNetwork != ActiveNetwork.Disconnected) {
-                    lastKnownActiveNetwork.value = physicalNetwork
-                }
+                lastKnownActiveNetwork.value = physicalNetwork
 
                 val underlyingNetwork: Network? =
-                    when (val last = lastKnownActiveNetwork.value) {
-                        is ActiveNetwork.Wifi -> last.network
-                        is ActiveNetwork.Cellular -> last.network
-                        is ActiveNetwork.Ethernet -> last.network
+                    when (physicalNetwork) {
+                        is ActiveNetwork.Wifi -> physicalNetwork.network
+                        is ActiveNetwork.Cellular -> physicalNetwork.network
+                        is ActiveNetwork.Ethernet -> physicalNetwork.network
                         else -> null
                     }
 
@@ -602,13 +588,13 @@ class AndroidNetworkMonitor(
                     )
 
                 ConnectivityState(
-                    activeNetwork = activeNetwork,
+                    activeNetwork = physicalNetwork,
                     locationPermissionsGranted = permissions.locationPermissionGranted,
                     locationServicesEnabled = permissions.locationServicesEnabled,
                     vpnState = vpnState,
                     effectiveDnsInfo = effectiveDns,
                     underlyingDnsInfo = underlyingDns,
-                    hasIpv6 = hasIpv6Support(underlyingNetwork, activeNetwork),
+                    hasIpv6 = hasIpv6Support(underlyingNetwork, physicalNetwork),
                 )
             }
             .distinctUntilChanged()
@@ -694,11 +680,13 @@ class AndroidNetworkMonitor(
             object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
                     if (intent.action == Intent.ACTION_AIRPLANE_MODE_CHANGED) {
-                        Timber.d("Received airplane mode changed broadcast")
-                        airplaneModeState.update { appContext.isAirplaneModeOn() }
+                        val isAirplaneOn = intent.getBooleanExtra("state", false)
+                        Timber.d("Airplane mode changed to new state: $isAirplaneOn")
+                        airplaneModeState.update { isAirplaneOn }
                     }
                 }
             }
+
         appContext.registerReceiver(
             airplaneReceiver,
             IntentFilter(Intent.ACTION_AIRPLANE_MODE_CHANGED),
