@@ -80,14 +80,14 @@ func awgStartProxy(interfaceName string, config string, uapiPath string, bypass 
 
 	dev := device.NewDevice(tun, stdBind, shared.NewLogger("Tun/"+interfaceName), conf.Device.DomainBlockingEnabled, statusCB)
 
+	dev.DisableSomeRoamingForBrokenMobileSemantics()
+
 	err = dev.IpcSet(setting.IpcRequest)
 
 	if err != nil {
 		shared.LogError(tag, "Ipc setting failed", err)
 		return -1
 	}
-
-	dev.DisableSomeRoamingForBrokenMobileSemantics()
 
 	uapiFile, err := ipc.UAPIOpen(uapiPath, name)
 

@@ -67,6 +67,8 @@ func awgTurnOn(interfaceName string, tunFd int32, settings string, uapiPath stri
 
 	tunDevice := device.NewDevice(tunnel, conn.NewStdNetBind(), shared.NewLogger("Tun/"+interfaceName), conf.Device.DomainBlockingEnabled, statusCB)
 
+	tunDevice.DisableSomeRoamingForBrokenMobileSemantics()
+
 	ipcRequest, err := wireproxyawg.CreateIPCRequest(conf.Device, false)
 	if err != nil {
 		shared.LogError(tag, "CreateIPCRequest: %v", err)
@@ -82,7 +84,6 @@ func awgTurnOn(interfaceName string, tunFd int32, settings string, uapiPath stri
 		shared.LogError(tag, "IpcSet: %v", err)
 		return -1
 	}
-	tunDevice.DisableSomeRoamingForBrokenMobileSemantics()
 
 	var uapi net.Listener
 
