@@ -512,14 +512,25 @@ class AndroidNetworkMonitor(
 
                 val physicalNetwork: ActiveNetwork =
                     when {
-                        // Ethernet
                         networkData.ethernetEvent is TransportEvent.CapabilitiesChanged &&
-                            networkData.ethernetEvent.networkCapabilities?.hasTransport(
-                                NetworkCapabilities.TRANSPORT_ETHERNET
-                            ) == true -> ActiveNetwork.Ethernet(networkData.ethernetEvent.network)
+                            networkData.ethernetEvent.networkCapabilities?.let { caps ->
+                                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) &&
+                                    caps.hasCapability(
+                                        NetworkCapabilities.NET_CAPABILITY_INTERNET
+                                    ) &&
+                                    caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                            } == true -> {
+                            ActiveNetwork.Ethernet(networkData.ethernetEvent.network)
+                        }
 
-                        // WiFi
-                        networkData.wifiNetworkEvent is TransportEvent.CapabilitiesChanged -> {
+                        networkData.wifiNetworkEvent is TransportEvent.CapabilitiesChanged &&
+                            networkData.wifiNetworkEvent.networkCapabilities?.let { caps ->
+                                caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
+                                    caps.hasCapability(
+                                        NetworkCapabilities.NET_CAPABILITY_INTERNET
+                                    ) &&
+                                    caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                            } == true -> {
                             val wifiEvent = networkData.wifiNetworkEvent
                             val ssid =
                                 getSsidByDetectionMethod(
@@ -535,12 +546,25 @@ class AndroidNetworkMonitor(
                             )
                         }
 
+                        // only count cellular as connected if validated AND not in airplane mode
                         networkData.cellularEvent is TransportEvent.CapabilitiesChanged &&
-                            networkData.cellularEvent.networkCapabilities?.hasTransport(
-                                NetworkCapabilities.TRANSPORT_CELLULAR
-                            ) == true &&
-                            !isAirplaneOn ->
+                            networkData.cellularEvent.networkCapabilities?.let { caps ->
+                                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) &&
+                                    caps.hasCapability(
+                                        NetworkCapabilities.NET_CAPABILITY_INTERNET
+                                    ) &&
+                                    caps.hasCapability(
+                                        NetworkCapabilities.NET_CAPABILITY_VALIDATED
+                                    ) &&
+                                    caps.hasCapability(
+                                        NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED
+                                    )
+                                // NOT_SUSPENDED need to properly tell when we've lost mobile data
+                                // connectivity
+                            } == true &&
+                            !isAirplaneOn -> {
                             ActiveNetwork.Cellular(networkData.cellularEvent.network)
+                        }
 
                         else -> ActiveNetwork.Disconnected
                     }
