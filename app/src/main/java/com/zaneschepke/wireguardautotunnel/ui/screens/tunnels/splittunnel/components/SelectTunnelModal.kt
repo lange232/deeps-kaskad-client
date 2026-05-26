@@ -2,6 +2,9 @@ package com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.compo
 
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -15,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
 import com.zaneschepke.wireguardautotunnel.ui.common.dialog.InfoDialog
@@ -34,29 +38,31 @@ fun SelectTunnelModal(
     InfoDialog(
         title = stringResource(R.string.copy_from),
         body = {
-            LazyColumn(
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.Top,
-                modifier = Modifier.overscroll(rememberOverscrollEffect()),
-                state = rememberLazyListState(),
-                userScrollEnabled = true,
-                flingBehavior = ScrollableDefaults.flingBehavior(),
-            ) {
-                items(tunnels, key = { it.id }) { tunnel ->
-                    SurfaceRow(
-                        title = tunnel.name,
-                        trailing =
-                            if (selectedTunnelId == tunnel.id) {
-                                {
-                                    Icon(
-                                        Icons.Outlined.Check,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            } else null,
-                        onClick = { onSelect(tunnel.id) },
-                    )
+            Box(modifier = Modifier.fillMaxWidth().heightIn(max = 480.dp)) {
+                LazyColumn(
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.Top,
+                    modifier = Modifier.overscroll(rememberOverscrollEffect()),
+                    state = rememberLazyListState(),
+                    userScrollEnabled = true,
+                    flingBehavior = ScrollableDefaults.flingBehavior(),
+                ) {
+                    items(tunnels, key = { it.id }) { tunnel ->
+                        SurfaceRow(
+                            title = tunnel.name,
+                            trailing =
+                                if (selectedTunnelId == tunnel.id) {
+                                    {
+                                        Icon(
+                                            Icons.Outlined.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                        )
+                                    }
+                                } else null,
+                            onClick = { onSelect(tunnel.id) },
+                        )
+                    }
                 }
             }
         },

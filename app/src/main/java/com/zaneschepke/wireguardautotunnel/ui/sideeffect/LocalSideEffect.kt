@@ -16,6 +16,8 @@ sealed class LocalSideEffect {
 
     data object ShowSensitive : LocalSideEffect()
 
+    data object CopyToClipboard : LocalSideEffect()
+
     sealed class Sheet : LocalSideEffect() {
 
         data object ImportTunnels : Sheet()

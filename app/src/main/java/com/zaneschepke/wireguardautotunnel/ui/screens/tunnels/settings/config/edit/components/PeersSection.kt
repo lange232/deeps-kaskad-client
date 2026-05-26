@@ -1,6 +1,5 @@
 package com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.config.edit.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.zaneschepke.wireguardautotunnel.R
@@ -66,8 +64,9 @@ fun PeersSection(
                             onDismissRequest = {
                                 onPeerDropdownExpanded(!uiState.ui.isPeerDropdownExpanded)
                             },
-                            modifier =
-                                Modifier.shadow(12.dp).background(MaterialTheme.colorScheme.surface),
+                            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                            tonalElevation = 4.dp,
+                            shadowElevation = 4.dp,
                         ) {
                             DropdownMenuItem(
                                 text = {

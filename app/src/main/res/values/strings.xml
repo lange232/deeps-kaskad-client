@@ -566,4 +566,5 @@
     <string name="balance_saver">Battery Saver (10s)</string>
     <string name="tunnel_scripting">Pre/Post script support</string>
     <string name="name_error_empty">Tunnel name cannot be empty</string>
+    <string name="more_options">More options</string>
 </resources>

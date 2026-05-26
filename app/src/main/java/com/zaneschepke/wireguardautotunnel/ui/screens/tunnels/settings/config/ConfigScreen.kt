@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,10 +22,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.zaneschepke.wireguardautotunnel.R
+import com.zaneschepke.wireguardautotunnel.ui.common.functions.rememberClipboardHelper
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.config.components.QrCodeDialog
 import com.zaneschepke.wireguardautotunnel.ui.sideeffect.LocalSideEffect
 import com.zaneschepke.wireguardautotunnel.ui.theme.ConfigHeaderColor
@@ -45,6 +48,7 @@ fun ConfigScreen(
 ) {
 
     val context = LocalContext.current
+    val clipboard = rememberClipboardHelper()
     val uiState by viewModel.collectAsState()
     var showKeys by rememberSaveable { mutableStateOf(false) }
 
@@ -74,6 +78,7 @@ fun ConfigScreen(
                 }
             }
             is LocalSideEffect.ShowSensitive -> showKeys = !showKeys
+            is LocalSideEffect.CopyToClipboard -> clipboard.copy(rawConfig)
             else -> Unit
         }
     }
@@ -89,16 +94,17 @@ fun ConfigScreen(
     ) {
         val displayText by
             remember(rawConfig, showKeys) { derivedStateOf { maskSensitive(rawConfig, showKeys) } }
-
         val annotated by
             remember(displayText) { derivedStateOf { buildConfigAnnotatedString(displayText) } }
 
-        Text(
-            text = annotated,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = 16.dp),
-        )
+        SelectionContainer {
+            Text(
+                text = annotated,
+                style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
     }
 }
 

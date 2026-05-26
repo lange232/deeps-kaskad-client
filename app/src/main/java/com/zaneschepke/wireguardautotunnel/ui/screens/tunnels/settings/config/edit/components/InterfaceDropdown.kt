@@ -1,6 +1,5 @@
 package com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.config.edit.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
@@ -11,8 +10,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.zaneschepke.wireguardautotunnel.R
@@ -38,7 +35,9 @@ fun InterfaceDropdown(
         DropdownMenu(
             expanded = uiState.ui.isInterfaceDropdownExpanded,
             onDismissRequest = { onToggleDropdown(false) },
-            modifier = Modifier.shadow(12.dp).background(MaterialTheme.colorScheme.surface),
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+            tonalElevation = 4.dp,
+            shadowElevation = 4.dp,
         ) {
             if (!uiState.isGlobalConfig)
                 DropdownMenuItem(

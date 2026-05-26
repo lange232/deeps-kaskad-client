@@ -48,7 +48,9 @@ fun <T> DropdownSelector(
         DropdownMenu(
             modifier = modifier.heightIn(max = 250.dp),
             scrollState = rememberScrollState(),
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+            tonalElevation = 4.dp,
+            shadowElevation = 4.dp,
             expanded = isExpanded,
             onDismissRequest = onDismiss,
         ) {
