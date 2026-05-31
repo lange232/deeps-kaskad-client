@@ -7,6 +7,7 @@ import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelCoordinator
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.distinctUntilChangedBy
@@ -18,6 +19,8 @@ class TunnelControlTile : TileService() {
 
     private val tunnelsRepository: TunnelRepository by inject()
     private val tunnelCoordinator: TunnelCoordinator by inject()
+
+    private var collectionJob: Job? = null
 
     private val tileScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -44,7 +47,7 @@ class TunnelControlTile : TileService() {
         if (observing) return
         observing = true
 
-        tileScope.launch {
+        collectionJob = tileScope.launch {
             val tunnels = withContext(Dispatchers.IO) { tunnelsRepository.getAll() }
 
             tunnelCoordinator.backendStatus
@@ -71,6 +74,8 @@ class TunnelControlTile : TileService() {
     override fun onStopListening() {
         super.onStopListening()
         observing = false
+        collectionJob?.cancel()
+        collectionJob = null
     }
 
     override fun onClick() {

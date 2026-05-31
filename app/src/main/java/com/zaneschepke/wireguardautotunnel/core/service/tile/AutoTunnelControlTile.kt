@@ -6,9 +6,9 @@ import com.zaneschepke.wireguardautotunnel.core.orchestration.AutoTunnelCoordina
 import com.zaneschepke.wireguardautotunnel.core.service.autotunnel.AutoTunnelStateHolder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 
@@ -18,6 +18,8 @@ class AutoTunnelControlTile : TileService() {
     private val autoTunnelCoordinator: AutoTunnelCoordinator by inject()
 
     private val tileScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+
+    private var observerJob: Job? = null
 
     override fun onDestroy() {
         tileScope.cancel()
@@ -30,15 +32,16 @@ class AutoTunnelControlTile : TileService() {
         startObserving()
     }
 
+    override fun onStopListening() {
+        super.onStopListening()
+        observerJob?.cancel()
+        observerJob = null
+    }
+
     override fun onTileAdded() {
         super.onTileAdded()
         updateTileState()
         startObserving()
-    }
-
-    override fun onStopListening() {
-        super.onStopListening()
-        tileScope.coroutineContext.cancelChildren()
     }
 
     override fun onClick() {
@@ -51,7 +54,9 @@ class AutoTunnelControlTile : TileService() {
     }
 
     private fun startObserving() {
-        tileScope.launch {
+        if (observerJob?.isActive == true) return
+
+        observerJob = tileScope.launch {
             autoTunnelStateHolder.active.collect { active ->
                 if (active) setActive() else setInactive()
             }
