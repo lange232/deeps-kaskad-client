@@ -198,6 +198,15 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
             .apply {
                 setSession(tunnel.name)
 
+                val isSplitTunneling =
+                    !config.`interface`.excludedApplications.isNullOrEmpty() ||
+                        !config.`interface`.includedApplications.isNullOrEmpty()
+
+                // important for Android Auto in split tunnel scenarios
+                // TODO Could make this a standalone feature toggle for strictness as it allows
+                // secondary network binding from other apps
+                if (isSplitTunneling) allowBypass()
+
                 config.`interface`.includedApplications?.forEach { addAllowedApplication(it) }
                 config.`interface`.excludedApplications?.forEach { addDisallowedApplication(it) }
 
