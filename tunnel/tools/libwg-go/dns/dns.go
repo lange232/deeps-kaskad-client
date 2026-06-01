@@ -153,6 +153,7 @@ func parseUpstream(upstreamURL string) (network, address string, err error) {
 	shared.LogDebug("DNS", "Parsing upstream URL: %s", upstreamURL)
 	u := upstreamURL
 	if !strings.Contains(u, "://") {
+		u = normalizeHostPort(u)
 		u = "udp://" + u
 	}
 	parsed, err := url.Parse(u)
@@ -229,6 +230,8 @@ func resolveServerAddrs(
 	defaultPort string,
 	underlying string,
 ) ([]string, string, error) {
+	address = normalizeHostPort(address)
+
 	host, port, err := net.SplitHostPort(address)
 	if err != nil {
 		host = address
@@ -379,7 +382,8 @@ func buildTransport(
 			return nil, fmt.Errorf("no addresses resolved for DoH server")
 		}
 
-		// Custom dialer that tries servers in order (IPv4 → IPv6)
+		// Custom dialer that tries servers in order
+		// tries ipv4 first and then ipv6
 		dialer := GetDialer(bypass)
 		transport := &http.Transport{
 			DialContext: func(ctx context.Context, network, _ string) (net.Conn, error) {
@@ -445,6 +449,35 @@ func buildTransport(
 			Servers: servers,
 		}, nil
 	}
+}
+
+// normalizeHostPort makes sure raw IPv6 is correctly bracketed.
+func normalizeHostPort(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" || strings.Contains(s, "://") || strings.Contains(s, "]") {
+		return s
+	}
+	if strings.Count(s, ":") < 2 {
+		return s // definitely not IPv6
+	}
+
+	lastColon := strings.LastIndexByte(s, ':')
+	potentialHost := s[:lastColon]
+	potentialPort := s[lastColon+1:]
+
+	if ip := net.ParseIP(potentialHost); ip != nil && ip.To4() == nil {
+		if potentialPort != "" {
+			return "[" + potentialHost + "]:" + potentialPort
+		}
+		return "[" + potentialHost + "]"
+	}
+
+	// fallback with no port
+	if ip := net.ParseIP(s); ip != nil && ip.To4() == nil {
+		return "[" + s + "]"
+	}
+
+	return s
 }
 
 func GetDialer(bypass bool) *net.Dialer {
