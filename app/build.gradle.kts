@@ -60,7 +60,9 @@ configure<ApplicationExtension> {
         versionCode = computeVersionCode()
         versionName = computeVersionName()
 
-        sourceSets { getByName("debug").assets.srcDirs(files("$projectDir/schemas")) }
+        sourceSets {
+            getByName("debug").assets.directories += "$projectDir/schemas"
+        }
 
         val languagesArray = buildLanguagesArray(languageList())
         buildConfigField("String[]", "LANGUAGES", "new String[]{ $languagesArray }")
