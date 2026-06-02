@@ -10,7 +10,7 @@ data class EditableConfig(
     val headerComments: List<String> = emptyList(),
 ) {
 
-    fun buildConfig(): Config {
+    fun buildConfig(name: String? = null): Config {
         val interfaceSection =
             InterfaceSection(
                 privateKey = `interface`.privateKey.trim(),
@@ -47,6 +47,7 @@ data class EditableConfig(
         return Config(
             `interface` = interfaceSection,
             peers = peerSections,
+            name = name,
             headerComments = headerComments,
         )
     }

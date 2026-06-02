@@ -120,7 +120,7 @@ class ConfigEditViewModel(
         }
 
         runCatching {
-                val config = state.draft.config.buildConfig()
+                val config = state.draft.config.buildConfig(state.draft.tunnelName)
 
                 config.validate()
 
