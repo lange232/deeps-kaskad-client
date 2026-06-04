@@ -21,6 +21,7 @@ import com.zaneschepke.wireguardautotunnel.core.tunnel.TunnelBackendProvider
 import com.zaneschepke.wireguardautotunnel.core.tunnel.TunnelProvider
 import com.zaneschepke.wireguardautotunnel.domain.repository.AutoTunnelSettingsRepository
 import com.zaneschepke.wireguardautotunnel.util.extensions.to
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChangedBy
@@ -34,7 +35,7 @@ import org.koin.dsl.module
 import timber.log.Timber
 
 val tunnelBackendProviderModule = module {
-    single<TunnelNotificationService> { AndroidTunnelNotificationService(get(), get()) }
+    single<TunnelNotificationService> { AndroidTunnelNotificationService(get()) }
     singleOf(::TunnelEventDispatcher)
 
     single<NotificationProvider> {
@@ -44,7 +45,7 @@ val tunnelBackendProviderModule = module {
             override val vpnInitNotification: Notification
                 get() =
                     notificationService.createNotification(
-                        channel = NotificationChannels.VPN,
+                        channel = NotificationChannels.Tunnel.VPN,
                         title = context.getString(R.string.initializing),
                         onGoing = true,
                         groupKey = VPN_GROUP_KEY,
@@ -53,7 +54,7 @@ val tunnelBackendProviderModule = module {
             override val proxyInitNotification: Notification
                 get() =
                     notificationService.createNotification(
-                        channel = NotificationChannels.PROXY,
+                        channel = NotificationChannels.Tunnel.Proxy,
                         title = context.getString(R.string.initializing),
                         onGoing = true,
                         groupKey = PROXY_GROUP_KEY,
@@ -84,7 +85,7 @@ val tunnelBackendProviderModule = module {
             object : AndroidNetworkMonitor.ConfigurationListener {
                 override suspend fun runRootShellCommand(cmd: String): String? {
                     return try {
-                        withTimeout(3_000) {
+                        withTimeout(3_000.milliseconds) {
                             withContext(Dispatchers.IO) {
                                 val result = RootShell.run(cmd)
                                 result.output

@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationCompat.Action
 import androidx.core.app.NotificationCompat.Builder
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.NotificationManagerCompat.IMPORTANCE_HIGH
 import com.zaneschepke.wireguardautotunnel.MainActivity
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.broadcast.NotificationActionReceiver
@@ -35,6 +36,7 @@ class AndroidNotificationService(override val context: Context) : NotificationSe
         onlyAlertOnce: Boolean,
         groupKey: String?,
         isGroupSummary: Boolean,
+        style: NotificationCompat.Style?,
     ): Notification {
         notificationManager.createNotificationChannel(channel.asChannel())
         return channel
@@ -63,6 +65,7 @@ class AndroidNotificationService(override val context: Context) : NotificationSe
                         setGroupSummary(true)
                     }
                 }
+                style?.let { setStyle(it) }
             }
             .build()
     }
@@ -78,6 +81,7 @@ class AndroidNotificationService(override val context: Context) : NotificationSe
         onlyAlertOnce: Boolean,
         groupKey: String?,
         isGroupSummary: Boolean,
+        style: NotificationCompat.Style?,
     ): Notification {
         return createNotification(
             channel,
@@ -90,6 +94,7 @@ class AndroidNotificationService(override val context: Context) : NotificationSe
             onlyAlertOnce,
             groupKey,
             isGroupSummary,
+            style,
         )
     }
 
@@ -107,7 +112,7 @@ class AndroidNotificationService(override val context: Context) : NotificationSe
                 },
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
-        return NotificationCompat.Action.Builder(
+        return Action.Builder(
                 R.drawable.ic_notification,
                 notificationAction.title(context),
                 pendingIntent,
@@ -133,50 +138,88 @@ class AndroidNotificationService(override val context: Context) : NotificationSe
         }
     }
 
-    private fun NotificationChannels.asBuilder(): NotificationCompat.Builder {
+    private fun NotificationChannels.asBuilder(): Builder {
         return when (this) {
-            NotificationChannels.AUTO_TUNNEL ->
-                Builder(context, context.getString(R.string.auto_tunnel_channel_id))
-            NotificationChannels.VPN -> Builder(context, context.getString(R.string.vpn_channel_id))
-
-            NotificationChannels.PROXY ->
+            is NotificationChannels.Tunnel.VPN ->
+                Builder(context, context.getString(R.string.vpn_channel_id))
+            is NotificationChannels.Tunnel.Proxy ->
                 Builder(context, context.getString(R.string.proxy_channel_id))
+            NotificationChannels.AutoTunnel ->
+                Builder(context, context.getString(R.string.auto_tunnel_channel_id))
+
+            NotificationChannels.App -> Builder(context, context.getString(R.string.app_channel_id))
+            NotificationChannels.Errors ->
+                Builder(context, context.getString(R.string.errors_channel_id))
+            NotificationChannels.Events ->
+                Builder(context, context.getString(R.string.events_channel_id))
         }
     }
 
-    enum class NotificationChannels(val channelId: Int, val importance: Int) {
-        VPN(R.string.vpn_channel_id, IMPORTANCE_LOW),
-        AUTO_TUNNEL(R.string.auto_tunnel_channel_id, IMPORTANCE_LOW),
-        PROXY(R.string.proxy_channel_id, IMPORTANCE_LOW),
+    sealed class NotificationChannels(val channelId: Int, val importance: Int) {
+        sealed class Tunnel(channelId: Int, importance: Int) :
+            NotificationChannels(channelId, importance) {
+
+            data object VPN :
+                Tunnel(channelId = R.string.vpn_channel_id, importance = IMPORTANCE_LOW)
+
+            data object Proxy :
+                Tunnel(channelId = R.string.proxy_channel_id, importance = IMPORTANCE_LOW)
+        }
+
+        data object AutoTunnel :
+            NotificationChannels(
+                channelId = R.string.auto_tunnel_channel_id,
+                importance = IMPORTANCE_LOW,
+            )
+
+        data object Events :
+            NotificationChannels(
+                channelId = R.string.events_channel_id,
+                importance = IMPORTANCE_LOW,
+            )
+
+        data object Errors :
+            NotificationChannels(
+                channelId = R.string.errors_channel_id,
+                importance = IMPORTANCE_HIGH,
+            )
+
+        data object App :
+            NotificationChannels(channelId = R.string.app_channel_id, importance = IMPORTANCE_LOW)
+
+        companion object {
+            val all: List<NotificationChannels> =
+                listOf(Errors, Events, App, Tunnel.VPN, Tunnel.Proxy, AutoTunnel)
+        }
     }
 
     fun NotificationChannels.asChannel(): NotificationChannel {
+        val (nameResId, descriptionResId) =
+            when (this) {
+                is NotificationChannels.Tunnel.VPN ->
+                    R.string.vpn to R.string.vpn_channel_description
+                is NotificationChannels.Tunnel.Proxy ->
+                    R.string.proxy to R.string.proxy_channel_description
+                NotificationChannels.AutoTunnel ->
+                    R.string.auto_tunnel to R.string.auto_tunnel_channel_description
+
+                NotificationChannels.Errors ->
+                    R.string.errors to R.string.errors_channel_description
+                NotificationChannels.Events ->
+                    R.string.events to R.string.events_channel_description
+                NotificationChannels.App -> R.string.app to R.string.app_channel_description
+            }
+
         return NotificationChannel(
                 context.getString(channelId),
-                context.getString(
-                    when (this) {
-                        NotificationChannels.VPN -> R.string.vpn
-                        NotificationChannels.AUTO_TUNNEL -> R.string.auto_tunnel
-                        NotificationChannels.PROXY -> R.string.proxy
-                    }
-                ),
+                context.getString(nameResId),
                 importance,
             )
-            .apply {
-                description =
-                    context.getString(
-                        when (this@asChannel) {
-                            NotificationChannels.VPN -> R.string.vpn_channel_description
-                            NotificationChannels.AUTO_TUNNEL ->
-                                R.string.auto_tunnel_channel_description
-                            NotificationChannels.PROXY -> R.string.proxy_channel_description
-                        }
-                    )
-            }
+            .apply { description = context.getString(descriptionResId) }
     }
 
     override fun createAllChannels() {
-        NotificationChannels.entries.forEach { channel ->
+        NotificationChannels.all.forEach { channel ->
             notificationManager.createNotificationChannel(channel.asChannel())
         }
     }

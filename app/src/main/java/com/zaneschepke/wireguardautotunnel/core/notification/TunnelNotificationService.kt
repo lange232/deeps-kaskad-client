@@ -1,26 +1,24 @@
 package com.zaneschepke.wireguardautotunnel.core.notification
 
-import com.zaneschepke.tunnel.state.ActiveTunnel
-
 interface TunnelNotificationService {
 
-    suspend fun updatePersistentNotifications(activeTunnels: Map<Int, ActiveTunnel>)
+    fun updateProxyPersistentNotification(tunnelNotificationLines: Map<Int, TunnelNotificationLine>)
 
-    suspend fun showIpv4Fallback(tunnelId: Int)
+    fun updateVpnPersistentNotification(tunnelNotificationLines: Map<Int, TunnelNotificationLine>)
 
-    suspend fun showIpv6Recovery(tunnelId: Int)
+    fun showIpv4Fallback(tunnelName: String)
 
-    suspend fun showDynamicDnsUpdate(tunnelId: Int)
+    fun showIpv6Recovery(tunnelName: String)
 
-    suspend fun showVpnRequired()
+    fun showDynamicDnsUpdate(tunnelName: String)
 
-    suspend fun showStateConflict(tunnelId: Int)
+    fun showVpnRequired()
 
-    suspend fun showSocks5PortUnavailable(port: Int)
+    fun showSocks5PortUnavailable(port: Int, tunnelName: String)
 
-    suspend fun showHttpPortUnavailable(port: Int)
+    fun showHttpPortUnavailable(port: Int, tunnelName: String)
 
-    suspend fun showRootShellAccess()
+    fun showRootShellAccess()
 
-    suspend fun showError(message: String)
+    fun showError(message: String)
 }

@@ -21,6 +21,7 @@ interface NotificationService {
         onlyAlertOnce: Boolean = true,
         groupKey: String? = null,
         isGroupSummary: Boolean = false,
+        style: NotificationCompat.Style? = null,
     ): Notification
 
     fun createNotification(
@@ -34,6 +35,7 @@ interface NotificationService {
         onlyAlertOnce: Boolean = true,
         groupKey: String? = null,
         isGroupSummary: Boolean = false,
+        style: NotificationCompat.Style? = null,
     ): Notification
 
     fun createAllChannels()

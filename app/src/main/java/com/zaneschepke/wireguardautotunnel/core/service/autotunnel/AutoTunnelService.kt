@@ -181,7 +181,7 @@ class AutoTunnelService : LifecycleService() {
     ) {
         val notification =
             notificationService.createNotification(
-                AndroidNotificationService.NotificationChannels.AUTO_TUNNEL,
+                AndroidNotificationService.NotificationChannels.AutoTunnel,
                 title = getString(R.string.auto_tunnel_title),
                 description = description,
                 actions =
@@ -295,7 +295,7 @@ class AutoTunnelService : LifecycleService() {
                         if (!state.locationPermissionsEnabled) {
                             val notification =
                                 notificationService.createNotification(
-                                    AndroidNotificationService.NotificationChannels.AUTO_TUNNEL,
+                                    AndroidNotificationService.NotificationChannels.AutoTunnel,
                                     title = getString(R.string.warning),
                                     description = getString(R.string.location_permissions_missing),
                                 )
@@ -313,7 +313,7 @@ class AutoTunnelService : LifecycleService() {
                         if (!state.locationServicesEnabled) {
                             val notification =
                                 notificationService.createNotification(
-                                    AndroidNotificationService.NotificationChannels.AUTO_TUNNEL,
+                                    AndroidNotificationService.NotificationChannels.AutoTunnel,
                                     title = getString(R.string.warning),
                                     description = getString(R.string.location_services_not_detected),
                                 )

@@ -5,8 +5,6 @@ import com.zaneschepke.tunnel.util.BackendException
 sealed interface TunnelErrorEvent {
     data class VpnPermissionDenied(val tunnelId: Int) : TunnelErrorEvent
 
-    data class StateConflict(val tunnelId: Int, val message: String) : TunnelErrorEvent
-
     data class InternalFailure(val tunnelId: Int, val message: String) : TunnelErrorEvent
 
     data class Socks5PortUnavailable(val tunnelId: Int, val port: Int) : TunnelErrorEvent
@@ -16,9 +14,6 @@ sealed interface TunnelErrorEvent {
     companion object {
         fun from(throwable: Throwable, id: Int): TunnelErrorEvent {
             return when (throwable) {
-                is BackendException.StateConflict -> {
-                    StateConflict(id, throwable.message)
-                }
                 is BackendException.Unauthorized -> {
                     VpnPermissionDenied(id)
                 }

@@ -1,18 +1,28 @@
 package com.zaneschepke.wireguardautotunnel.core.event
 
+import android.content.Context
 import com.zaneschepke.tunnel.event.TunnelEvent
+import com.zaneschepke.tunnel.model.BackendMode
 import com.zaneschepke.tunnel.state.BackendStatus
+import com.zaneschepke.wireguardautotunnel.R
+import com.zaneschepke.wireguardautotunnel.core.notification.TunnelNotificationLine
 import com.zaneschepke.wireguardautotunnel.core.notification.TunnelNotificationService
+import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
+import com.zaneschepke.wireguardautotunnel.ui.state.DisplayTunnelState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 
-class TunnelEventDispatcher(private val notificationManager: TunnelNotificationService) {
+class TunnelEventDispatcher(
+    private val notificationManager: TunnelNotificationService,
+    private val tunnelRepository: TunnelRepository,
+    private val context: Context,
+) {
 
     fun bind(
         scope: CoroutineScope,
@@ -27,15 +37,18 @@ class TunnelEventDispatcher(private val notificationManager: TunnelNotificationS
             .onEach { event ->
                 when (event) {
                     is TunnelEvent.FallbackToIpv4 -> {
-                        notificationManager.showIpv4Fallback(event.tunnelId)
+                        val name = getTunnelName(event.tunnelId)
+                        notificationManager.showIpv4Fallback(name)
                     }
 
                     is TunnelEvent.RecoveredToIpv6 -> {
-                        notificationManager.showIpv6Recovery(event.tunnelId)
+                        val name = getTunnelName(event.tunnelId)
+                        notificationManager.showIpv6Recovery(name)
                     }
 
                     is TunnelEvent.DynamicDnsUpdate -> {
-                        notificationManager.showDynamicDnsUpdate(event.tunnelId)
+                        val name = getTunnelName(event.tunnelId)
+                        notificationManager.showDynamicDnsUpdate(name)
                     }
 
                     is TunnelEvent.NoRootShellAccess -> {
@@ -54,36 +67,85 @@ class TunnelEventDispatcher(private val notificationManager: TunnelNotificationS
                         notificationManager.showVpnRequired()
                     }
 
-                    is TunnelErrorEvent.StateConflict -> {
-                        notificationManager.showStateConflict(error.tunnelId)
-                    }
-
                     is TunnelErrorEvent.InternalFailure -> {
                         notificationManager.showError(error.message)
                     }
 
                     is TunnelErrorEvent.Socks5PortUnavailable -> {
-                        notificationManager.showSocks5PortUnavailable(error.port)
+                        val name = getTunnelName(error.tunnelId)
+                        notificationManager.showSocks5PortUnavailable(error.port, name)
                     }
 
                     is TunnelErrorEvent.HttpPortUnavailable -> {
-                        notificationManager.showHttpPortUnavailable(error.port)
+                        val name = getTunnelName(error.tunnelId)
+                        notificationManager.showHttpPortUnavailable(error.port, name)
                     }
                 }
             }
             .launchIn(scope)
 
-        // update persistent notification for services with the tunnel states
-        providerStatus
-            .map { it.activeTunnels }
-            .distinctUntilChangedBy { map ->
-                val stateSignature =
-                    map.entries
-                        .sortedBy { it.key }
-                        .map { (_, tunnel) -> tunnel.transportState to tunnel.bootstrapState }
-                map.size to stateSignature
+        // vpn
+        combine(providerStatus.map { it.activeTunnels }, tunnelRepository.userTunnelsFlow) {
+                activeTunnels,
+                allTunnels ->
+                activeTunnels
+                    .mapNotNull { (id, activeTunnel) ->
+                        val mode = activeTunnel.mode ?: return@mapNotNull null
+
+                        // Only include VPN / KillSwitchPrimary modes
+                        if (
+                            mode !is BackendMode.Vpn && mode !is BackendMode.Proxy.KillSwitchPrimary
+                        ) {
+                            return@mapNotNull null
+                        }
+
+                        val tunnel = allTunnels.find { it.id == id } ?: return@mapNotNull null
+                        val displayState = DisplayTunnelState.from(activeTunnel)
+
+                        TunnelNotificationLine(
+                            id = id,
+                            name = tunnel.name,
+                            displayState = displayState,
+                        )
+                    }
+                    .associateBy { it.id }
             }
-            .onEach { status -> notificationManager.updatePersistentNotifications(status) }
+            .distinctUntilChanged()
+            .onEach { vpnLines -> notificationManager.updateVpnPersistentNotification(vpnLines) }
             .launchIn(scope)
+
+        // proxy
+        combine(providerStatus.map { it.activeTunnels }, tunnelRepository.userTunnelsFlow) {
+                activeTunnels,
+                allTunnels ->
+                activeTunnels
+                    .mapNotNull { (id, activeTunnel) ->
+                        val mode = activeTunnel.mode ?: return@mapNotNull null
+
+                        // Only include Standard Proxy mode
+                        if (mode !is BackendMode.Proxy.Standard) {
+                            return@mapNotNull null
+                        }
+
+                        val tunnel = allTunnels.find { it.id == id } ?: return@mapNotNull null
+                        val displayState = DisplayTunnelState.from(activeTunnel)
+
+                        TunnelNotificationLine(
+                            id = id,
+                            name = tunnel.name,
+                            displayState = displayState,
+                        )
+                    }
+                    .associateBy { it.id }
+            }
+            .distinctUntilChanged()
+            .onEach { proxyLines ->
+                notificationManager.updateProxyPersistentNotification(proxyLines)
+            }
+            .launchIn(scope)
+    }
+
+    private suspend fun getTunnelName(tunnelId: Int): String {
+        return tunnelRepository.getById(tunnelId)?.name ?: context.getString(R.string.unknown)
     }
 }

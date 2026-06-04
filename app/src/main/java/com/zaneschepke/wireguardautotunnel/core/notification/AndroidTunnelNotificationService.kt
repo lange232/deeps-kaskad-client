@@ -1,7 +1,6 @@
 package com.zaneschepke.wireguardautotunnel.core.notification
 
-import com.zaneschepke.tunnel.model.BackendMode
-import com.zaneschepke.tunnel.state.ActiveTunnel
+import androidx.core.app.NotificationCompat
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.notification.AndroidNotificationService.NotificationChannels
 import com.zaneschepke.wireguardautotunnel.core.notification.NotificationService.Companion.PROXY_GROUP_KEY
@@ -11,164 +10,154 @@ import com.zaneschepke.wireguardautotunnel.core.notification.NotificationService
 import com.zaneschepke.wireguardautotunnel.core.notification.NotificationService.Companion.VPN_GROUP_KEY
 import com.zaneschepke.wireguardautotunnel.core.notification.NotificationService.Companion.VPN_NOTIFICATION_ID
 import com.zaneschepke.wireguardautotunnel.domain.enums.NotificationAction
-import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
-import com.zaneschepke.wireguardautotunnel.ui.state.DisplayTunnelState
 
-class AndroidTunnelNotificationService(
-    private val notificationService: NotificationService,
-    private val tunnelRepository: TunnelRepository,
-) : TunnelNotificationService {
+class AndroidTunnelNotificationService(private val notificationService: NotificationService) :
+    TunnelNotificationService {
 
-    override suspend fun updatePersistentNotifications(activeTunnels: Map<Int, ActiveTunnel>) {
+    private val context = notificationService.context
 
-        val vpnTunnels = activeTunnels.filterValues { it.mode is BackendMode.Vpn }
-
-        val proxyTunnels = activeTunnels.filterValues { it.mode is BackendMode.Proxy }
-
-        updateGroupNotification(
-            tunnels = vpnTunnels,
-            notificationId = VPN_NOTIFICATION_ID,
-            channel = NotificationChannels.VPN,
-            groupKey = VPN_GROUP_KEY,
-        )
-
-        updateGroupNotification(
-            tunnels = proxyTunnels,
-            notificationId = PROXY_NOTIFICATION_ID,
-            channel = NotificationChannels.PROXY,
-            groupKey = PROXY_GROUP_KEY,
-        )
-    }
-
-    private suspend fun updateGroupNotification(
-        tunnels: Map<Int, ActiveTunnel>,
+    private fun updateGroupNotification(
+        tunnelNotificationLines: Map<Int, TunnelNotificationLine>,
         notificationId: Int,
-        channel: NotificationChannels,
+        channel: NotificationChannels.Tunnel,
         groupKey: String,
     ) {
-
-        if (tunnels.isEmpty()) {
+        if (tunnelNotificationLines.isEmpty()) {
             notificationService.remove(notificationId)
             return
         }
 
         val context = notificationService.context
 
-        val lines = tunnels.mapNotNull { (id, activeTunnel) ->
-            val tunnel = tunnelRepository.getById(id) ?: return@mapNotNull null
-            val display = DisplayTunnelState.from(activeTunnel)
-
+        val formattedLines = tunnelNotificationLines.values.map { line ->
+            val status = line.displayState.asLocalizedString(context)
             context.getString(
                 R.string.notification_tunnel_status_format,
-                tunnel.name,
-                display.asLocalizedString(context),
+                line.name,
+                status,
             )
         }
 
-        val description = lines.joinToString("\n")
+        val description = formattedLines.joinToString("\n")
 
-        val stopActions =
-            tunnels.keys.map {
+        val actions = if (tunnelNotificationLines.size == 1) {
+            val tunnelId = tunnelNotificationLines.keys.first()
+            listOf(
                 notificationService.createNotificationAction(
                     notificationAction = NotificationAction.TUNNEL_OFF,
-                    extraId = it,
+                    extraId = tunnelId,
                 )
-            }
-
-        val title =
-            when (channel) {
-                NotificationChannels.VPN -> context.getString(R.string.vpn)
-
-                NotificationChannels.PROXY -> context.getString(R.string.proxy)
-
-                NotificationChannels.AUTO_TUNNEL -> context.getString(R.string.auto_tunnel)
-            }
-
-        val notification =
-            notificationService.createNotification(
-                channel = channel,
-                title = title,
-                description = description,
-                actions = stopActions,
-                onGoing = true,
-                onlyAlertOnce = true,
-                groupKey = groupKey,
             )
+        } else {
+            listOf(
+                notificationService.createNotificationAction(
+                    notificationAction = NotificationAction.STOP_ALL,
+                    extraId = null,
+                )
+            )
+        }
+
+        val title = when (channel) {
+            is NotificationChannels.Tunnel.VPN -> context.getString(R.string.vpn)
+            is NotificationChannels.Tunnel.Proxy -> context.getString(R.string.proxy)
+        }
+
+        val style = if (tunnelNotificationLines.size > 1) {
+            NotificationCompat.InboxStyle()
+                .setBigContentTitle(title)
+                .setSummaryText("${tunnelNotificationLines.size} ${context.getString(R.string.tunnels).lowercase()}")
+                .also { inboxStyle ->
+                    formattedLines.forEach { inboxStyle.addLine(it) }
+                }
+        } else {
+            null
+        }
+
+        val notification = notificationService.createNotification(
+            channel = channel,
+            title = title,
+            description = description,
+            actions = actions,
+            onGoing = true,
+            onlyAlertOnce = true,
+            groupKey = groupKey,
+            style = style,
+        )
 
         notificationService.show(notificationId, notification)
     }
 
-    override suspend fun showIpv4Fallback(tunnelId: Int) {
+    override fun updateProxyPersistentNotification(
+        tunnelNotificationLines: Map<Int, TunnelNotificationLine>
+    ) {
+        updateGroupNotification(
+            tunnelNotificationLines = tunnelNotificationLines,
+            notificationId = PROXY_NOTIFICATION_ID,
+            channel = NotificationChannels.Tunnel.Proxy,
+            groupKey = PROXY_GROUP_KEY,
+        )
+    }
 
-        val context = notificationService.context
-        val name = tunnelName(tunnelId)
+    override fun updateVpnPersistentNotification(
+        tunnelNotificationLines: Map<Int, TunnelNotificationLine>
+    ) {
+        updateGroupNotification(
+            tunnelNotificationLines = tunnelNotificationLines,
+            notificationId = VPN_NOTIFICATION_ID,
+            channel = NotificationChannels.Tunnel.VPN,
+            groupKey = VPN_GROUP_KEY,
+        )
+    }
 
-        showMessage(
+    override fun showIpv4Fallback(tunnelName: String) {
+        showEvent(
             title = context.getString(R.string.ipv4_fallback),
-            message = context.getString(R.string.notification_ipv4_fallback_message, name),
+            message = context.getString(R.string.notification_ipv4_fallback_message, tunnelName),
         )
     }
 
-    override suspend fun showIpv6Recovery(tunnelId: Int) {
-
-        val context = notificationService.context
-        val name = tunnelName(tunnelId)
-
-        showMessage(
+    override fun showIpv6Recovery(tunnelName: String) {
+        showEvent(
             title = context.getString(R.string.ipv6_recovery),
-            message = context.getString(R.string.notification_ipv6_recovery_message, name),
+            message = context.getString(R.string.notification_ipv6_recovery_message, tunnelName),
         )
     }
 
-    override suspend fun showDynamicDnsUpdate(tunnelId: Int) {
-
-        val context = notificationService.context
-        val name = tunnelName(tunnelId)
-
-        showMessage(
+    override fun showDynamicDnsUpdate(tunnelName: String) {
+        showEvent(
             title = context.getString(R.string.dynamic_dns_update),
-            message = context.getString(R.string.notification_dynamic_dns_message, name),
+            message = context.getString(R.string.notification_dynamic_dns_message, tunnelName),
         )
     }
 
-    override suspend fun showVpnRequired() {
-
+    override fun showVpnRequired() {
         showError(notificationService.context.getString(R.string.vpn_permission_required))
     }
 
-    override suspend fun showStateConflict(tunnelId: Int) {
-
-        val context = notificationService.context
-        val name = tunnelName(tunnelId)
-
-        showError(context.getString(R.string.notification_tunnel_already_running, name))
-    }
-
-    override suspend fun showRootShellAccess() {
+    override fun showRootShellAccess() {
         // TODO could improve with fix action
         val context = notificationService.context
         showError(context.getString(R.string.error_root_denied))
     }
 
-    override suspend fun showSocks5PortUnavailable(port: Int) {
+    override fun showSocks5PortUnavailable(port: Int, tunnelName: String) {
         val context = notificationService.context
         val message = context.getString(R.string.error_socks5_port_unavailable, port)
 
         showError(message)
     }
 
-    override suspend fun showHttpPortUnavailable(port: Int) {
+    override fun showHttpPortUnavailable(port: Int, tunnelName: String) {
         val context = notificationService.context
         val message = context.getString(R.string.error_http_port_unavailable, port)
 
         showError(message)
     }
 
-    override suspend fun showError(message: String) {
-
+    override fun showError(message: String) {
         val notification =
             notificationService.createNotification(
-                channel = NotificationChannels.VPN,
+                channel = NotificationChannels.Errors,
                 title = notificationService.context.getString(R.string.error),
                 description = message,
                 onGoing = false,
@@ -179,11 +168,11 @@ class AndroidTunnelNotificationService(
         notificationService.show(TUNNEL_ERROR_NOTIFICATION_ID, notification)
     }
 
-    private fun showMessage(title: String, message: String) {
+    private fun showEvent(title: String, message: String) {
 
         val notification =
             notificationService.createNotification(
-                channel = NotificationChannels.VPN,
+                channel = NotificationChannels.Events,
                 title = title,
                 description = message,
                 onGoing = false,
@@ -192,12 +181,5 @@ class AndroidTunnelNotificationService(
             )
 
         notificationService.show(TUNNEL_MESSAGES_NOTIFICATION_ID, notification)
-    }
-
-    private suspend fun tunnelName(id: Int): String {
-
-        val context = notificationService.context
-
-        return tunnelRepository.getById(id)?.name ?: context.getString(R.string.unknown, id)
     }
 }

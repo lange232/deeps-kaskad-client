@@ -154,9 +154,10 @@ class TunnelBackend(
     }
 
     override suspend fun stop(id: Int): Result<Unit> = runCatching {
+        // TODO need a clean localized message for this passed by provider
         val runtime =
             actor.state.value.byTunnelId[id]
-                ?: throw BackendException.StateConflict(
+                ?: throw BackendException.InternalError(
                     "Tunnel $id is not active or no longer exists"
                 )
 

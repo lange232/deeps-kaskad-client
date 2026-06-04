@@ -570,4 +570,14 @@
 
     <string name="error_socks5_port_unavailable">SOCKS5 port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
+    <string name="events_channel_id" translatable="false">Events Channel</string>
+    <string name="errors_channel_id" translatable="false">Errors Channel</string>
+    <string name="errors">Errors</string>
+    <string name="events">Events</string>
+    <string name="errors_channel_description">A channel for application and tunnel errors</string>
+    <string name="events_channel_description">A channel for app events, like automation event</string>
+    <string name="app_channel_id" translatable="false">App Channel</string>
+    <string name="app">App</string>
+    <string name="app_channel_description">A channel for general application notifications, like version updates</string>
+    <string name="stop_all">Stop all</string>
 </resources>
