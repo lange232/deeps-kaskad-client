@@ -10,6 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -23,8 +26,6 @@ class TunnelControlTile : TileService() {
     private var collectionJob: Job? = null
 
     private val tileScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-
-    @Volatile private var observing = false
 
     override fun onDestroy() {
         collectionJob?.cancel()
@@ -46,36 +47,31 @@ class TunnelControlTile : TileService() {
     }
 
     private fun startObserving() {
-        if (observing) return
-        observing = true
-
+        collectionJob?.cancel()
         collectionJob = tileScope.launch {
-            val tunnels = withContext(Dispatchers.IO) { tunnelsRepository.getAll() }
-
-            tunnelCoordinator.backendStatus
-                .distinctUntilChangedBy { it.activeTunnels.keys }
-                .collect { status ->
+            combine(
+                    tunnelsRepository.userTunnelsFlow.distinctUntilChanged(),
+                    tunnelCoordinator.backendStatus.distinctUntilChangedBy { it.activeTunnels.keys },
+                ) { tunnels, status ->
                     if (tunnels.isEmpty()) {
                         setUnavailable()
-                        return@collect
+                        return@combine
                     }
 
                     val active = status.activeTunnels
-
                     if (active.isNotEmpty()) {
                         val names = tunnels.filter { active.containsKey(it.id) }.map { it.name }
-
                         setActive(names)
                     } else {
                         setInactive()
                     }
                 }
+                .collect()
         }
     }
 
     override fun onStopListening() {
         super.onStopListening()
-        observing = false
         collectionJob?.cancel()
         collectionJob = null
     }
@@ -91,7 +87,7 @@ class TunnelControlTile : TileService() {
 
     private fun updateTileState() {
         tileScope.launch {
-            val tunnels = tunnelsRepository.getAll()
+            val tunnels = withContext(Dispatchers.IO) { tunnelsRepository.getAll() }
 
             if (tunnels.isEmpty()) {
                 setUnavailable()

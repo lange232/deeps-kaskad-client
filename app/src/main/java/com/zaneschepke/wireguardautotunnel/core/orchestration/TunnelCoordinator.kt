@@ -194,9 +194,13 @@ class TunnelCoordinator(
     suspend fun toggleTunnels(source: TunnelActionSource = TunnelActionSource.USER) =
         tunnelMutex.withLock {
             val active = tunnelProvider.backendStatus.value.activeTunnels
-
             if (active.isNotEmpty()) {
                 lastActiveTunnels = active.keys.toList()
+
+                active.keys.forEach { id ->
+                    _actions.emit(TunnelActionEvent.Stopped(tunnelId = id, source = source))
+                }
+
                 stopActiveTunnelsInternal()
                 return@withLock
             }

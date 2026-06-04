@@ -19,9 +19,11 @@ class AutoTunnelControlTile : TileService() {
 
     private val tileScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    private var observerJob: Job? = null
+    private var collectionJob: Job? = null
 
     override fun onDestroy() {
+        collectionJob?.cancel()
+        collectionJob = null
         tileScope.cancel()
         super.onDestroy()
     }
@@ -34,8 +36,8 @@ class AutoTunnelControlTile : TileService() {
 
     override fun onStopListening() {
         super.onStopListening()
-        observerJob?.cancel()
-        observerJob = null
+        collectionJob?.cancel()
+        collectionJob = null
     }
 
     override fun onTileAdded() {
@@ -59,8 +61,8 @@ class AutoTunnelControlTile : TileService() {
     }
 
     private fun startObserving() {
-        observerJob?.cancel()
-        observerJob = tileScope.launch {
+        collectionJob?.cancel()
+        collectionJob = tileScope.launch {
             autoTunnelStateHolder.active.collect { active ->
                 if (active) setActive() else setInactive()
             }
