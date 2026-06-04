@@ -28,6 +28,7 @@ import com.zaneschepke.tunnel.state.TunnelRuntimeState
 import com.zaneschepke.tunnel.util.RootShellException
 import com.zaneschepke.tunnel.util.buildResolvedPeers
 import com.zaneschepke.tunnel.util.exponentialBackoffForever
+import com.zaneschepke.wireguardautotunnel.parser.ActiveConfig
 import kotlin.reflect.KClass
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -315,7 +316,7 @@ internal class TunnelActor(
             DynamicDnsController(
                 stabilityWindowMs = DDNS_STABILITY_WINDOW,
                 failureWindowMs = DDNS_FAILURE_WINDOW,
-                minResolveIntervalMs = DDNS_MIN_RESOLVE_INTERVAL,
+                minCheckIntervalMs = DDNS_MIN_CHECK_INTERVAL,
             )
 
         combine(
@@ -326,48 +327,104 @@ internal class TunnelActor(
             }
             .collect { (stable, activeTunnel) ->
                 val runtime = state.value.byTunnelId[tunnelId] ?: return@collect
-
                 if (!stable.state.hasInternet()) return@collect
 
                 val now = System.currentTimeMillis()
+                val isHealthy = activeTunnel.transportState is Tunnel.State.Up.Healthy
+                val isHandshakeFailure =
+                    activeTunnel.transportState is Tunnel.State.Up.HandshakeFailure
 
-                val shouldResolve =
-                    controller.shouldResolve(
-                        now = now,
-                        isHealthy = activeTunnel.transportState is Tunnel.State.Up.Healthy,
-                        isHandshakeFailure =
-                            activeTunnel.transportState is Tunnel.State.Up.HandshakeFailure,
-                    )
+                if (!controller.shouldCheck(now, isHealthy, isHandshakeFailure)) return@collect
 
-                if (!shouldResolve) return@collect
+                // Fresh DNS resolve
+                val freshDns = resolvePeers(runtime.running)
+                if (freshDns.isEmpty()) {
+                    controller.markChecked(now)
+                    return@collect
+                }
 
-                val resolved = resolvePeers(runtime.running)
                 ensureActive()
 
-                val changed = controller.diff(resolved)
-                if (changed.isEmpty()) return@collect
+                // Query live state from WireGuard UAPI
+                val activeConfig =
+                    try {
+                        engine.getActiveConfig(runtime.running.handle, runtime.running.mode)
+                    } catch (t: Throwable) {
+                        Timber.w(t, "UAPI query failed during DDNS check")
+                        controller.markChecked(now)
+                        return@collect
+                    }
 
-                controller.markResolved(now)
+                val mismatches = findEndpointMismatches(freshDns, activeConfig, runtime.running)
+                if (mismatches.isEmpty()) {
+                    controller.markChecked(now)
+                    return@collect
+                }
+
+                controller.markChecked(now)
+
+                Timber.i("Dynamic DNS drift detected for peers: $mismatches — updating")
 
                 _events.emit(
-                    TunnelEvent.DynamicDnsUpdate(tunnelId = tunnelId, changedPeers = changed)
+                    TunnelEvent.DynamicDnsUpdate(tunnelId = tunnelId, changedPeers = mismatches)
                 )
 
                 val latestRuntime = state.value.byTunnelId[tunnelId] ?: return@collect
+                val updatedCache = latestRuntime.running.peerBootstrapCache + freshDns
 
                 send(
                     TunnelCommand.ApplyResolvedPeers(
                         tunnelId = tunnelId,
-                        cache = resolved,
+                        cache = updatedCache,
                         peers =
                             latestRuntime.running
-                                .copy(peerBootstrapCache = resolved)
+                                .copy(peerBootstrapCache = updatedCache)
                                 .buildResolvedPeers(
                                     preferIpv6 = latestRuntime.running.currentPreferIpv6
                                 ),
                     )
                 )
             }
+    }
+
+    private fun findEndpointMismatches(
+        freshDns: Map<PublicKey, DnsBootstrapResult>,
+        activeConfig: ActiveConfig?,
+        running: RunningTunnel,
+    ): List<PublicKey> {
+        if (activeConfig == null) return emptyList()
+
+        val currentEndpoints = activeConfig.peers.associateBy { it.publicKey }
+
+        return freshDns.mapNotNull { (pubKey, dnsResult) ->
+            val current = currentEndpoints[pubKey] ?: return@mapNotNull null
+            val currentEndpoint = current.endpoint ?: return@mapNotNull null
+
+            val normalizedCurrent = normalizeEndpointForComparison(currentEndpoint)
+
+            // Choose which fresh address to compare against
+            val freshAddress =
+                if (running.currentPreferIpv6 && dnsResult.ipv6.isNotEmpty()) {
+                    dnsResult.ipv6.first()
+                } else {
+                    dnsResult.ipv4.firstOrNull() ?: dnsResult.ipv6.firstOrNull()
+                } ?: return@mapNotNull null
+
+            if (freshAddress != normalizedCurrent) pubKey else null
+        }
+    }
+
+    /** Normalizes an endpoint string so IPv6 addresses have brackets. */
+    private fun normalizeEndpointForComparison(endpoint: String): String {
+        val host = endpoint.substringBeforeLast(":")
+        val port = endpoint.substringAfterLast(":")
+
+        return if (host.contains(":")) {
+            // Looks like IPv6
+            if (host.startsWith("[")) endpoint else "[$host]:$port"
+        } else {
+            endpoint
+        }
     }
 
     private fun CoroutineScope.startIpv6Job(tunnelId: Int, strategy: Tunnel.IpStrategy.PreferIpv6) =
@@ -719,8 +776,8 @@ internal class TunnelActor(
     }
 
     companion object {
-        private const val DDNS_MIN_RESOLVE_INTERVAL = 30_000L
-        private const val DDNS_FAILURE_WINDOW = 10_000L
+        private const val DDNS_MIN_CHECK_INTERVAL = 30_000L
+        private const val DDNS_FAILURE_WINDOW = 15_000L
         private const val DDNS_STABILITY_WINDOW = 15_000L
         private const val IPV4_FALLBACK_FAILURE_COUNT = 4
         private const val IPV4_FALLBACK_FAILURE_DURATION = 10_000L
