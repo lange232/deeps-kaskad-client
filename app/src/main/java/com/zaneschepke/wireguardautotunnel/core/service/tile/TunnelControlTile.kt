@@ -78,7 +78,6 @@ class TunnelControlTile : TileService() {
         observing = false
         collectionJob?.cancel()
         collectionJob = null
-        tileScope.cancel()
     }
 
     override fun onClick() {
