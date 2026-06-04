@@ -1,11 +1,13 @@
 package com.zaneschepke.tunnel.backend
 
+import android.net.TrafficStats
 import com.zaneschepke.tunnel.ProxyBackend
 import com.zaneschepke.tunnel.Tunnel
 import com.zaneschepke.tunnel.VpnBackend
 import com.zaneschepke.tunnel.model.BackendMode
 import com.zaneschepke.tunnel.model.ProxyConfig
 import com.zaneschepke.tunnel.service.VpnService
+import com.zaneschepke.tunnel.service.VpnService.Companion.HEV_BRIDGE_TRAFFIC_TAG
 import com.zaneschepke.tunnel.state.EngineStartResult
 import com.zaneschepke.tunnel.state.EngineState
 import com.zaneschepke.tunnel.state.NativeTunnelStatus
@@ -135,27 +137,43 @@ internal class WireGuardTunnelEngine(
     }
 
     @Throws(IOException::class)
-    private fun getAvailablePort(): Int {
-        ServerSocket(0).use { socket ->
-            socket.reuseAddress = true
-            return socket.localPort
+    fun getAvailablePort(): Int {
+        TrafficStats.setThreadStatsTag(HEV_BRIDGE_TRAFFIC_TAG)
+
+        try {
+            ServerSocket(0).use {
+                return it.localPort
+            }
+        } finally {
+            TrafficStats.clearThreadStatsTag()
         }
     }
 
-    // omit peer endpoint while boostrapping
+    // omit peer endpoint while bootstrapping
     private fun rewriteDynamicEndpoint(peer: PeerSection): PeerSection {
         return peer.copy(endpoint = null)
     }
 
     override fun stop(handle: Int, mode: BackendMode) {
         when (mode) {
-            is BackendMode.Proxy -> {
-                ProxyBackend.awgTurnProxyTunnelOff(handle)
-            }
-            is BackendMode.Vpn -> {
-                VpnBackend.awgTurnOff(handle)
-            }
+            is BackendMode.Proxy.Standard -> stopProxyTunnel(handle)
+            is BackendMode.Vpn -> stopVpnTunnel(handle)
+            is BackendMode.Proxy.KillSwitchPrimary -> stopKillSwitchPrimaryTunnel(handle)
         }
+    }
+
+    private fun stopKillSwitchPrimaryTunnel(handle: Int) {
+        ProxyBackend.awgTurnProxyTunnelOff(handle)
+        val service = serviceHolder.getVpnService()
+        service.stopHevSocks5Bridge()
+    }
+
+    private fun stopProxyTunnel(handle: Int) {
+        ProxyBackend.awgTurnProxyTunnelOff(handle)
+    }
+
+    private fun stopVpnTunnel(handle: Int) {
+        VpnBackend.awgTurnOff(handle)
     }
 
     private fun startVpnTunnel(tunnel: Tunnel, ifName: String, config: Config): Int {

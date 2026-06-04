@@ -29,6 +29,7 @@ import com.zaneschepke.tunnel.util.RootShellException
 import com.zaneschepke.tunnel.util.buildResolvedPeers
 import com.zaneschepke.tunnel.util.exponentialBackoffForever
 import kotlin.reflect.KClass
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -208,7 +209,7 @@ internal class TunnelActor(
 
                             try {
                                 cmd.cmds?.forEach { cmd ->
-                                    withTimeout(3_000) {
+                                    withTimeout(3_000.milliseconds) {
                                         withContext(Dispatchers.IO) { RootShell.run(cmd) }
                                     }
                                 }

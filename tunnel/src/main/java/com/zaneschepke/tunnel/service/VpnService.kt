@@ -1,6 +1,7 @@
 package com.zaneschepke.tunnel.service
 
 import android.content.Intent
+import android.net.TrafficStats
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.system.OsConstants
@@ -105,6 +106,7 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
 
     private fun startHevBridge(port: Int, pass: String): Job {
         val job = serviceScope.launch {
+            TrafficStats.setThreadStatsTag(HEV_BRIDGE_TRAFFIC_TAG)
             try {
                 val vpnFd = fd ?: throw IOException("No VPN interface fd available")
 
@@ -145,6 +147,8 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
                 Timber.e("Timed out waiting for SOCKS5 proxy to be ready")
             } catch (e: Exception) {
                 Timber.e(e, "Failed to start HEV bridge")
+            } finally {
+                TrafficStats.clearThreadStatsTag()
             }
         }
 
@@ -282,6 +286,7 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
     }
 
     companion object {
+        const val HEV_BRIDGE_TRAFFIC_TAG = 0xF00D
         private const val LOCKDOWN_SESSION_NAME = "Lockdown"
         private const val LOCALHOST = "127.0.0.1"
         private const val IPV4_INTERFACE_ADDRESS = "10.0.0.1"

@@ -154,7 +154,8 @@ class TunnelBackend(
     }
 
     override suspend fun stop(id: Int): Result<Unit> = runCatching {
-        // TODO need a clean localized message for this passed by provider
+        // TODO need a clean localized message for this passed by provider, but this error should
+        // never happen
         val runtime =
             actor.state.value.byTunnelId[id]
                 ?: throw BackendException.InternalError(
