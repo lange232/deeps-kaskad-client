@@ -3,6 +3,7 @@ package com.zaneschepke.wireguardautotunnel.ui.screens.autotunnel.wifi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -105,7 +106,7 @@ fun WifiSettingsScreen(viewModel: AutoTunnelViewModel = koinViewModel()) {
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Top),
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()),
     ) {
         Column {
             WarningBanner(
