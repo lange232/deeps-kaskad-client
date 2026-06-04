@@ -22,6 +22,7 @@ import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
 import com.zaneschepke.wireguardautotunnel.ui.common.button.ThemedSwitch
 import com.zaneschepke.wireguardautotunnel.ui.common.label.GroupLabel
+import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
 import com.zaneschepke.wireguardautotunnel.ui.theme.Disabled
 import com.zaneschepke.wireguardautotunnel.viewmodel.TunnelViewModel
 import org.orbitmvi.orbit.compose.collectAsState
@@ -41,62 +42,73 @@ fun IPv6Screen(viewModel: TunnelViewModel) {
     ) {
         Column {
             GroupLabel(
-                stringResource(R.string.general),
+                stringResource(R.string.peer_endpoints),
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
+
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.Public, contentDescription = null) },
-                title = stringResource(R.string.use_ipv6),
+                title = stringResource(R.string.prefer_ipv6),
                 trailing = {
                     ThemedSwitch(
                         checked = tunnel.isIpv6Preferred,
                         onClick = { viewModel.onIPv6Action(IPv6Intent.ToggleIpv6Preferred(it)) },
                     )
                 },
+                description = { DescriptionText(stringResource(R.string.prefer_ipv6_desc)) },
                 onClick = {
                     viewModel.onIPv6Action(IPv6Intent.ToggleIpv6Preferred(!tunnel.isIpv6Preferred))
                 },
             )
-        }
-        Column {
+
             val iconTint =
                 if (!tunnel.isIpv6Preferred) Disabled else MaterialTheme.colorScheme.onSurface
-            val enabled = tunnel.isIpv6Preferred
-            GroupLabel(
-                stringResource(R.string.automation),
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
+            val ipv6Enabled = tunnel.isIpv6Preferred
+
             SurfaceRow(
                 leading = {
                     Icon(Icons.Outlined.SwapHoriz, contentDescription = null, tint = iconTint)
                 },
-                title = stringResource(R.string.switch_to_ipv4),
+                title = stringResource(R.string.fallback_to_ipv4),
                 onClick = {
                     viewModel.onIPv6Action(IPv6Intent.ToggleFallback(!tunnel.ipv4FallbackEnabled))
                 },
-                enabled = enabled,
+                enabled = ipv6Enabled,
+                description = {
+                    DescriptionText(
+                        stringResource(R.string.fallback_to_ipv4_desc),
+                        disabled = !ipv6Enabled,
+                    )
+                },
                 trailing = {
                     ThemedSwitch(
                         checked = tunnel.ipv4FallbackEnabled,
                         onClick = { viewModel.onIPv6Action(IPv6Intent.ToggleFallback(it)) },
-                        enabled = enabled,
+                        enabled = ipv6Enabled,
                     )
                 },
             )
+
             SurfaceRow(
                 leading = {
                     Icon(Icons.Outlined.Restore, contentDescription = null, tint = iconTint)
                 },
-                title = stringResource(R.string.switch_to_ipv6),
+                title = stringResource(R.string.restore_ipv6),
                 onClick = {
                     viewModel.onIPv6Action(IPv6Intent.ToggleRestore(!tunnel.ipv6RestoreEnabled))
                 },
-                enabled = enabled,
+                enabled = ipv6Enabled,
+                description = {
+                    DescriptionText(
+                        stringResource(R.string.restore_ipv6_desc),
+                        disabled = !ipv6Enabled,
+                    )
+                },
                 trailing = {
                     ThemedSwitch(
                         checked = tunnel.ipv6RestoreEnabled,
                         onClick = { viewModel.onIPv6Action(IPv6Intent.ToggleRestore(it)) },
-                        enabled = enabled,
+                        enabled = ipv6Enabled,
                     )
                 },
             )

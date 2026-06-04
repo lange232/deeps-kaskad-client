@@ -581,4 +581,13 @@
     <string name="app_channel_description">A channel for general application notifications, like version updates</string>
     <string name="stop_all">Stop all</string>
     <string name="tunnel_state_establishing_connection">Establishing connection</string>
+    <string name="peer_endpoints">Peer endpoints</string>
+    <string name="prefer_ipv6">Prefer IPv6</string>
+    <string name="prefer_ipv6_desc">Use IPv6 endpoints when the network supports it.</string>
+
+    <string name="fallback_to_ipv4">Fallback to IPv4</string>
+    <string name="fallback_to_ipv4_desc">Switch to IPv4 if IPv6 fails, without restarting the tunnel.</string>
+
+    <string name="restore_ipv6">Restore IPv6</string>
+    <string name="restore_ipv6_desc">Switch back to IPv6 when an IPv6 network is detected.</string>
 </resources>
