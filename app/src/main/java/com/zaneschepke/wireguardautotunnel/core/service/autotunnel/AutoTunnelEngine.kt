@@ -28,12 +28,16 @@ class AutoTunnelEngine {
 
         val activeTunnelIds = backend.activeTunnels.keys.toSet()
 
-        val desiredTunnels = resolveDesiredTunnels(state).map { it.id }.toSet()
-
-        // stop condition overrides everything
-        if (!network.hasInternet() && settings.isStopOnNoInternetEnabled) {
-            return Decision.StopDueToNoInternet
+        if (!network.hasInternet()) {
+            return if (settings.isStopOnNoInternetEnabled) {
+                Decision.StopDueToNoInternet
+            } else {
+                // keep tunnel state neutral on no internet otherwise
+                Decision.None
+            }
         }
+
+        val desiredTunnels = resolveDesiredTunnels(state).map { it.id }.toSet()
 
         val toStart = desiredTunnels - activeTunnelIds
         val toStop = activeTunnelIds - desiredTunnels
