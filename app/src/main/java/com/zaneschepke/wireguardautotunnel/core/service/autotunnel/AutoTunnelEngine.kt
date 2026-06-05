@@ -17,6 +17,7 @@ class AutoTunnelEngine {
                 }
             }
             Decision.None -> AutoTunnelEvent.DoNothing
+            is Decision.StopDueToNoInternet -> AutoTunnelEvent.StopAllDueToNoInternet
         }
     }
 
@@ -31,7 +32,7 @@ class AutoTunnelEngine {
 
         // stop condition overrides everything
         if (!network.hasInternet() && settings.isStopOnNoInternetEnabled) {
-            return Decision.Sync(start = emptySet(), stop = activeTunnelIds)
+            return Decision.StopDueToNoInternet
         }
 
         val toStart = desiredTunnels - activeTunnelIds
@@ -96,5 +97,7 @@ class AutoTunnelEngine {
         data class Sync(val start: Set<TunnelConfig>, val stop: Set<Int>) : Decision
 
         data object None : Decision
+
+        data object StopDueToNoInternet : Decision
     }
 }

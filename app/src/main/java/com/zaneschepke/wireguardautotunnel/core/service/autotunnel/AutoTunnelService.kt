@@ -26,13 +26,16 @@ import com.zaneschepke.wireguardautotunnel.domain.state.AutoTunnelState
 import com.zaneschepke.wireguardautotunnel.domain.state.toDomain
 import com.zaneschepke.wireguardautotunnel.util.Constants
 import com.zaneschepke.wireguardautotunnel.util.extensions.to
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
@@ -63,6 +66,7 @@ class AutoTunnelService : LifecycleService() {
     private var autoTunnelJob: Job? = null
     private var permissionsJob: Job? = null
     private var overridesJob: Job? = null
+    private var noInternetStopJob: Job? = null
 
     @Volatile private var manualOverrideState = ManualOverrideState()
 
@@ -130,6 +134,7 @@ class AutoTunnelService : LifecycleService() {
     }
 
     override fun onDestroy() {
+        cancelNoInternetStopJob()
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stateHolder.setActive(false)
         AutoTunnelTileRefresher.refresh(this)
@@ -200,6 +205,52 @@ class AutoTunnelService : LifecycleService() {
             notification,
             Constants.SPECIAL_USE_SERVICE_TYPE_ID,
         )
+    }
+
+    // Instead of stopping tunnel right away on no internet, we kick off this job to add short delay
+    // and re-evaluation to prevent unwanted stops
+    // on flaky networks and network transitions
+    private fun scheduleNoInternetStop() {
+        noInternetStopJob?.cancel()
+
+        noInternetStopJob =
+            lifecycleScope.launch(ioDispatcher) {
+                delay(NO_INTERNET_GRACE_PERIOD_MS.milliseconds)
+
+                reconciliationMutex.withLock {
+                    val currentNetworkState = networkEngine.stableState.value?.state?.toDomain()
+
+                    val stillNoInternet = currentNetworkState?.hasInternet() == false
+                    val stopOnNoInternetEnabled =
+                        autoTunnelRepository.flow.firstOrNull()?.isStopOnNoInternetEnabled == true
+
+                    if (stillNoInternet && stopOnNoInternetEnabled) {
+                        val currentActiveIds =
+                            tunnelCoordinator.backendStatus.value.activeTunnels.keys
+
+                        if (currentActiveIds.isNotEmpty()) {
+                            Timber.w(
+                                "No internet grace period expired and still no internet. Stopping tunnels: $currentActiveIds"
+                            )
+                            currentActiveIds.forEach { tunnelId ->
+                                tunnelCoordinator.stopTunnel(
+                                    tunnelId,
+                                    TunnelActionSource.AUTO_TUNNEL,
+                                )
+                            }
+                        }
+                    } else {
+                        Timber.d(
+                            "No internet grace period expired, but internet is back or setting disabled. Doing nothing."
+                        )
+                    }
+                }
+            }
+    }
+
+    private fun cancelNoInternetStopJob() {
+        noInternetStopJob?.cancel()
+        noInternetStopJob = null
     }
 
     private fun startAutoTunnelStateJob(): Job =
@@ -334,7 +385,7 @@ class AutoTunnelService : LifecycleService() {
     private suspend fun handleAutoTunnelEvent(event: AutoTunnelEvent) {
         when (event) {
             is AutoTunnelEvent.Sync -> {
-
+                cancelNoInternetStopJob()
                 event.stop.forEach { tunnelId ->
                     Timber.d("Stopping tunnel: $tunnelId")
                     tunnelCoordinator.stopTunnel(tunnelId, TunnelActionSource.AUTO_TUNNEL)
@@ -345,8 +396,12 @@ class AutoTunnelService : LifecycleService() {
                     tunnelCoordinator.startTunnel(config, TunnelActionSource.AUTO_TUNNEL)
                 }
             }
-
+            AutoTunnelEvent.StopAllDueToNoInternet -> scheduleNoInternetStop()
             AutoTunnelEvent.DoNothing -> Unit
         }
+    }
+
+    companion object {
+        private const val NO_INTERNET_GRACE_PERIOD_MS = 10_000L
     }
 }
