@@ -16,7 +16,6 @@ import com.zaneschepke.wireguardautotunnel.domain.enums.NotificationAction
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelActionSource
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
 import com.zaneschepke.wireguardautotunnel.domain.events.AutoTunnelEvent
-import com.zaneschepke.wireguardautotunnel.domain.events.TunnelActionEvent
 import com.zaneschepke.wireguardautotunnel.domain.model.AutoTunnelSettings
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig
 import com.zaneschepke.wireguardautotunnel.domain.repository.AutoTunnelSettingsRepository
@@ -68,8 +67,6 @@ class AutoTunnelService : LifecycleService() {
     private var overridesJob: Job? = null
     private var noInternetStopJob: Job? = null
 
-    @Volatile private var manualOverrideState = ManualOverrideState()
-
     private data class PermissionWarningState(
         val detectionMethod: AndroidNetworkMonitor.WifiDetectionMethod,
         val locationServicesEnabled: Boolean,
@@ -77,11 +74,8 @@ class AutoTunnelService : LifecycleService() {
         val ssidReadRequired: Boolean,
     )
 
-    private data class ManualOverrideState(
-        val fingerprint: AutoTunnelState.NetworkFingerprint? = null,
-        val stoppedTunnelIds: Set<Int> = emptySet(),
-        val startedTunnelIds: Set<Int> = emptySet(),
-    )
+    @Volatile private var hasUserOverride = false
+    private var lastNetworkFingerprint: AutoTunnelState.NetworkFingerprint? = null
 
     private val autoTunnelStateFlow: Flow<AutoTunnelState> by lazy {
         val networkFlow = networkEngine.stableState.mapNotNull { it?.state?.toDomain() }
@@ -125,7 +119,7 @@ class AutoTunnelService : LifecycleService() {
         permissionsJob?.cancel()
         permissionsJob = startLocationPermissionsNotificationJob()
         overridesJob?.cancel()
-        overridesJob = startOverridesJob()
+        overridesJob = startUserOverrideJob()
     }
 
     fun stop() {
@@ -141,42 +135,16 @@ class AutoTunnelService : LifecycleService() {
         super.onDestroy()
     }
 
-    private fun startOverridesJob(): Job =
+    private fun startUserOverrideJob(): Job =
         lifecycleScope.launch(ioDispatcher) {
-            tunnelCoordinator.actions.collect { action ->
+            tunnelCoordinator.userOverrideFlow.collect {
                 reconciliationMutex.withLock {
-                    manualOverrideState =
-                        when (action) {
-                            is TunnelActionEvent.Started -> {
-
-                                if (action.source != TunnelActionSource.USER) {
-                                    return@withLock
-                                }
-
-                                manualOverrideState.copy(
-                                    startedTunnelIds =
-                                        manualOverrideState.startedTunnelIds + action.tunnelId,
-                                    stoppedTunnelIds =
-                                        manualOverrideState.stoppedTunnelIds - action.tunnelId,
-                                )
-                            }
-
-                            is TunnelActionEvent.Stopped -> {
-
-                                if (action.source != TunnelActionSource.USER) {
-                                    return@withLock
-                                }
-
-                                manualOverrideState.copy(
-                                    stoppedTunnelIds =
-                                        manualOverrideState.stoppedTunnelIds + action.tunnelId,
-                                    startedTunnelIds =
-                                        manualOverrideState.startedTunnelIds - action.tunnelId,
-                                )
-                            }
-                        }
-
-                    Timber.d("Updated manual overrides: $manualOverrideState")
+                    if (!hasUserOverride) {
+                        Timber.d(
+                            "User manually overrode Auto Tunnel on current network. Pausing auto decisions."
+                        )
+                    }
+                    hasUserOverride = true
                 }
             }
         }
@@ -258,45 +226,32 @@ class AutoTunnelService : LifecycleService() {
             autoTunnelStateFlow.collectLatest { state ->
                 reconciliationMutex.withLock {
                     updateFingerprintIfNeeded(state)
-
                     val rawEvent = engine.evaluate(state)
-
                     val event = applyOverrides(rawEvent)
-
                     Timber.d("AutoTunnel reconciliation event: $event")
-
                     handleAutoTunnelEvent(event)
                 }
             }
         }
 
     private fun updateFingerprintIfNeeded(state: AutoTunnelState) {
-        val fingerprint = state.networkFingerPrint
+        val currentFingerprint = state.networkFingerPrint
 
-        if (manualOverrideState.fingerprint != fingerprint) {
-            Timber.d("Network changed, clearing overrides")
-
-            manualOverrideState = ManualOverrideState(fingerprint = fingerprint)
+        if (lastNetworkFingerprint != currentFingerprint) {
+            if (hasUserOverride) {
+                Timber.d("Network fingerprint changed, clearing user override")
+            }
+            hasUserOverride = false
+            lastNetworkFingerprint = currentFingerprint
         }
     }
 
     private fun applyOverrides(event: AutoTunnelEvent): AutoTunnelEvent {
-
-        if (event !is AutoTunnelEvent.Sync) {
-            return event
+        return if (hasUserOverride) {
+            AutoTunnelEvent.DoNothing
+        } else {
+            event
         }
-
-        val filteredStart =
-            event.start.filterNot { it.id in manualOverrideState.stoppedTunnelIds }.toSet()
-
-        val filteredStop =
-            event.stop.filterNot { it in manualOverrideState.startedTunnelIds }.toSet()
-
-        if (filteredStart.isEmpty() && filteredStop.isEmpty()) {
-            return AutoTunnelEvent.DoNothing
-        }
-
-        return event.copy(start = filteredStart, stop = filteredStop)
     }
 
     private fun combineSettings():

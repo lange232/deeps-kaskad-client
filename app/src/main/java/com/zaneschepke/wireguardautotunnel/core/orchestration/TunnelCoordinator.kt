@@ -47,12 +47,15 @@ class TunnelCoordinator(
     scope: CoroutineScope,
 ) {
 
+    private val _userOverrideFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val userOverrideFlow = _userOverrideFlow.asSharedFlow()
+
     @OptIn(FlowPreview::class)
     val tunnelDisplayStates: StateFlow<Map<Int, DisplayTunnelState>> =
         tunnelProvider.backendStatus
             .map { status ->
                 status.activeTunnels.mapValues { (_, activeTunnel) ->
-                    DisplayTunnelState.from(activeTunnel)
+                    DisplayTunnelState.from(activeTunnel, System.currentTimeMillis())
                 }
             }
             .debounce(400L.milliseconds)
@@ -107,11 +110,24 @@ class TunnelCoordinator(
     ) = tunnelMutex.withLock {
         // wait for app to be bootstrapped
         bootstrapCoordinator.isReady.first { it }
+
+        if (source == TunnelActionSource.USER) {
+            _userOverrideFlow.tryEmit(Unit)
+        }
+
+        // enforce single tunnel, for now
+        if (backendStatus.value.activeTunnels.isNotEmpty()) {
+            stopActiveTunnelsInternal()
+        }
+
         startTunnelInternal(config, source)
     }
 
     suspend fun stopTunnel(id: Int, source: TunnelActionSource = TunnelActionSource.USER) =
         tunnelMutex.withLock {
+            if (source == TunnelActionSource.USER) {
+                _userOverrideFlow.tryEmit(Unit)
+            }
             stopTunnelInternal(id, source)
         }
 
@@ -166,9 +182,6 @@ class TunnelCoordinator(
                     BackendMode.Proxy.KillSwitchPrimary(runConfig)
                 }
             }
-
-        // TODO for now, enforce single tunnel until multi-tunneling is implement
-        stopActiveTunnelsInternal()
 
         tunnelProvider
             .startTunnel(

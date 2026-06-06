@@ -2,46 +2,26 @@ package com.zaneschepke.tunnel.backend
 
 import android.content.Context
 import android.content.Intent
-import com.zaneschepke.tunnel.ProxyBackend
-import com.zaneschepke.tunnel.StatusCallback
-import com.zaneschepke.tunnel.VpnBackend
 import com.zaneschepke.tunnel.service.TunnelService
 import com.zaneschepke.tunnel.service.VpnService
-import com.zaneschepke.tunnel.state.NativeTunnelStatus
 import com.zaneschepke.tunnel.util.BackendException
 import java.lang.ref.WeakReference
-import java.util.concurrent.CompletableFuture
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
-import kotlin.concurrent.atomics.AtomicBoolean
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
 internal class ServiceHolder(val context: Context) {
 
     internal val uapiPath = context.dataDir.absolutePath
 
-    @OptIn(ExperimentalAtomicApi::class)
-    private val nativeCallbacksRegistered = AtomicBoolean(false)
-
-    private val _nativeStatuses = MutableSharedFlow<NativeTunnelStatus>(extraBufferCapacity = 64)
-
-    val nativeStatuses = _nativeStatuses.asSharedFlow()
-
-    private val statusCallback = StatusCallback { handle, code ->
-        val status = NativeTunnelStatus.NativeTunnelStatusCode.from(code)
-
-        if (status == null) {
-            Timber.d("Unknown native status code: $code")
-            return@StatusCallback
-        }
-
-        Timber.d("Native Callback - Handle: $handle, Code: $status")
-
-        _nativeStatuses.tryEmit(NativeTunnelStatus(handle = handle, code = status))
-    }
+    @Volatile private var vpnService = CompletableDeferred<VpnService>()
+    @Volatile private var tunnelService = CompletableDeferred<TunnelService>()
+    @Volatile private var vpnServiceDestroyed = CompletableDeferred<Unit>()
+    @Volatile private var tunnelServiceDestroyed = CompletableDeferred<Unit>()
 
     fun set(service: VpnService) {
         vpnService.complete(service)
@@ -51,117 +31,81 @@ internal class ServiceHolder(val context: Context) {
         tunnelService.complete(service)
     }
 
-    fun getVpnService(): VpnService {
+    fun signalVpnServiceDestroyed() {
+        vpnServiceDestroyed.complete(Unit)
+    }
 
-        vpnService.getNow(null)?.let {
-            return it
+    fun signalTunnelServiceDestroyed() {
+        tunnelServiceDestroyed.complete(Unit)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    suspend fun getVpnService(): VpnService {
+        if (vpnService.isCompleted && !vpnService.isCancelled) {
+            return vpnService.getCompleted()
         }
 
-        try {
-            if (android.net.VpnService.prepare(context) != null) {
-                throw BackendException.Unauthorized("Permission unavailable to use VpnService")
-            }
-
-            context.startForegroundService(Intent(context, VpnService::class.java))
-        } catch (e: Exception) {
-            Timber.e(e, "Error starting VPN service")
+        if (android.net.VpnService.prepare(context) != null) {
+            throw BackendException.Unauthorized("Permission unavailable to use VpnService")
         }
+
+        context.startForegroundService(Intent(context, VpnService::class.java))
 
         return try {
-            vpnService.get(2, TimeUnit.SECONDS)
-        } catch (e: TimeoutException) {
+            withTimeout(3_000L.milliseconds) { vpnService.await() }
+        } catch (e: TimeoutCancellationException) {
             Timber.e(e, "Timed out getting VpnService")
             throw BackendException.InternalError("Failed to get VpnService")
         }
     }
 
-    fun getTunnelService(): TunnelService {
-
-        tunnelService.getNow(null)?.let {
-            return it
+    @OptIn(ExperimentalCoroutinesApi::class)
+    suspend fun getTunnelService(): TunnelService {
+        if (tunnelService.isCompleted && !tunnelService.isCancelled) {
+            return tunnelService.getCompleted()
         }
 
-        try {
-            context.startForegroundService(Intent(context, TunnelService::class.java))
-        } catch (e: Exception) {
-            Timber.e(e, "Error starting TunnelService")
-        }
+        context.startForegroundService(Intent(context, TunnelService::class.java))
 
         return try {
-            tunnelService.get(2, TimeUnit.SECONDS)
-        } catch (e: TimeoutException) {
+            withTimeout(3_000L.milliseconds) { tunnelService.await() }
+        } catch (e: TimeoutCancellationException) {
             Timber.e(e, "Timed out getting TunnelService")
             throw BackendException.InternalError("Failed to get TunnelService")
         }
     }
 
-    fun stopVpnService() {
-        val service = vpnService.getNow(null) ?: return
+    @OptIn(ExperimentalCoroutinesApi::class)
+    suspend fun stopTunnelService() {
+        val service =
+            if (tunnelService.isCompleted && !tunnelService.isCancelled) {
+                tunnelService.getCompleted()
+            } else return
 
-        Timber.d("Stopping VpnService")
-
-        ProxyBackend.setSocketProtector(null)
-
-        service.stopSelf()
-    }
-
-    fun stopTunnelService() {
-        val service = tunnelService.getNow(null) ?: return
-
-        Timber.d("Stopping TunnelService")
+        tunnelServiceDestroyed = CompletableDeferred()
 
         service.stopSelf()
+        tunnelService = CompletableDeferred()
+        withTimeoutOrNull(1_000L.milliseconds) { tunnelServiceDestroyed.await() }
     }
 
-    @OptIn(ExperimentalAtomicApi::class)
-    fun ensureNativeCallbacksRegistered() {
-        if (!nativeCallbacksRegistered.compareAndSet(expectedValue = false, newValue = true)) {
-            return
-        }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    suspend fun stopVpnService() {
+        val service =
+            if (vpnService.isCompleted && !vpnService.isCancelled) {
+                vpnService.getCompleted()
+            } else return
 
-        VpnBackend.setStatusCallback(statusCallback)
+        vpnServiceDestroyed = CompletableDeferred()
 
-        Timber.d("Registered native status callback")
-    }
-
-    @OptIn(ExperimentalAtomicApi::class)
-    fun maybeUnregisterNativeCallbacks() {
-        val vpnAlive = vpnService.getNow(null) != null
-        val tunnelAlive = tunnelService.getNow(null) != null
-
-        if (vpnAlive || tunnelAlive) {
-            return
-        }
-
-        if (!nativeCallbacksRegistered.compareAndSet(expectedValue = true, newValue = false)) {
-            return
-        }
-
-        VpnBackend.setStatusCallback(null)
-
-        Timber.d("Unregistered native status callback")
-    }
-
-    fun clear(service: VpnService) {
-        if (vpnService.getNow(null) === service) {
-            vpnService = CompletableFuture()
-        }
-
-        maybeUnregisterNativeCallbacks()
-    }
-
-    fun clear(service: TunnelService) {
-        if (tunnelService.getNow(null) === service) {
-            tunnelService = CompletableFuture()
-        }
-        maybeUnregisterNativeCallbacks()
+        service.stopSelf()
+        vpnService = CompletableDeferred()
+        withTimeoutOrNull(1_000L.milliseconds) { vpnServiceDestroyed.await() }
     }
 
     companion object {
         const val DEFAULT_MTU = 1280
         // for consumer to set AOVPN callback
         var alwaysOnCallback: WeakReference<VpnService.AlwaysOnCallback>? = null
-        @Volatile var vpnService = CompletableFuture<VpnService>()
-        @Volatile var tunnelService = CompletableFuture<TunnelService>()
     }
 }

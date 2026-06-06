@@ -61,36 +61,47 @@ sealed class DisplayTunnelState {
     }
 
     companion object {
-        fun from(activeTunnel: ActiveTunnel): DisplayTunnelState {
+        private const val HANDSHAKE_FAILURE_DEGRADED_THRESHOLD_MS = 6_000L
+
+        // During this window we avoid showing Degraded even if we see HandshakeFailure
+        private const val POST_RESOLUTION_GRACE_PERIOD_MS = 3_500L
+
+        fun from(activeTunnel: ActiveTunnel, now: Long): DisplayTunnelState {
             val transport = activeTunnel.transportState
             val bootstrap = activeTunnel.bootstrapState
             val mode = activeTunnel.mode
             val isVpnStyle = mode is BackendMode.Vpn || mode is BackendMode.Proxy.KillSwitchPrimary
 
-            // Static peers bootstrap never goes to complete, treat none the same
             val bootstrapPhaseDone =
                 bootstrap is BootstrapState.Complete || bootstrap is BootstrapState.None
+
+            // Check if we recently completed peer resolution
+            val recentlyResolvedPeers =
+                activeTunnel.lastPeerUpdateMs > 0 &&
+                    (now - activeTunnel.lastPeerUpdateMs) < POST_RESOLUTION_GRACE_PERIOD_MS
 
             return when {
                 transport is Tunnel.State.Down -> Disconnected
 
                 bootstrap is BootstrapState.Failed -> Degraded
 
-                // DNS resolution still in progress
                 bootstrap is BootstrapState.ResolvingDns ||
                     bootstrap is BootstrapState.UpdatingPeers -> ResolvingDns
 
                 transport is Tunnel.State.Up.Healthy -> Connected
 
                 transport is Tunnel.State.Up.HandshakeFailure -> {
-                    val age = System.currentTimeMillis() - activeTunnel.lastStateChangeMs
+                    val age = now - activeTunnel.lastStateChangeMs
 
-                    if (age > 15_000L && bootstrapPhaseDone) {
+                    if (recentlyResolvedPeers && bootstrapPhaseDone) {
+                        if (isVpnStyle) EstablishingConnection else Ready
+                    } else if (
+                        age > HANDSHAKE_FAILURE_DEGRADED_THRESHOLD_MS && bootstrapPhaseDone
+                    ) {
                         Degraded
                     } else if (isVpnStyle && bootstrapPhaseDone) {
                         EstablishingConnection
                     } else if (bootstrapPhaseDone) {
-                        // For regular proxy mode, we go to ready once past bootstrap phase
                         Ready
                     } else {
                         Connecting
@@ -99,16 +110,12 @@ sealed class DisplayTunnelState {
 
                 transport is Tunnel.State.Starting -> {
                     when {
-                        bootstrapPhaseDone -> {
-                            if (isVpnStyle) EstablishingConnection else Ready
-                        }
+                        bootstrapPhaseDone -> if (isVpnStyle) EstablishingConnection else Ready
                         else -> Connecting
                     }
                 }
 
-                // Final fallback after bootstrap phase is done
                 bootstrapPhaseDone -> if (isVpnStyle) EstablishingConnection else Ready
-
                 else -> Connecting
             }
         }

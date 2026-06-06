@@ -6,7 +6,6 @@ import androidx.lifecycle.LifecycleService
 import com.zaneschepke.tunnel.backend.Backend
 import com.zaneschepke.tunnel.backend.ServiceHolder
 import com.zaneschepke.tunnel.backend.ServiceHolder.Companion.alwaysOnCallback
-import com.zaneschepke.tunnel.model.BackendMode
 import org.koin.java.KoinJavaComponent.inject
 import timber.log.Timber
 
@@ -16,15 +15,14 @@ class TunnelService : LifecycleService() {
     private val serviceHolder: ServiceHolder by inject(ServiceHolder::class.java)
 
     override fun onCreate() {
-        ServiceHolder.tunnelService.complete(this)
-        serviceHolder.ensureNativeCallbacksRegistered()
+        serviceHolder.set(this)
         launchForegroundNotification()
         super.onCreate()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        ServiceHolder.tunnelService.complete(this)
+        serviceHolder.set(this)
         launchForegroundNotification()
 
         // Service restarted by system, reuse always-on VPN callback
@@ -41,10 +39,8 @@ class TunnelService : LifecycleService() {
     }
 
     override fun onDestroy() {
-        backend.emergencyStopAllOfTypeSync(BackendMode.Proxy.Standard::class)
-
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
-        serviceHolder.clear(this)
+        serviceHolder.signalTunnelServiceDestroyed()
         super.onDestroy()
     }
 

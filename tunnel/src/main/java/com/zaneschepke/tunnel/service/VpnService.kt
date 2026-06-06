@@ -15,14 +15,13 @@ import com.zaneschepke.tunnel.backend.KillSwitch
 import com.zaneschepke.tunnel.backend.ServiceHolder
 import com.zaneschepke.tunnel.backend.ServiceHolder.Companion.DEFAULT_MTU
 import com.zaneschepke.tunnel.backend.ServiceHolder.Companion.alwaysOnCallback
-import com.zaneschepke.tunnel.backend.ServiceHolder.Companion.vpnService
 import com.zaneschepke.tunnel.backend.SocketProtector
-import com.zaneschepke.tunnel.model.BackendMode
 import com.zaneschepke.tunnel.model.KillSwitchConfig
 import com.zaneschepke.tunnel.util.parseDns
 import com.zaneschepke.tunnel.util.parseInetNetwork
 import com.zaneschepke.wireguardautotunnel.parser.Config
 import java.io.IOException
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -47,10 +46,8 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
         get() = Builder()
 
     override fun onCreate() {
-        vpnService.complete(this)
-        // We call this for all backend modes as it is shared for bootstrapping bypass
+        serviceHolder.set(this)
         ProxyBackend.setSocketProtector(this)
-        serviceHolder.ensureNativeCallbacksRegistered()
         launchForegroundNotification()
         super.onCreate()
     }
@@ -66,30 +63,21 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
 
     override fun onDestroy() {
         Timber.d("VpnService destroyed")
-
         try {
             ProxyBackend.setSocketProtector(null)
-
             ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
-
             disableKillSwitch()
             hevBridgeJob?.cancel()
-
             serviceScope.cancel()
-
-            backend.emergencyStopAllOfTypeSync(BackendMode.Vpn::class)
-            backend.emergencyStopAllOfTypeSync(BackendMode.Proxy.KillSwitchPrimary::class)
-
             stopHevSocks5Bridge()
-
-            serviceHolder.clear(this)
         } finally {
+            serviceHolder.signalVpnServiceDestroyed()
             super.onDestroy()
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        vpnService.complete(this)
+        serviceHolder.set(this)
         launchForegroundNotification()
 
         // Service restarted by system or Always-on VPN started
@@ -141,7 +129,7 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
                         if (attempt % 5 == 0) {
                             Timber.d("SOCKS5 not ready yet, retrying...")
                         }
-                        delay(300)
+                        delay(300.milliseconds)
                     }
                 }
                 Timber.e("Timed out waiting for SOCKS5 proxy to be ready")

@@ -9,31 +9,31 @@ import com.zaneschepke.tunnel.model.ProxyConfig
 import com.zaneschepke.tunnel.service.VpnService
 import com.zaneschepke.tunnel.service.VpnService.Companion.HEV_BRIDGE_TRAFFIC_TAG
 import com.zaneschepke.tunnel.state.EngineStartResult
-import com.zaneschepke.tunnel.state.EngineState
-import com.zaneschepke.tunnel.state.NativeTunnelStatus
 import com.zaneschepke.tunnel.util.BackendException
 import com.zaneschepke.wireguardautotunnel.parser.ActiveConfig
 import com.zaneschepke.wireguardautotunnel.parser.Config
 import com.zaneschepke.wireguardautotunnel.parser.PeerSection
 import java.io.IOException
+import java.net.DatagramSocket
 import java.net.ServerSocket
+import java.net.SocketException
 import java.util.UUID
-import kotlinx.coroutines.flow.Flow
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.delay
 
-internal class WireGuardTunnelEngine(
-    private val serviceHolder: ServiceHolder,
-    stateProvider: EngineStateProvider,
-) : TunnelEngine {
+internal class WireGuardTunnelEngine(private val serviceHolder: ServiceHolder) : TunnelEngine {
 
-    override val status: Flow<NativeTunnelStatus> = serviceHolder.nativeStatuses
-
-    override val state: Flow<EngineState> = stateProvider.state
-
-    override fun start(tunnel: Tunnel, mode: BackendMode): EngineStartResult {
+    override suspend fun start(tunnel: Tunnel, mode: BackendMode): EngineStartResult {
 
         val ifName = WGT_INTERFACE_PREFIX + tunnel.id
 
         val (config, removedPeerEndpoint) = buildConfig(mode)
+
+        // guard against static listenPort issues
+        val listenPort = config.`interface`.listenPort
+        if (listenPort != null) {
+            waitForUdpPortAvailable(listenPort)
+        }
 
         val handle =
             when (mode) {
@@ -154,7 +154,7 @@ internal class WireGuardTunnelEngine(
         return peer.copy(endpoint = null)
     }
 
-    override fun stop(handle: Int, mode: BackendMode) {
+    override suspend fun stop(handle: Int, mode: BackendMode) {
         when (mode) {
             is BackendMode.Proxy.Standard -> stopProxyTunnel(handle)
             is BackendMode.Vpn -> stopVpnTunnel(handle)
@@ -162,7 +162,7 @@ internal class WireGuardTunnelEngine(
         }
     }
 
-    private fun stopKillSwitchPrimaryTunnel(handle: Int) {
+    private suspend fun stopKillSwitchPrimaryTunnel(handle: Int) {
         ProxyBackend.awgTurnProxyTunnelOff(handle)
         val service = serviceHolder.getVpnService()
         service.stopHevSocks5Bridge()
@@ -176,7 +176,7 @@ internal class WireGuardTunnelEngine(
         VpnBackend.awgTurnOff(handle)
     }
 
-    private fun startVpnTunnel(tunnel: Tunnel, ifName: String, config: Config): Int {
+    private suspend fun startVpnTunnel(tunnel: Tunnel, ifName: String, config: Config): Int {
 
         val service = serviceHolder.getVpnService()
 
@@ -197,7 +197,29 @@ internal class WireGuardTunnelEngine(
         return handle
     }
 
-    private fun startProxyTunnel(
+    private fun isUdpPortAvailable(port: Int): Boolean {
+        if (port !in 1..65_535) return false
+        return try {
+            DatagramSocket(port).use { true }
+        } catch (_: SocketException) {
+            false
+        }
+    }
+
+    @Throws(BackendException::class)
+    private suspend fun waitForUdpPortAvailable(port: Int, timeoutMs: Long = 3000L) {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            if (isUdpPortAvailable(port)) return
+            delay(50.milliseconds)
+        }
+        throw BackendException.ListenPortUnavailable(
+            "UDP ListenPort $port is still in use after waiting $timeoutMs ms",
+            port,
+        )
+    }
+
+    private suspend fun startProxyTunnel(
         ifName: String,
         config: Config,
         proxyConfig: ProxyConfig,

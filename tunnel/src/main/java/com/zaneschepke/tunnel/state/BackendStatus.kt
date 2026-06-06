@@ -6,4 +6,5 @@ data class BackendStatus(
     val killSwitch: KillSwitchState = KillSwitchState(),
     val activeTunnels: Map<Int, ActiveTunnel> = emptyMap(),
     val dnsMode: DnsBoostrapMode = DnsBoostrapMode.System,
+    val runtimeDnsConfig: RuntimeDnsConfig = RuntimeDnsConfig(),
 )

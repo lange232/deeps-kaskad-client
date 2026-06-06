@@ -13,7 +13,7 @@ import (
 	"net"
 	"runtime/debug"
 	"strings"
-	"time"
+	"sync"
 
 	"github.com/amnezia-vpn/amneziawg-go/conn"
 	"github.com/amnezia-vpn/amneziawg-go/device"
@@ -32,6 +32,7 @@ type TunnelHandle struct {
 var (
 	tag           string
 	tunnelHandles = make(map[int32]TunnelHandle)
+	tunnelMu      sync.RWMutex
 )
 
 func init() {
@@ -129,13 +130,20 @@ func awgTurnOn(interfaceName string, tunFd int32, settings string, uapiPath stri
 
 	shared.LogDebug(tag, "Tunnel started successfully for handle %d", handle)
 
-	tunnelHandles[handle] = TunnelHandle{device: tunDevice, uapi: uapi}
+	tunnelMu.Lock()
+	tunnelHandles[handle] = TunnelHandle{
+		device: tunDevice,
+		uapi:   uapi,
+	}
+	tunnelMu.Unlock()
 	return handle
 }
 
 //export awgUpdateTunnelPeers
 func awgUpdateTunnelPeers(tunnelHandle int32, settings string) int32 {
+	tunnelMu.RLock()
 	handle, ok := tunnelHandles[tunnelHandle]
+	tunnelMu.RUnlock()
 	if !ok {
 		shared.LogError(tag, "Tunnel is not up")
 		return -1
@@ -165,73 +173,101 @@ func awgUpdateTunnelPeers(tunnelHandle int32, settings string) int32 {
 
 //export awgTurnOff
 func awgTurnOff(tunnelHandle int32) {
+
+	tunnelMu.Lock()
+
 	handle, ok := tunnelHandles[tunnelHandle]
 	if !ok {
+		tunnelMu.Unlock()
+
 		shared.LogError(tag, "Tunnel is not up")
 		return
 	}
 
 	delete(tunnelHandles, tunnelHandle)
 
+	tunnelMu.Unlock()
+
 	if handle.uapi != nil {
 		handle.uapi.Close()
 	}
+
 	if handle.device != nil {
 		handle.device.Close()
 	}
 
-	C.awgNotifyStatus(C.int32_t(tunnelHandle), C.int32_t(shared.StatusStop))
-
-	// Give time for full resource release
-	time.Sleep(150 * time.Millisecond)
-
 	shared.ReleaseHandle(tunnelHandle)
+
+	C.awgNotifyStatus(
+		C.int32_t(tunnelHandle),
+		C.int32_t(shared.StatusStop),
+	)
 }
 
 //export awgGetSocketV4
 func awgGetSocketV4(tunnelHandle int32) int32 {
+
+	tunnelMu.RLock()
 	handle, ok := tunnelHandles[tunnelHandle]
+	tunnelMu.RUnlock()
+
 	if !ok {
 		return -1
 	}
+
 	bind, _ := handle.device.Bind().(conn.PeekLookAtSocketFd)
 	if bind == nil {
 		return -1
 	}
+
 	fd, err := bind.PeekLookAtSocketFd4()
 	if err != nil {
 		return -1
 	}
+
 	return int32(fd)
 }
 
 //export awgGetSocketV6
 func awgGetSocketV6(tunnelHandle int32) int32 {
+
+	tunnelMu.RLock()
 	handle, ok := tunnelHandles[tunnelHandle]
+	tunnelMu.RUnlock()
+
 	if !ok {
 		return -1
 	}
+
 	bind, _ := handle.device.Bind().(conn.PeekLookAtSocketFd)
 	if bind == nil {
 		return -1
 	}
+
 	fd, err := bind.PeekLookAtSocketFd6()
 	if err != nil {
 		return -1
 	}
+
 	return int32(fd)
 }
 
 //export awgGetConfig
 func awgGetConfig(tunnelHandle int32) *C.char {
+
+	tunnelMu.RLock()
 	handle, ok := tunnelHandles[tunnelHandle]
+	tunnelMu.RUnlock()
+
 	if !ok {
 		return nil
 	}
+
 	settings, err := handle.device.IpcGet()
 	if err != nil {
 		return nil
 	}
+
 	return C.CString(settings)
 }
 

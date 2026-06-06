@@ -14,6 +14,8 @@ import androidx.compose.material.icons.rounded.Circle
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +36,8 @@ import com.zaneschepke.wireguardautotunnel.ui.state.DisplayTunnelState
 import com.zaneschepke.wireguardautotunnel.ui.state.TunnelsUiState
 import com.zaneschepke.wireguardautotunnel.util.extensions.openWebUrl
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -45,6 +49,14 @@ fun TunnelList(
     val navController = LocalNavController.current
     val context = LocalContext.current
     val isTv = LocalIsAndroidTV.current
+
+    val now by
+        produceState(System.currentTimeMillis()) {
+            while (true) {
+                delay(1_000L.milliseconds)
+                value = System.currentTimeMillis()
+            }
+        }
 
     val focusRequester = remember { FocusRequester() }
 
@@ -88,7 +100,9 @@ fun TunnelList(
                 }
 
             val displayState =
-                uiState.displayStates[tunnel.id] ?: DisplayTunnelState.from(activeTunnel)
+                remember(activeTunnel, now, uiState.displayStates[tunnel.id]) {
+                    uiState.displayStates[tunnel.id] ?: DisplayTunnelState.from(activeTunnel, now)
+                }
 
             val isRunning = uiState.backendStatus.activeTunnels.containsKey(tunnel.id)
 
@@ -107,7 +121,7 @@ fun TunnelList(
                     Icon(
                         Icons.Rounded.Circle,
                         contentDescription = stringResource(R.string.tunnel_monitoring),
-                        tint = displayState.asColor(),
+                        tint = remember(displayState) { displayState.asColor() },
                         modifier = Modifier.size(14.dp),
                     )
                 },

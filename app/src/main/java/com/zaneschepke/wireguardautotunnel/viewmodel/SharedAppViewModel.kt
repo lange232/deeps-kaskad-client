@@ -18,6 +18,7 @@ import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
 import com.zaneschepke.wireguardautotunnel.domain.sideeffect.GlobalSideEffect
 import com.zaneschepke.wireguardautotunnel.parser.ConfigParseException
 import com.zaneschepke.wireguardautotunnel.ui.sideeffect.LocalSideEffect
+import com.zaneschepke.wireguardautotunnel.ui.state.DisplayTunnelState
 import com.zaneschepke.wireguardautotunnel.ui.state.GlobalAppUiState
 import com.zaneschepke.wireguardautotunnel.ui.state.TunnelsUiState
 import com.zaneschepke.wireguardautotunnel.ui.theme.Theme
@@ -71,16 +72,19 @@ class SharedAppViewModel(
                 tunnelRepository.userTunnelsFlow,
                 tunnelCoordinator.backendStatus,
                 selectedTunnelsRepository.flow,
-                tunnelCoordinator.tunnelDisplayStates,
-            ) { tunnels, backendStatus, selectedTuns, displayStates ->
+            ) { tunnels, backendStatus, selectedTuns ->
                 val activeTunnelIds = backendStatus.activeTunnels.keys
 
-                // Active tunnels first, then preserve the user ordering
                 val sortedTunnels =
                     tunnels.sortedWith(
                         compareByDescending<TunnelConfig> { it.id in activeTunnelIds }
                             .thenBy { it.position }
                     )
+
+                val displayStates =
+                    backendStatus.activeTunnels.mapValues { (_, activeTunnel) ->
+                        DisplayTunnelState.from(activeTunnel, System.currentTimeMillis())
+                    }
 
                 TunnelsUiState(
                     tunnels = sortedTunnels,

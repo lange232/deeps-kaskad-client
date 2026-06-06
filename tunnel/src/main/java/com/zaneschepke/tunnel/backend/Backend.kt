@@ -8,7 +8,6 @@ import com.zaneschepke.tunnel.model.DnsBoostrapMode
 import com.zaneschepke.tunnel.model.KillSwitchConfig
 import com.zaneschepke.tunnel.service.VpnService
 import com.zaneschepke.tunnel.state.BackendStatus
-import kotlin.reflect.KClass
 import kotlinx.coroutines.flow.Flow
 
 interface Backend {
@@ -26,9 +25,6 @@ interface Backend {
     suspend fun disableKillSwitch(): Result<Unit>
 
     suspend fun setBootstrapDnsMode(mode: DnsBoostrapMode)
-
-    // Emergency synchronous teardown to be called only from Service.onDestroy()
-    fun emergencyStopAllOfTypeSync(modeClass: KClass<out BackendMode>)
 
     suspend fun stopAllActiveTunnels(): Result<Unit>
 
