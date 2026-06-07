@@ -42,6 +42,7 @@ class ProxySettingsViewModel(
                 .collect { reduce { it } }
         }
 
+    // TODO add a dialog requesting restart if any tunnels active
     fun save() = intent {
         reduce { state.copy(showSaveModal = false) }
 
@@ -97,9 +98,6 @@ class ProxySettingsViewModel(
         }
 
         proxySettingsRepository.upsert(updated)
-
-        tunnelCoordinator.toggleTunnels()
-        tunnelCoordinator.toggleTunnels()
 
         postSideEffect(
             GlobalSideEffect.Snackbar(StringValue.StringResource(R.string.config_changes_saved))

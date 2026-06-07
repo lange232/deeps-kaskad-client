@@ -37,7 +37,6 @@
     <string name="base64_key">base64-Schlüssel</string>
     <string name="delete_tunnel">Tunnel löschen</string>
     <string name="persistent_keepalive">Dauerhaftes Keepalive</string>
-    <string name="enable_app_lock">App-Sperre aktivieren</string>
     <string name="interface_">Schnittstelle</string>
     <string name="listen_port">Eingehender Port</string>
     <string name="random">(zufällig)</string>
@@ -45,7 +44,6 @@
     <string name="seconds">Sekunden</string>
     <string name="cancel">Abbrechen</string>
     <string name="preshared_key">Geteilter Schlüssel</string>
-    <string name="enabled_app_shortcuts">App-Verknüpfungen aktivieren</string>
     <string name="tunnel_on_wifi">Tunnel bei WLAN</string>
     <string name="email_subject">WG Tunnel Unterstützung</string>
     <string name="docs_description">Dokumentation lesen</string>
@@ -125,7 +123,6 @@
     <string name="pre_down">Vor Deaktivierung</string>
     <string name="post_down">Nach Deaktivierung</string>
     <string name="quick_actions">Schnellaktionen</string>
-    <string name="stop_on_internet_loss">Stoppen, wenn die Internetverbindung getrennt wird</string>
     <string name="bypass_lan_for_kill_switch">LAN umgehen für Notschalter</string>
     <string name="hide_scripts">Skripte verbergen</string>
     <string name="enable_amnezia_compatibility">Amnezia Kompatibilität aktivieren</string>
@@ -153,7 +150,6 @@
     <string name="copy">Kopieren</string>
     <string name="service_running_error">Dienst läuft nicht</string>
     <string name="auth_error">Nicht autorisiert</string>
-    <string name="enable_remote_app_control">App-Fernsteuerung aktivieren</string>
     <string name="export_failed">Export fehlgeschlagen</string>
     <string name="app_permission_description">https://hosted.weblate.org/translate/wg-tunnel/strings/en/?checksum=e52d7eb2e28a9a12Steuere Tunnel und Auto-Tunnel Funktionen.</string>
     <string name="dns_resolve_error">DNS-Auflösung fehlgeschlagen</string>
@@ -281,14 +277,12 @@
     <string name="resources">Resourcen</string>
     <string name="back">Zurück</string>
     <string name="already_donated">Bereits gespendet</string>
-    <string name="global_split_tunneling">Globales Split-Tunneling</string>
     <string name="active_network">Aktives Netzwerk:</string>
     <string name="help_translate">Hilf mit, die App zu übersetzen</string>
     <string name="ethernet">Ethernet</string>
     <string name="other">Sonstiges</string>
     <string name="kill_switch">Notschalter</string>
     <string name="configuration">Konfiguration</string>
-    <string name="global_dns_servers">Globale DNS Server</string>
     <string name="contact">Kontakt</string>
     <string name="backup_and_restore">Sichern und Wiederherstellen</string>
     <string name="about">Über</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>

@@ -21,7 +21,6 @@
     <string name="preshared_key">Předsdílený klíč</string>
     <string name="seconds">s</string>
     <string name="cancel">Zrušit</string>
-    <string name="enabled_app_shortcuts">Zapnout zkratky aplikací</string>
     <string name="unknown_error">Došlo k neznámé chybě</string>
     <string name="tunnel_on_wifi">Tunelovat na Wi-Fi</string>
     <string name="email_subject">WG Tunnel podpora</string>
@@ -65,7 +64,6 @@
     <string name="no_browser_detected">Žádný prohlížeč nebyl nalezen</string>
     <string name="pin_created">PIN úspěšně vytvořen</string>
     <string name="enter_pin">Zadejte PIN</string>
-    <string name="enable_app_lock">Zapnout zámek aplikace</string>
     <string name="settings">Nastavení</string>
     <string name="support">Podpora</string>
     <string name="app_name">WG Tunnel</string>
@@ -90,7 +88,6 @@
     <string name="primary_tunnel">Výchozí tunel</string>
     <string name="skip">Přeskočit</string>
     <string name="donate">Přispět na projekt</string>
-    <string name="stop_on_internet_loss">Zastavit tunel při ztrátě internetu</string>
     <string name="stop_on_no_internet">Zastavit při ztrátě internetu</string>
     <string name="native_kill_switch">Nativní kill switch</string>
     <string name="vpn_channel_description">Kanál pro oznámení o stavu VPN</string>
@@ -144,7 +141,6 @@
     <string name="vpn_denied_dialog_title">Oprávnění zamítnuto</string>
     <string name="app_permission_title">Ovládání tunelů a funkcí automatického tunelování</string>
     <string name="app_permission_description">https://hosted.weblate.org/translate/wg-tunnel/strings/en/?checksum=e52d7eb2e28a9a12 Ovládání funkcí tunelu a automatického tunelování.</string>
-    <string name="enable_remote_app_control">Povolit vzdálené ovládání aplikace</string>
     <string name="export_success">Export byl úspěšně dokončen</string>
     <string name="download">Stáhnout</string>
     <string name="check_for_update">Zkontrolovat aktualizaci</string>
@@ -276,7 +272,6 @@
     <string name="back">Zpět</string>
     <string name="already_donated">Již darováno</string>
     <string name="selected">Vybrané</string>
-    <string name="global_split_tunneling">Globální dělené tunelování</string>
     <string name="active_network">Aktivní síť:</string>
     <string name="delete_active_message">Aktivní tunel nelze odstranit.</string>
     <string name="help_translate">Pomozte s překladem aplikace</string>
@@ -284,7 +279,6 @@
     <string name="other">Ostatní</string>
     <string name="kill_switch">kill switch</string>
     <string name="configuration">Konfigurace</string>
-    <string name="global_dns_servers">Globální DNS servery</string>
     <string name="contact">Kontakt</string>
     <string name="backup_and_restore">Zálohování a obnovení</string>
     <string name="about">O aplikaci</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>

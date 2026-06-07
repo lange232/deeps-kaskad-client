@@ -29,7 +29,6 @@
     <string name="seconds">Detik</string>
     <string name="persistent_keepalive">Keepalive persisten</string>
     <string name="cancel">Batal</string>
-    <string name="enabled_app_shortcuts">Aktifkan pintasan aplikasi</string>
     <string name="unknown_error">Terjadi kesalahan tidak dikenal</string>
     <string name="tunnel_on_wifi">Terowongan pada Wi-Fi</string>
     <string name="email_subject">Dukungan WG Tunnel</string>
@@ -64,7 +63,6 @@
     <string name="prominent_background_location_message">Fitur ini memerlukan izin lokasi latar belakang untuk mengaktifkan pemantauan SSID Wi-Fi bahkan saat aplikasi ditutup. Untuk detail selengkapnya, silakan lihat Kebijakan Privasi yang tertaut di layar Dukungan.</string>
     <string name="copy_public_key">Salin kunci publik</string>
     <string name="base64_key">Kunci Base64</string>
-    <string name="enable_app_lock">Aktifkan kunci aplikasi</string>
     <string name="delete_tunnel">Hapus terowongan</string>
     <string name="delete_tunnel_message">Apakah Anda yakin ingin menghapus terowongan yang dipilih?</string>
     <string name="no_email_detected">Tidak ada aplikasi email yang terdeteksi</string>
@@ -93,7 +91,6 @@
     <string name="remote_key">Kunci jarak jauh</string>
     <string name="mobile_data">Data seluler</string>
     <string name="use_shell_via_shizuku">Gunakan shell melalui Shizuku untuk mendapatkan informasi Wi-Fi, sehingga tidak memerlukan izin lokasi pada perangkat yang tidak di-root</string>
-    <string name="stop_on_internet_loss">Hentikan terowongan saat koneksi internet terputus</string>
     <string name="vpn">VPN</string>
     <string name="tunnel_boot_description">Mulai terowongan bawaan saat booting</string>
     <string name="allow_lan_traffic">Izinkan lalu lintas LAN</string>
@@ -174,7 +171,6 @@
     <string name="kofi">Ko-fi</string>
     <string name="donation_signoff">Dengan penuh rasa syukur,</string>
     <string name="selected">Dipilih</string>
-    <string name="global_split_tunneling">Terowongan terpisah global</string>
     <string name="active_network">Jaringan Aktif:</string>
     <string name="range_hint">(%1$d–%2$d)</string>
     <string name="delete_active_message">Tidak dapat menghapus terowongan yang sedang aktif.</string>
@@ -192,7 +188,6 @@
     <string name="mtu">MTU</string>
     <string name="configuration">Konfigurasi</string>
     <string name="drag_handle">Pegangan Seret</string>
-    <string name="global_dns_servers">Server DNS global</string>
     <string name="display_theme">Tema tampilan</string>
     <string name="contact">Kontak</string>
     <string name="ports_must_differ">Gagal. Proksi harus memiliki port yang berbeda.</string>
@@ -279,7 +274,6 @@
     <string name="fix">Perbaiki</string>
     <string name="tunnel_running_name_message">Nama tidak dapat diubah saat terowongan aktif.</string>
     <string name="export_failed">Ekspor gagal</string>
-    <string name="enable_remote_app_control">Aktifkan kontrol aplikasi jarak jauh</string>
     <string name="donation_closing">Impian saya adalah bekerja penuh waktu untuk Anda pada proyek ini.</string>
     <string name="update_download_failed">Unduhan pembaruan gagal.</string>
     <string name="network_name">Jaringan:</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>

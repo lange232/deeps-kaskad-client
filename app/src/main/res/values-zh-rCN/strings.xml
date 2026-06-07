@@ -25,7 +25,6 @@
     <string name="private_key">私钥</string>
     <string name="listen_port">监听端口</string>
     <string name="optional">(可选)</string>
-    <string name="enabled_app_shortcuts">创建桌面快捷方式</string>
     <string name="docs_description">阅读文档</string>
     <string name="email_description">给作者发邮件</string>
     <string name="error_root_denied">root 权限未开启</string>
@@ -57,7 +56,6 @@
     <string name="yes">是</string>
     <string name="all">全部</string>
     <string name="no_email_detected">未安装邮件应用</string>
-    <string name="enable_app_lock">锁定应用</string>
     <string name="settings">设置</string>
     <string name="support">支持</string>
     <string name="junk_packet_minimum_size">无效包最小值</string>
@@ -113,7 +111,6 @@
     <string name="donate">捐赠</string>
     <string name="local_logging">本地日志监控器</string>
     <string name="stop_on_no_internet">无网络时停用</string>
-    <string name="stop_on_internet_loss">网络丢失时停止隧道</string>
     <string name="bypass_lan_for_kill_switch">绕过局域网流量</string>
     <string name="auto_tunnel_channel_description">自动隧道状态通知频道</string>
     <string name="stop">停止</string>
@@ -154,7 +151,6 @@
     <string name="copy">复制</string>
     <string name="config_error">无效配置</string>
     <string name="service_running_error">服务未运行</string>
-    <string name="enable_remote_app_control">开启远程应用控制</string>
     <string name="join_matrix">加入 Matrix 社区</string>
     <string name="app_permission_description">控制隧道和自动隧道功能.</string>
     <string name="app_permission_title">控制隧道和自动隧道功能。</string>
@@ -300,8 +296,6 @@
     <string name="metered_tunnel">流量计费的隧道</string>
     <string name="lockdown_settings">锁定设置</string>
     <string name="unavailable_in_mode">当前模式下不可用</string>
-    <string name="global_split_tunneling">全局分流隧道</string>
-    <string name="global_dns_servers">全局 DNS 服务器</string>
     <string name="dual_stack">双栈</string>
     <string name="dual_stack_description">隧道必须支持 IPv4 和 IPv6</string>
     <string name="save_changes">保存更改</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>

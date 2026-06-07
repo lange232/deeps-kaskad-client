@@ -302,7 +302,9 @@ fun AutoTunnelScreen(
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.PublicOff, contentDescription = null) },
                 title = stringResource(R.string.stop_on_no_internet),
-                description = { DescriptionText(stringResource(R.string.stop_on_internet_loss)) },
+                description = {
+                    DescriptionText(stringResource(R.string.stop_on_no_internet_desc))
+                },
                 trailing = {
                     ThemedSwitch(
                         checked = uiState.autoTunnelSettings.isStopOnNoInternetEnabled,
@@ -318,7 +320,7 @@ fun AutoTunnelScreen(
         }
         Column {
             GroupLabel(
-                stringResource(R.string.other),
+                stringResource(R.string.automation),
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
             SurfaceRow(
@@ -330,6 +332,7 @@ fun AutoTunnelScreen(
                         onClick = { viewModel.setStartAtBoot(it) },
                     )
                 },
+                description = { DescriptionText(stringResource(R.string.start_on_boot_desc)) },
                 onClick = { viewModel.setStartAtBoot(!uiState.autoTunnelSettings.startOnBoot) },
             )
         }

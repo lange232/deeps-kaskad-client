@@ -11,13 +11,11 @@
     <string name="vpn_on">Włącz VPN</string>
     <string name="vpn_off">Wyłącz VPN</string>
     <string name="interface_">Interfejs</string>
-    <string name="enabled_app_shortcuts">Włącz skróty aplikacji</string>
     <string name="privacy_policy">Polityka prywatności</string>
     <string name="tunnel_mobile_data">Tunel przez mobilną transmisję danych</string>
     <string name="random">(losowy)</string>
     <string name="pin_created">Kod PIN został pomyślnie utworzony</string>
     <string name="enter_pin">Podaj kod PIN</string>
-    <string name="enable_app_lock">Włącz blokadę aplikacji</string>
     <string name="response_packet_junk_size">Rozmiar śmieciowego pakietu odpowiedzi</string>
     <string name="response_packet_magic_header">Nagłówek magicznego pakietu odpowiedzi</string>
     <string name="transport_packet_magic_header">Nagłówek magicznego pakietu transportowego</string>
@@ -114,7 +112,6 @@
     <string name="set_primary_tunnel">Tunel używany, gdy nie skonfigurowano preferowanego tunelu</string>
     <string name="vpn_channel_id" translatable="false">VPN Channel</string>
     <string name="stop_on_no_internet">Zatrzymaj, gdy nie ma Internetu</string>
-    <string name="stop_on_internet_loss">Zatrzymaj tunel przy utracie Internetu</string>
     <string name="allow_lan_traffic">Zezwól na ruch LAN</string>
     <string name="bypass_lan_for_kill_switch">Omiń LAN dla wyłącznika awaryjnego</string>
     <string name="vpn_channel_description">Kanał powiadomień o stanie VPN</string>
@@ -156,7 +153,6 @@
     <string name="config_error">Nieprawidłowa konfiguracja</string>
     <string name="dropdown">Rozwijane</string>
     <string name="auth_error">Brak autoryzacji</string>
-    <string name="enable_remote_app_control">Włącz zdalne sterowanie aplikacją</string>
     <string name="add_tunnel">Dodaj tunel</string>
     <string name="select">Wybierz</string>
     <string name="dns_resolve_error">Rozwiązywanie DNS się nie powiodło</string>
@@ -302,8 +298,6 @@
     <string name="metered_tunnel">Tunel taryfowy</string>
     <string name="lockdown_settings">Ustawienia blokady</string>
     <string name="unavailable_in_mode">Niedostępne w obecnym trybie</string>
-    <string name="global_split_tunneling">Globalne tunelowanie dzielone</string>
-    <string name="global_dns_servers">Globalne serwery DNS</string>
     <string name="dual_stack">Sieć dual-stack</string>
     <string name="dual_stack_description">Tunele muszą obsługiwać protokoły IPv4 i IPv6</string>
     <string name="save_changes">Zapisz zmiany</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>

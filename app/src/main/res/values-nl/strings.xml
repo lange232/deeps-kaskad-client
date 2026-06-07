@@ -17,7 +17,6 @@
     <string name="name">Naam</string>
     <string name="seconds">Seconden</string>
     <string name="persistent_keepalive">Persistent keepalive</string>
-    <string name="enabled_app_shortcuts">App snelkoppelingen inschakelen</string>
     <string name="random">(willekeurig)</string>
     <string name="thank_you">Bedankt voor het gebruiken van WG Tunnel!</string>
     <string name="trusted_ssid_value_description">Verstuur SSID</string>
@@ -44,7 +43,6 @@
     <string name="auto_tunnel_title">Auto-tunnel service</string>
     <string name="open_issue">Open een melding</string>
     <string name="create_pin">Maak PIN</string>
-    <string name="enable_app_lock">Schakel app-lock in</string>
     <string name="init_packet_junk_size">Initiële junk packet grootte</string>
     <string name="junk_packet_maximum_size">Junk packet maximum grootte</string>
     <string name="response_packet_junk_size">Response junk packet grootte</string>
@@ -110,7 +108,6 @@
     <string name="enable_amnezia_compatibility">Amnezia compatibiliteit inschakelen</string>
     <string name="add_from_url">Toevoegen met link</string>
     <string name="stop_on_no_internet">Stoppen wanneer geen internet</string>
-    <string name="stop_on_internet_loss">Stop tunnel bij verlies van internet</string>
     <string name="wildcards_active">Wildcards actief</string>
     <string name="use_root_shell_for_wifi">Gebruik root shell om wifi naam te bepalen, zodat locatie toestemmingen niet nodig zijn</string>
     <string name="start_auto">Start auto-tunnel</string>
@@ -154,7 +151,6 @@
     <string name="auto_tunnel_not_running">Auto-tunnel is niet actief</string>
     <string name="auth_error">Niet toegelaten</string>
     <string name="service_running_error">Service niet actief</string>
-    <string name="enable_remote_app_control">Activeer applicatie controle vanop afstand</string>
     <string name="select_all">Selecteer alles</string>
     <string name="export_success">Export gelukt</string>
     <string name="download">Download</string>
@@ -251,7 +247,6 @@
     <string name="kofi">Ko-fi</string>
     <string name="donation_signoff">Hartelijk bedankt,</string>
     <string name="selected">Geselecteerd</string>
-    <string name="global_split_tunneling">Globale split tunneling</string>
     <string name="active_network">Actief Netwerk:</string>
     <string name="range_hint">(%1$d–%2$d)</string>
     <string name="delete_active_message">Actieve tunnel kan niet worden verwijderd.</string>
@@ -262,7 +257,6 @@
     <string name="new_tunnel">Nieuwe tunnel</string>
     <string name="kill_switch">kill switch</string>
     <string name="configuration">Configuratie</string>
-    <string name="global_dns_servers">Globale DNS servers</string>
     <string name="contact">Contact</string>
     <string name="ports_must_differ">Mislukt. Proxyservers moeten verschillende poorten hebben.</string>
     <string name="backup_and_restore">Backup en herstellen</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>

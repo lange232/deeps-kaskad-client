@@ -112,7 +112,7 @@ fun ConfigEditScreen(
                     leading = {
                         Icon(ImageVector.vectorResource(R.drawable.host), contentDescription = null)
                     },
-                    title = stringResource(R.string.global_dns_servers),
+                    title = stringResource(R.string.dns_servers),
                     trailing = { modifier ->
                         ThemedSwitch(
                             checked = uiState.globalSettings.dnsEnabled,
@@ -126,7 +126,7 @@ fun ConfigEditScreen(
                 )
                 SurfaceRow(
                     leading = { Icon(Icons.Outlined.HdrAuto, contentDescription = null) },
-                    title = stringResource(R.string.global_amnezia_configuration),
+                    title = stringResource(R.string.amnezia_configuration),
                     trailing = { modifier ->
                         ThemedSwitch(
                             checked = uiState.globalSettings.amneziaEnabled,

@@ -17,7 +17,6 @@
     <string name="delete_tunnel">Alagút törlése</string>
     <string name="tunnel_mobile_data">Alagút mobiladat-forgalmon</string>
     <string name="logs">Naplók</string>
-    <string name="enable_app_lock">Alkalmazászár engedélyezése</string>
     <string name="config_changes_saved">Konfigurációs módosítások mentve.</string>
     <string name="join_telegram">Csatlakozás a Telegram közösséghez</string>
     <string name="pin_created">PIN-kód sikeresen létrehozva</string>
@@ -29,7 +28,6 @@
     <string name="remote_key">Távoli kulcs</string>
     <string name="mobile_data">Mobiladat</string>
     <string name="use_shell_via_shizuku">Shell használata Shizuku-n keresztül a Wi-Fi információkhoz, így nincs szükség helymeghatározási engedélyre nem rootolt eszközökön</string>
-    <string name="stop_on_internet_loss">Alagút leállítása az internet megszűnésekor</string>
     <string name="vpn">VPN</string>
     <string name="tunnel_boot_description">Alapértelmezett alagút indítása rendszerindításkor</string>
     <string name="allow_lan_traffic">LAN forgalom engedélyezése</string>
@@ -135,7 +133,6 @@
     <string name="kofi">Ko-fi</string>
     <string name="donation_signoff">Hálával,</string>
     <string name="selected">Kiválasztva</string>
-    <string name="global_split_tunneling">Globális split tunneling</string>
     <string name="active_network">Aktív hálózat:</string>
     <string name="range_hint">(%1$d–%2$d)</string>
     <string name="delete_active_message">Aktív alagút nem törölhető.</string>
@@ -158,7 +155,6 @@
     <string name="mtu">MTU</string>
     <string name="configuration">Konfiguráció</string>
     <string name="drag_handle">Húzóka</string>
-    <string name="global_dns_servers">Globális DNS szerverek</string>
     <string name="display_theme">Megjelenítési téma</string>
     <string name="contact">Kapcsolat</string>
     <string name="ports_must_differ">Sikertelen. A proxyknak különböző portokat kell használniuk.</string>
@@ -258,7 +254,6 @@
     <string name="unavailable_in_mode">Nem érhető el a jelenlegi módban</string>
     <string name="server_port">Szerver:Port</string>
     <string name="camera_permission_required">Kamera engedély szükséges</string>
-    <string name="enabled_app_shortcuts">App gyorsindítók engedélyezése</string>
     <string name="preferred_tunnel">Preferált alagút</string>
     <string name="allow">Engedélyezés</string>
     <string name="underload_packet_magic_header">Underload csomag magic header</string>
@@ -273,7 +268,6 @@
     <string name="settings">Beállítások</string>
     <string name="incorrect_pin">A PIN-kód helytelen</string>
     <string name="export_failed">Exportálás sikertelen</string>
-    <string name="enable_remote_app_control">Távoli vezérlés engedélyezése</string>
     <string name="donation_closing">Minden álmom, hogy teljes munkaidőben ezen a projekten dolgozhassak.</string>
     <string name="update_download_failed">Frissítés letöltése sikertelen.</string>
     <string name="network_name">Hálózat:</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>

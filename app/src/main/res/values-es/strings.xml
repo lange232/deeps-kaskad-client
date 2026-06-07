@@ -41,7 +41,6 @@
     <string name="optional">(opcional)</string>
     <string name="seconds">Segundos</string>
     <string name="cancel">Cancelar</string>
-    <string name="enabled_app_shortcuts">Habilitar acesos directos de app</string>
     <string name="unknown_error">Error desconocido</string>
     <string name="email_subject">Ayuda de WG Tunnel</string>
     <string name="interface_">Interfaz</string>
@@ -65,7 +64,6 @@
     <string name="pin_created">Pin creado con éxito</string>
     <string name="enter_pin">Introduce tu pin</string>
     <string name="create_pin">Crear pin</string>
-    <string name="enable_app_lock">Activar el bloqueo de aplicaciones</string>
     <string name="set_primary_tunnel">Establecer como túnel Principal</string>
     <string name="edit_tunnel">Editar túnel</string>
     <string name="settings">Ajustes</string>
@@ -121,7 +119,6 @@
     <string name="learn_more">Saber más</string>
     <string name="wildcards_active">Comodines activos</string>
     <string name="stop_on_no_internet">Detener cuando no hay internet</string>
-    <string name="stop_on_internet_loss">Detener túnel cuando se pierda el internet</string>
     <string name="native_kill_switch">Interruptor de apagado nativo</string>
     <string name="allow_lan_traffic">Permitir tráfico LAN</string>
     <string name="bypass_lan_for_kill_switch">Excluir LAN del interruptor de apagado</string>
@@ -166,7 +163,6 @@
     <string name="check_for_update">Comprobar actualización</string>
     <string name="update_check_failed">Fallo al comprobar la actualización.</string>
     <string name="flavor_template">Variante: %1$s</string>
-    <string name="enable_remote_app_control">Activar control remoto de la app</string>
     <string name="export_success">Exportación completada</string>
     <string name="download">Descargar</string>
     <string name="latest_installed">Ya se está ejecutando la última versión.</string>
@@ -280,14 +276,12 @@
     <string name="resources">Recursos</string>
     <string name="back">Atrás</string>
     <string name="already_donated">Ya he donado</string>
-    <string name="global_split_tunneling">Túnel dividido global</string>
     <string name="active_network">Red activa:</string>
     <string name="help_translate">Ayuda a traducir la app</string>
     <string name="ethernet">Ethernet</string>
     <string name="other">Otros</string>
     <string name="kill_switch">kill switch</string>
     <string name="configuration">Configuración</string>
-    <string name="global_dns_servers">Servidores DNS globales</string>
     <string name="contact">Contacto</string>
     <string name="backup_and_restore">Copia de seguridad/Restaurar</string>
     <string name="about">Acerca de</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>

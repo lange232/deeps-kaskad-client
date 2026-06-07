@@ -47,7 +47,6 @@
     <string name="pin_created">Pin luotu</string>
     <string name="enter_pin">Syötä pin-koodi</string>
     <string name="create_pin">Luo pin-koodi</string>
-    <string name="enable_app_lock">Ota käyttöön sovelluksen lukitus</string>
     <string name="set_primary_tunnel">Aseta ensisijaiseksi tunneliksi</string>
     <string name="edit_tunnel">Muokkaa tunnelia</string>
     <string name="settings">Asetukset</string>
@@ -87,7 +86,6 @@
     <string name="add_wifi_name">Lisää WIFI:n nimi</string>
     <string name="language">Kieli</string>
     <string name="include">Sisällytä</string>
-    <string name="enabled_app_shortcuts">Salli sovelluksen pikakuvakkeet</string>
     <string name="automatic">Automaattinen</string>
     <string name="tunnel_name">Tunnelin nimi</string>
     <string name="restart_at_boot">Käynnistä laitteen käynnistyksen yhteydessä</string>
@@ -114,7 +112,6 @@
     <string name="remote_key">Remote key</string>
     <string name="mobile_data">Mobile data</string>
     <string name="use_shell_via_shizuku">Use shell via Shizuku to get Wi-Fi information, preventing the need for location permission on non-rooted devices</string>
-    <string name="stop_on_internet_loss">Stop tunnel on internet loss</string>
     <string name="vpn">VPN</string>
     <string name="tunnel_boot_description">Start the default tunnel on boot</string>
     <string name="google_donation_message">Unfortunately, due to Google\'s policies, donation links are not allowed in the Play Store version of this app. Please browse the project\'s webpages to find where to donate.</string>
@@ -187,7 +184,6 @@
     <string name="kofi">Ko-fi</string>
     <string name="donation_signoff">Gratefully,</string>
     <string name="selected">Selected</string>
-    <string name="global_split_tunneling">Global split tunneling</string>
     <string name="active_network">Active Network:</string>
     <string name="range_hint">(%1$d–%2$d)</string>
     <string name="delete_active_message">Cannot delete active tunnel.</string>
@@ -203,7 +199,6 @@
     <string name="kill_switch">kill switch</string>
     <string name="configuration">Configuration</string>
     <string name="drag_handle">Drag Handle</string>
-    <string name="global_dns_servers">Global DNS servers</string>
     <string name="contact">Contact</string>
     <string name="ports_must_differ">Failed. Proxies must have different ports.</string>
     <string name="join_matrix">Join Matrix community</string>
@@ -282,7 +277,6 @@
     <string name="fix">Fix</string>
     <string name="tunnel_running_name_message">Name unchangeable while tunnel is active.</string>
     <string name="export_failed">Export failed</string>
-    <string name="enable_remote_app_control">Enable remote app control</string>
     <string name="donation_closing">It\'s my dream to work for you on this project full-time.</string>
     <string name="update_download_failed">Update download failed.</string>
     <string name="network_name">Network:</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>

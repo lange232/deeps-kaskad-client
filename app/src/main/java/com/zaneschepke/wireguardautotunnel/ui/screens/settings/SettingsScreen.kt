@@ -176,6 +176,7 @@ fun SettingsScreen(
                 leading = { Icon(Icons.Outlined.Public, contentDescription = null) },
                 title = stringResource(R.string.tunnel_globals),
                 onClick = { navController.push(Route.TunnelGlobals) },
+                description = { DescriptionText(stringResource(R.string.tunnel_globals_desc)) },
             )
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.Terminal, contentDescription = null) },
@@ -232,6 +233,7 @@ fun SettingsScreen(
                         modifier = modifier,
                     )
                 },
+                description = { DescriptionText(stringResource(R.string.local_logging_desc)) },
                 onClick = { navController.push(Route.Logs) },
             )
             SurfaceRow(

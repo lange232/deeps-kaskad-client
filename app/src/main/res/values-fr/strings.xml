@@ -71,7 +71,6 @@
     <string name="show_amnezia_properties">Voir les propriétés d\'Amnezia</string>
     <string name="never">Jamais</string>
     <string name="logs">Journaux</string>
-    <string name="enabled_app_shortcuts">Activer les raccourcis</string>
     <string name="unknown_error">Une erreur inconnue s\'est produite</string>
     <string name="email_subject">Assistance WG Tunnel</string>
     <string name="yes">Oui</string>
@@ -79,7 +78,6 @@
     <string name="set_primary_tunnel">Tunnel utilisé quand aucun tunnel favori n\'est défini</string>
     <string name="auto">(Auto)</string>
     <string name="pin_created">Code PIN bien créé</string>
-    <string name="enable_app_lock">Activer le verrouillage de l\'appli</string>
     <string name="edit_tunnel">Éditer le tunnel</string>
     <string name="settings">Réglages</string>
     <string name="junk_packet_count">Nombre de paquets indésirables</string>
@@ -118,7 +116,6 @@
     <string name="remove_amnezia_compatibility">Retirer la prise en charge d\'Amnezia</string>
     <string name="hide_amnezia_properties">Cacher les propriétés d\'Amnezia</string>
     <string name="stop_on_no_internet">Arrêt en l\'absence d\'internet</string>
-    <string name="stop_on_internet_loss">Couper les tunnels en l\'absence d\'internet</string>
     <string name="native_kill_switch">Arrêt d\'urgence natif</string>
     <string name="allow_lan_traffic">Autoriser le trafic LAN</string>
     <string name="bypass_lan_for_kill_switch">Contourner le LAN en cas d\'arrêt d\'urgence</string>
@@ -213,7 +210,6 @@
     <string name="kofi">Ko-fi</string>
     <string name="donation_signoff">Avec toute ma gratitude,</string>
     <string name="selected">Sélectionné</string>
-    <string name="global_split_tunneling">Tunneling sélectif global</string>
     <string name="active_network">Réseau actif:</string>
     <string name="range_hint">(%1$d–%2$d)</string>
     <string name="delete_active_message">Impossible de supprimer un tunnel actif.</string>
@@ -227,7 +223,6 @@
     <string name="kill_switch">kill switch</string>
     <string name="configuration">Configuration</string>
     <string name="drag_handle">Poignée de glissement</string>
-    <string name="global_dns_servers">Serveurs DNS global</string>
     <string name="contact">Contact</string>
     <string name="ports_must_differ">Échec. Les serveurs proxy doivent utiliser des ports différents.</string>
     <string name="backup_and_restore">Sauvegarde et restauration</string>
@@ -287,7 +282,6 @@
     <string name="fix">Corriger</string>
     <string name="tunnel_running_name_message">Le nom ne peut pas être modifié tant que le tunnel est actif.</string>
     <string name="export_failed">L\'exportation a échoué</string>
-    <string name="enable_remote_app_control">Activer le contrôle à distance des applications</string>
     <string name="donation_closing">Mon rêve serait de travailler à plein temps pour vous sur ce projet.</string>
     <string name="update_download_failed">La mise à jour n\'a pas pu être téléchargée.</string>
     <string name="network_name">Réseau:</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>

@@ -29,7 +29,6 @@
     <string name="listen_port">துறைமுகம் கேளுங்கள்</string>
     <string name="persistent_keepalive">தொடர்ச்சியான கீப்அலிவ்</string>
     <string name="cancel">ரத்துசெய்</string>
-    <string name="enabled_app_shortcuts">பயன்பாட்டு குறுக்குவழிகளை இயக்கவும்</string>
     <string name="unknown_error">தெரியாத பிழை ஏற்பட்டது</string>
     <string name="tunnel_on_wifi">நம்பத்தகாத வைஃபை மீது சுரங்கப்பாதை</string>
     <string name="email_subject">WG சுரங்கப்பாதை உதவி</string>
@@ -48,7 +47,6 @@
     <string name="pin_created">முள் வெற்றிகரமாக உருவாக்கப்பட்டது</string>
     <string name="enter_pin">உங்கள் முள் உள்ளிடவும்</string>
     <string name="create_pin">முள் உருவாக்கவும்</string>
-    <string name="enable_app_lock">பயன்பாட்டு பூட்டை இயக்கவும்</string>
     <string name="settings">அமைப்புகள்</string>
     <string name="support">உதவி</string>
     <string name="junk_packet_count">குப்பை பாக்கெட் எண்ணிக்கை</string>
@@ -92,7 +90,6 @@
     <string name="local_logging">உள்ளூர்வாசிகள்</string>
     <string name="add_from_clipboard">கிளிப்போர்டில் இருந்து சேர்க்கவும்</string>
     <string name="stop_on_no_internet">இணையத்தில் நிறுத்துங்கள்</string>
-    <string name="stop_on_internet_loss">இணைய இழப்பில் சுரங்கப்பாதையை நிறுத்துங்கள்</string>
     <string name="native_kill_switch">சொந்த கொலை சுவிட்ச்</string>
     <string name="allow_lan_traffic">லேன் போக்குவரத்தை அனுமதிக்கவும்</string>
     <string name="bypass_lan_for_kill_switch">கொலை சுவிட்சுக்கு பைபாச் லேன்</string>
@@ -157,7 +154,6 @@
     <string name="dns_resolve_error">டிஎன்எச் தீர்மானம் பிழை</string>
     <string name="auth_error">அங்கீகரிக்கப்பட்ட பிழை இல்லை</string>
     <string name="service_running_error">பணி இயங்கும் பிழை</string>
-    <string name="enable_remote_app_control">தொலைநிலை பயன்பாட்டுக் கட்டுப்பாட்டை இயக்கவும்</string>
     <string name="flavor_template">சுவை: %1$s</string>
     <string name="add_from_url">முகவரி இலிருந்து சேர்க்கவும்</string>
     <string name="delete_logs">பதிவுகளை நீக்கவும் அழிக்கவும்</string>
@@ -232,7 +228,6 @@
     <string name="kofi">Ko-fi</string>
     <string name="donation_signoff">Gratefully,</string>
     <string name="selected">Selected</string>
-    <string name="global_split_tunneling">Global split tunneling</string>
     <string name="active_network">Active Network:</string>
     <string name="range_hint">(%1$d–%2$d)</string>
     <string name="delete_active_message">Cannot delete active tunnel.</string>
@@ -245,7 +240,6 @@
     <string name="kill_switch">kill switch</string>
     <string name="configuration">Configuration</string>
     <string name="drag_handle">Drag Handle</string>
-    <string name="global_dns_servers">Global DNS servers</string>
     <string name="contact">Contact</string>
     <string name="ports_must_differ">Failed. Proxies must have different ports.</string>
     <string name="backup_and_restore">Backup and restore</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>

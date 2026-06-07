@@ -47,7 +47,6 @@
     <string name="allow">Luba</string>
     <string name="select_all">Vali kõik</string>
     <string name="export_success">Eksportimine õnnestus</string>
-    <string name="enable_remote_app_control">Luba rakenduse kaugjuhtimine</string>
     <string name="add_from_url">Lisa võrguaadressilt</string>
     <string name="enter_config_url">Sisesta seadistuse võrguaadress</string>
     <string name="error_download_failed">Seadistuse allalaadimine ei õnnestunud</string>
@@ -151,8 +150,6 @@
     <string name="splt_tunneling">Jagatud tunneldus</string>
     <string name="stop">Peata</string>
     <string name="stop_on_no_internet">Peata internetiühenduse puudumisel</string>
-    <string name="stop_on_internet_loss">Peata tunnel internetiühenduse kadumisel</string>
-    <string name="enable_app_lock">Luba rakenduse lukustamine</string>
     <string name="launch_app_settings">Käivita rakenduse seadistused</string>
     <string name="use_wildcards">Kasuta nimedes metamärke</string>
     <string name="wildcards_active">Metamärgid on kasutusel</string>
@@ -181,7 +178,6 @@
     <string name="_default">Vaikimisi meetod</string>
     <string name="wifi_detection_method">WiFi tuvastamise meetod</string>
     <string name="current_template">Praegune: %1$s</string>
-    <string name="enabled_app_shortcuts">Luba rakenduse otseteed</string>
     <string name="auto_tunnel_title">Tunneli automaatne loomine</string>
     <string name="auto_tunnel_not_running">Tunneli automaatne käivitamine pole kasutusel</string>
     <string name="auto_tunnel_running">Tunneli automaatne käivitamine on kasutusel</string>
@@ -280,14 +276,12 @@
     <string name="resources">Ressursid</string>
     <string name="back">Tagasi</string>
     <string name="already_donated">Juba annetasin</string>
-    <string name="global_split_tunneling">Üldine jagatud tunneldus</string>
     <string name="active_network">Aktiivne võrk:</string>
     <string name="help_translate">Aita seda rakendust tõlkida</string>
     <string name="ethernet">Ethernet</string>
     <string name="other">Muu</string>
     <string name="kill_switch">kiirpeatamine</string>
     <string name="configuration">Seadistused</string>
-    <string name="global_dns_servers">Üldised nimeserverid</string>
     <string name="contact">Kontakt</string>
     <string name="backup_and_restore">Varundus ja taastamine</string>
     <string name="about">Rakenduse teave</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>

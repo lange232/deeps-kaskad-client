@@ -20,7 +20,6 @@
     <string name="okay">OK</string>
     <string name="tunnel_on_ethernet">Túnel na ethernet</string>
     <string name="create_import">Criar do zero</string>
-    <string name="enabled_app_shortcuts">Ativar atalhos de aplicações</string>
     <string name="tunnel_on_wifi">Túnel em Wi-Fi não confiável</string>
     <string name="email_subject">Apoio para o WG Tunnel</string>
     <string name="email_chooser">Enviar um email…</string>
@@ -34,7 +33,6 @@
     <string name="auto">(automático)</string>
     <string name="pin_created">Pin criado com sucesso</string>
     <string name="enter_pin">Digite o seu pin</string>
-    <string name="enable_app_lock">Ligar bloqueio de aplicação</string>
     <string name="edit_tunnel">Editar túnel</string>
     <string name="junk_packet_count">Quantidade de pacotes-lixo</string>
     <string name="junk_packet_minimum_size">Tamanho mínimo de pacote-lixo</string>
@@ -111,7 +109,6 @@
     <string name="monitoring_state_changes">Monitorar estado de alterações</string>
     <string name="donate">Contribua com projeto</string>
     <string name="add_from_clipboard">Adicionar da área de transferência</string>
-    <string name="stop_on_internet_loss">Interrompa o túnel quando a internet não estiver disponível</string>
     <string name="stop">pausar</string>
     <string name="splt_tunneling">Tunelamento dividido</string>
     <string name="show_scripts">Mostrar scripts</string>
@@ -202,7 +199,6 @@
     <string name="kofi">Ko-fi</string>
     <string name="donation_signoff">Gratefully,</string>
     <string name="selected">Selected</string>
-    <string name="global_split_tunneling">Global split tunneling</string>
     <string name="active_network">Active Network:</string>
     <string name="range_hint">(%1$d–%2$d)</string>
     <string name="delete_active_message">Cannot delete active tunnel.</string>
@@ -216,7 +212,6 @@
     <string name="kill_switch">kill switch</string>
     <string name="configuration">Configuration</string>
     <string name="drag_handle">Drag Handle</string>
-    <string name="global_dns_servers">Global DNS servers</string>
     <string name="contact">Contact</string>
     <string name="ports_must_differ">Failed. Proxies must have different ports.</string>
     <string name="join_matrix">Join Matrix community</string>
@@ -286,7 +281,6 @@
     <string name="fix">Fix</string>
     <string name="tunnel_running_name_message">Name unchangeable while tunnel is active.</string>
     <string name="export_failed">Export failed</string>
-    <string name="enable_remote_app_control">Enable remote app control</string>
     <string name="donation_closing">It\'s my dream to work for you on this project full-time.</string>
     <string name="update_download_failed">Update download failed.</string>
     <string name="network_name">Network:</string>
@@ -391,7 +385,6 @@
     <string name="dns_error_empty">Endpoint cannot be empty</string>
     <string name="tunnel_state_connected">Connected</string>
     <string name="dns_error_invalid_scheme">DoH must use HTTPS</string>
-    <string name="configuration_globals">Configuration globals</string>
     <string name="private_dns_hostname">Private DNS: hostname (%1$s)</string>
     <string name="app">App</string>
     <string name="refresh_rate">Statistics refresh rate</string>
@@ -433,7 +426,6 @@
     <string name="included_apps">%1$s apps included</string>
     <string name="error_http_port_unavailable">HTTP listener port %1$d is already in use.\nPlease choose a different port.</string>
     <string name="current_system_dns">Current system DNS</string>
-    <string name="global_amnezia_configuration">Global Amnezia configuration</string>
     <string name="security">Security</string>
     <string name="more_options">More options</string>
     <string name="status_template">status: %1$s</string>
