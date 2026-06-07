@@ -10,13 +10,18 @@ import com.zaneschepke.wireguardautotunnel.core.notification.TunnelNotificationS
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
 import com.zaneschepke.wireguardautotunnel.ui.state.DisplayTunnelState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlin.time.Duration.Companion.milliseconds
 
 class TunnelEventDispatcher(
     private val notificationManager: TunnelNotificationService,
@@ -24,6 +29,7 @@ class TunnelEventDispatcher(
     private val context: Context,
 ) {
 
+    @OptIn(FlowPreview::class)
     fun bind(
         scope: CoroutineScope,
         providerEvents: Flow<TunnelEvent>,
@@ -114,6 +120,7 @@ class TunnelEventDispatcher(
                     .associateBy { it.id }
             }
             .distinctUntilChanged()
+            .debounce(500.milliseconds) // give the service notification time to display
             .onEach { vpnLines -> notificationManager.updateVpnPersistentNotification(vpnLines) }
             .launchIn(scope)
 
@@ -142,6 +149,7 @@ class TunnelEventDispatcher(
                     .associateBy { it.id }
             }
             .distinctUntilChanged()
+            .debounce(500.milliseconds) // give the service notification time to display
             .onEach { proxyLines ->
                 notificationManager.updateProxyPersistentNotification(proxyLines)
             }
