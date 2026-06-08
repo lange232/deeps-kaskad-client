@@ -93,7 +93,6 @@ class ConfigEditViewModel(
                                 tunnel = tunnel,
                                 tunnels = tunnels,
                                 isRunning = isRunning,
-                                globalSettings = globalSettings,
                             )
                         }
                     }
