@@ -27,17 +27,21 @@ class ProxySettingsViewModel(
             combine(tunnelCoordinator.backendStatus, proxySettingsRepository.flow) {
                     backendStatus,
                     settings ->
-                    ProxySettingsUiState(
-                        proxySettings = settings,
-                        backendStatus = backendStatus,
-                        isLoading = false,
-                        socks5Enabled = settings.socks5ProxyEnabled,
-                        httpEnabled = settings.httpProxyEnabled,
-                        socksBindAddress = settings.socks5ProxyBindAddress ?: "",
-                        httpBindAddress = settings.httpProxyBindAddress ?: "",
-                        proxyUsername = settings.proxyUsername ?: "",
-                        proxyPassword = settings.proxyPassword ?: "",
-                    )
+                    if (state.isLoading) {
+                        ProxySettingsUiState(
+                            proxySettings = settings,
+                            backendStatus = backendStatus,
+                            isLoading = false,
+                            socks5Enabled = settings.socks5ProxyEnabled,
+                            httpEnabled = settings.httpProxyEnabled,
+                            socksBindAddress = settings.socks5ProxyBindAddress ?: "",
+                            httpBindAddress = settings.httpProxyBindAddress ?: "",
+                            proxyUsername = settings.proxyUsername ?: "",
+                            proxyPassword = settings.proxyPassword ?: "",
+                        )
+                    } else {
+                        state.copy(backendStatus = backendStatus)
+                    }
                 }
                 .collect { reduce { it } }
         }
