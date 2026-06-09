@@ -524,4 +524,5 @@
     <string name="app_shortcuts_desc">Add quick actions to the app icon</string>
     <string name="remote_control">Remote control</string>
     <string name="remote_control_desc">Allow other apps (like Tasker) to control tunnels</string>
+    <string name="endpoint_template">endpoint: %1$s</string>
 </resources>
