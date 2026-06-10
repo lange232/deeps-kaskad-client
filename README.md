@@ -72,7 +72,7 @@ WG Tunnel is an alternative Android client for WireGuard and AmneziaWG, inspired
 - **Handshake Monitoring:** Real-time handshake monitoring for instant tunnel health feedback.
 - **AmneziaWG Support:** Full support for AmneziaWG 2.0, providing robust censorship protection.
 - **Split Tunneling:** Flexible support for routing specific apps or traffic through the VPN.
-- **Local Proxying:** Expose WireGuard tunnels over a local SOCKS5 or HTTP proxy to browsers or firewall apps (like AdGuard).
+- **Local Proxy Mode:** Expose WireGuard tunnels over a local SOCKS5 or HTTP proxy to browsers or firewall apps (like AdGuard).
 - **Lockdown Mode:** Advanced in-app kill switch that blocks all traffic while the tunnel is down.
 - **Quick Controls:** Quick Settings tile and home screen shortcuts for easy toggling.
 - **Remote Control Support:** Intent-based automation for controlling tunnels and auto-tunneling from automation apps (like Tasker).
