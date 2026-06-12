@@ -101,8 +101,7 @@ internal class WireGuardTunnelEngine(private val serviceHolder: ServiceHolder) :
                     if (!peer.isStaticallyConfigured && peer.endpoint != null) {
                         replacedWithNonRoutable = true
                         val port = peer.endpoint!!.substringAfterLast(":")
-                        peer.copy(endpoint = "$TEST_NET_IP:$port",
-                            persistentKeepalive = 0)
+                        peer.copy(endpoint = "$TEST_NET_IP:$port", persistentKeepalive = 0)
                     } else peer
                 }
         ) to replacedWithNonRoutable

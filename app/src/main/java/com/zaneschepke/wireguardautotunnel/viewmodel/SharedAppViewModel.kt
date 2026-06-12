@@ -73,13 +73,7 @@ class SharedAppViewModel(
                 tunnelCoordinator.backendStatus,
                 selectedTunnelsRepository.flow,
             ) { tunnels, backendStatus, selectedTuns ->
-                val activeTunnelIds = backendStatus.activeTunnels.keys
-
-                val sortedTunnels =
-                    tunnels.sortedWith(
-                        compareByDescending<TunnelConfig> { it.id in activeTunnelIds }
-                            .thenBy { it.position }
-                    )
+                val sortedTunnels = tunnels.sortedBy { it.position }
 
                 val displayStates =
                     backendStatus.activeTunnels.mapValues { (_, activeTunnel) ->

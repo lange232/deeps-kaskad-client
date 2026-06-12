@@ -1,5 +1,6 @@
 package com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.config
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +10,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.scrollbar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -57,6 +59,8 @@ fun ConfigScreen(
 
     var showQrModal by rememberSaveable { mutableStateOf(false) }
 
+    val scrollState = rememberScrollState()
+
     val rawConfig by
         remember(liveConfig, uiState.activeConfig, uiState.tunnel?.quickConfig) {
             derivedStateOf {
@@ -90,7 +94,13 @@ fun ConfigScreen(
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.Top),
-        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+        modifier =
+            Modifier.fillMaxSize()
+                .verticalScroll(scrollState)
+                .scrollbar(
+                    state = scrollState.scrollIndicatorState,
+                    orientation = Orientation.Vertical,
+                ),
     ) {
         val displayText by
             remember(rawConfig, showKeys) { derivedStateOf { maskSensitive(rawConfig, showKeys) } }

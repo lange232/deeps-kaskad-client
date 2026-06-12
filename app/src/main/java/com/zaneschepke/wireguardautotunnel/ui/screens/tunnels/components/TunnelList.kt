@@ -1,6 +1,7 @@
 package com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.ScrollableDefaults
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.size
@@ -12,6 +13,7 @@ import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Circle
 import androidx.compose.material3.Icon
+import androidx.compose.material3.scrollbar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,7 +80,11 @@ fun TunnelList(
                         viewModel.clearSelectedTunnels()
                     }
                 }
-                .overscroll(rememberOverscrollEffect()),
+                .overscroll(rememberOverscrollEffect())
+                .scrollbar(
+                    state = lazyListState.scrollIndicatorState,
+                    orientation = Orientation.Vertical,
+                ),
         state = lazyListState,
         userScrollEnabled = true,
         reverseLayout = false,

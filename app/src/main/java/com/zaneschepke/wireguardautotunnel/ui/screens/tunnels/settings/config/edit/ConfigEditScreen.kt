@@ -1,5 +1,6 @@
 package com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.config.edit
 
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.HdrAuto
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.scrollbar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,10 +51,11 @@ fun ConfigEditScreen(
     val uiState by viewModel.collectAsState()
 
     if (uiState.isLoading) return
-
     val locale = Locale.current.platformLocale
 
     var showSelectionDialog by rememberSaveable { mutableStateOf(false) }
+
+    val scrollState = rememberScrollState()
 
     sharedViewModel.collectSideEffect { sideEffect ->
         when (sideEffect) {
@@ -104,7 +107,14 @@ fun ConfigEditScreen(
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.Top),
-        modifier = Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()),
+        modifier =
+            Modifier.fillMaxSize()
+                .imePadding()
+                .verticalScroll(scrollState)
+                .scrollbar(
+                    state = scrollState.scrollIndicatorState,
+                    orientation = Orientation.Vertical,
+                ),
     ) {
         if (uiState.isGlobalConfig) {
             Column {
