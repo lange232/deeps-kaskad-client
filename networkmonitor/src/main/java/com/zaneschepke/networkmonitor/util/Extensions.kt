@@ -16,9 +16,22 @@ import kotlinx.coroutines.withContext
 import timber.log.Timber
 
 @Suppress("DEPRECATION")
-fun WifiManager.getCurrentSecurityType(): WifiSecurityType? {
+fun WifiManager.getLegacySecurityType(): WifiSecurityType? {
     return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         WifiSecurityType.from(connectionInfo.currentSecurityType)
+    } else {
+        null
+    }
+}
+
+fun NetworkCapabilities.getWifiSecurityType(): WifiSecurityType? {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        val transportInfo = this.transportInfo
+        if (transportInfo is WifiInfo) {
+            WifiSecurityType.from(transportInfo.currentSecurityType)
+        } else {
+            null
+        }
     } else {
         null
     }

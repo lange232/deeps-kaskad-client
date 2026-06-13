@@ -18,7 +18,8 @@ import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.
 import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.ROOT
 import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.SHIZUKU
 import com.zaneschepke.networkmonitor.shizuku.ShizukuShell
-import com.zaneschepke.networkmonitor.util.getCurrentSecurityType
+import com.zaneschepke.networkmonitor.util.getLegacySecurityType
+import com.zaneschepke.networkmonitor.util.getWifiSecurityType
 import com.zaneschepke.networkmonitor.util.getWifiSsid
 import com.zaneschepke.networkmonitor.util.hasRequiredLocationPermissions
 import com.zaneschepke.networkmonitor.util.isAirplaneModeOn
@@ -415,6 +416,7 @@ class AndroidNetworkMonitor(
                                     return lastActive.ssid
                                 }
                             }
+                            Timber.d("Triggering new location ping")
                             wifiManager?.getWifiSsid() ?: ANDROID_UNKNOWN_SSID
                         }
                         ROOT ->
@@ -529,17 +531,47 @@ class AndroidNetworkMonitor(
                                     ) &&
                                     caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
                             } == true -> {
+
                             val wifiEvent = networkData.wifiNetworkEvent
-                            val ssid =
-                                getSsidByDetectionMethod(
-                                    detectionMethod,
-                                    wifiEvent.networkCapabilities,
-                                    wifiEvent.network,
-                                )
+                            val currentNetworkId = wifiEvent.network.toString()
+                            val lastActive = lastKnownActiveNetwork.value
+
+                            // Use cache in legacy mode
+                            val (ssid, securityType) =
+                                if (
+                                    detectionMethod == LEGACY &&
+                                        lastActive is ActiveNetwork.Wifi &&
+                                        lastActive.networkId == currentNetworkId &&
+                                        lastActive.ssid != ANDROID_UNKNOWN_SSID
+                                ) {
+                                    Timber.d(
+                                        "Using cached SSID and Security Type to prevent location ping"
+                                    )
+                                    lastActive.ssid to lastActive.securityType
+                                } else {
+                                    // Fallback
+                                    val fetchedSsid =
+                                        getSsidByDetectionMethod(
+                                            detectionMethod,
+                                            wifiEvent.networkCapabilities,
+                                            wifiEvent.network,
+                                        )
+                                    val fetchedSecurity =
+                                        if (
+                                            detectionMethod == DEFAULT &&
+                                                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                                        ) {
+                                            wifiEvent.networkCapabilities.getWifiSecurityType()
+                                        } else {
+                                            wifiManager?.getLegacySecurityType()
+                                        }
+                                    fetchedSsid to fetchedSecurity
+                                }
+
                             ActiveNetwork.Wifi(
                                 ssid,
-                                wifiManager?.getCurrentSecurityType(),
-                                wifiEvent.network.toString(),
+                                securityType,
+                                currentNetworkId,
                                 wifiEvent.network,
                             )
                         }
