@@ -98,10 +98,11 @@ class TunnelBackend(
     private var dnsConfigJob: Job? = null
 
     private val statusCallback = StatusCallback { handle, code ->
-        val state = Tunnel.State.fromNative(code)
-        state?.let { nativeState ->
-            val tunnelId = byHandle[handle] ?: return@let
-            updateTunnelTransportState(tunnelId, nativeState)
+        val state = Tunnel.State.fromNative(code) ?: return@StatusCallback
+        val tunnelId = byHandle[handle] ?: return@StatusCallback
+        val current = _status.value.activeTunnels[tunnelId]?.transportState
+        if (current != state) {
+            updateTunnelTransportState(tunnelId, state)
         }
     }
 

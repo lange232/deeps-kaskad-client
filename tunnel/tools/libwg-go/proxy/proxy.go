@@ -24,6 +24,7 @@ var (
 	cancelFuncs          map[int32]context.CancelFunc
 	tag                  string
 	virtualTunnelHandles map[int32]*wireproxyawg.VirtualTun
+	lastTunnelStatus     sync.Map
 	tunnelMu             sync.RWMutex
 )
 
@@ -81,6 +82,13 @@ func awgStartProxy(interfaceName string, config string, uapiPath string, bypass 
 	}
 
 	statusCB := func(code device.StatusCode) {
+		key := handle
+		if prev, loaded := lastTunnelStatus.LoadOrStore(key, code); loaded {
+			if prev == code {
+				return // duplicate, skip
+			}
+			lastTunnelStatus.Store(key, code)
+		}
 		go C.awgNotifyStatus(C.int32_t(handle), C.int32_t(code))
 	}
 
@@ -279,6 +287,7 @@ func awgTurnProxyTunnelOff(virtualTunnelHandle int32) {
 		virtualTun.Dev.Close()
 	}
 
+	lastTunnelStatus.Delete(virtualTunnelHandle)
 	shared.ReleaseHandle(virtualTunnelHandle)
 
 	C.awgNotifyStatus(

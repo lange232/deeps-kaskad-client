@@ -30,9 +30,10 @@ type TunnelHandle struct {
 }
 
 var (
-	tag           string
-	tunnelHandles = make(map[int32]TunnelHandle)
-	tunnelMu      sync.RWMutex
+	tag              string
+	tunnelHandles    = make(map[int32]TunnelHandle)
+	lastTunnelStatus sync.Map
+	tunnelMu         sync.RWMutex
 )
 
 func init() {
@@ -67,6 +68,13 @@ func awgTurnOn(interfaceName string, tunFd int32, settings string, uapiPath stri
 	}
 
 	statusCB := func(code device.StatusCode) {
+		key := handle
+		if prev, loaded := lastTunnelStatus.LoadOrStore(key, code); loaded {
+			if prev == code {
+				return // duplicate, skip
+			}
+			lastTunnelStatus.Store(key, code)
+		}
 		go C.awgNotifyStatus(C.int32_t(handle), C.int32_t(code))
 	}
 
@@ -196,6 +204,7 @@ func awgTurnOff(tunnelHandle int32) {
 		handle.device.Close()
 	}
 
+	lastTunnelStatus.Delete(tunnelHandle)
 	shared.ReleaseHandle(tunnelHandle)
 
 	C.awgNotifyStatus(
