@@ -6,6 +6,7 @@ import com.zaneschepke.networkmonitor.NetworkMonitor
 import com.zaneschepke.networkmonitor.PrivateDnsMode
 import com.zaneschepke.networkmonitor.StableNetworkEngine
 import com.zaneschepke.tunnel.ApplicationProvider
+import com.zaneschepke.tunnel.DnsConfigManager
 import com.zaneschepke.tunnel.StatusCallback
 import com.zaneschepke.tunnel.Tunnel
 import com.zaneschepke.tunnel.VpnBackend
@@ -473,9 +474,9 @@ class TunnelBackend(
                 val network = snapshot?.activeNetwork?.network
 
                 if (network == null) {
-                    Timber.d("No network — waiting")
+                    Timber.d("No network, waiting...")
                     delay(delayMs.milliseconds)
-                    delayMs = (delayMs * 2).coerceAtMost(30_000)
+                    delayMs = (delayMs * 2).coerceAtMost(MAX_DNS_RESOLVER_BACKOFF)
                     continue
                 }
 
@@ -499,8 +500,10 @@ class TunnelBackend(
 
                     val host = peer.endpoint?.substringBeforeLast(":") ?: continue
 
+                    var dnsResult: DnsBootstrapResult? = null
+
                     try {
-                        val dnsResult = resolver.resolve(host)
+                        dnsResult = resolver.resolve(host)
 
                         if (dnsResult.ipv4.isNotEmpty() || dnsResult.ipv6.isNotEmpty()) {
                             results[peer.publicKey] =
@@ -510,6 +513,39 @@ class TunnelBackend(
                     } catch (e: Exception) {
                         Timber.w(e, "DNS failed for $host")
                     }
+
+                    // Fallback to plain DNS via custom resolver if system resolve failing
+                    // useful in situations where underlying network doesn't have configured network
+                    // DNS, like some mobile networks
+                    if (
+                        dnsResult == null || (dnsResult.ipv4.isEmpty() && dnsResult.ipv6.isEmpty())
+                    ) {
+                        if (dnsMode is DnsBoostrapMode.System) {
+                            Timber.d(
+                                "System DNS returned no results for $host, falling back to public DNS"
+                            )
+                            dnsResult =
+                                DnsConfigManager.resolveHostBootstrap(
+                                    host = host,
+                                    protocol =
+                                        DnsBoostrapConfig.Plain(
+                                                DnsBoostrapConfig.DEFAULT_PLAIN_UPSTREAM
+                                            )
+                                            .protocol,
+                                    upstream = DnsBoostrapConfig.DEFAULT_PLAIN_UPSTREAM,
+                                    bypass = bypassNeeded,
+                                )
+                        }
+                    }
+
+                    if (
+                        dnsResult != null &&
+                            (dnsResult.ipv4.isNotEmpty() || dnsResult.ipv6.isNotEmpty())
+                    ) {
+                        results[peer.publicKey] =
+                            dnsResult.copy(ipv6 = dnsResult.ipv6.map { "[$it]" })
+                        progressed = true
+                    }
                 }
 
                 if (results.keys.containsAll(peersToResolve.map { it.publicKey })) {
@@ -518,9 +554,9 @@ class TunnelBackend(
                 }
 
                 if (!progressed) {
-                    Timber.d("No progress — backing off")
+                    Timber.d("No progress, backing off...")
                     delay(delayMs.milliseconds)
-                    delayMs = (delayMs * 2).coerceAtMost(30_000)
+                    delayMs = (delayMs * 2).coerceAtMost(MAX_DNS_RESOLVER_BACKOFF)
                 }
             }
 
@@ -827,6 +863,7 @@ class TunnelBackend(
     }
 
     companion object {
+        private const val MAX_DNS_RESOLVER_BACKOFF = 30_000L
         private const val DDNS_MIN_CHECK_INTERVAL = 30_000L
         private const val DDNS_FAILURE_WINDOW = 15_000L
         private const val DDNS_STABILITY_WINDOW = 15_000L

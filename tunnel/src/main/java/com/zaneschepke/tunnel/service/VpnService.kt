@@ -48,8 +48,6 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
 
     @Volatile private var fd: ParcelFileDescriptor? = null
 
-    private val pendingIntent = backend.applicationProvider.createVpnConfigurePendingIntent(this)
-
     override fun onCreate() {
         serviceHolder.set(this)
         ProxyBackend.setSocketProtector(this)
@@ -180,11 +178,12 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
     override fun setKillSwitch(config: KillSwitchConfig?) {
         if (config == null) return disableKillSwitch()
         fd?.close()
+        val intent = backend.applicationProvider.createVpnConfigurePendingIntent(this@VpnService)
         fd =
             Builder()
                 .apply {
                     setSession(LOCKDOWN_SESSION_NAME)
-                    setConfigureIntent(pendingIntent)
+                    setConfigureIntent(intent)
                     addAddress(IPV4_INTERFACE_ADDRESS, 32)
                     if (config.dualStack) addAddress(IPV6_INTERFACE_ADDRESS, 128)
                     if (config.allowedIps.isEmpty()) {
@@ -208,10 +207,11 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
     }
 
     fun createTunInterface(tunnel: Tunnel, config: Config): ParcelFileDescriptor? {
+        val intent = backend.applicationProvider.createVpnConfigurePendingIntent(this@VpnService)
         return Builder()
             .apply {
                 setSession(tunnel.name)
-                setConfigureIntent(pendingIntent)
+                setConfigureIntent(intent)
                 setMtu(config.`interface`.mtu ?: DEFAULT_MTU)
                 setBlocking(true)
                 setUnderlyingNetworks(null)
