@@ -1,13 +1,16 @@
 package com.zaneschepke.wireguardautotunnel.di
 
 import android.app.Notification
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import com.zaneschepke.networkmonitor.AndroidNetworkMonitor
 import com.zaneschepke.networkmonitor.NetworkMonitor
 import com.zaneschepke.networkmonitor.StableNetworkEngine
-import com.zaneschepke.tunnel.NotificationProvider
+import com.zaneschepke.tunnel.ApplicationProvider
 import com.zaneschepke.tunnel.backend.RootShell
 import com.zaneschepke.tunnel.util.RootShellException
+import com.zaneschepke.wireguardautotunnel.MainActivity
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.event.TunnelEventDispatcher
 import com.zaneschepke.wireguardautotunnel.core.notification.AndroidNotificationService.NotificationChannels
@@ -38,10 +41,10 @@ val tunnelBackendProviderModule = module {
     single<TunnelNotificationService> { AndroidTunnelNotificationService(get()) }
     singleOf(::TunnelEventDispatcher)
 
-    single<NotificationProvider> {
+    single<ApplicationProvider> {
         val notificationService = get<NotificationService>()
         val context = androidContext()
-        object : NotificationProvider {
+        object : ApplicationProvider {
             override val vpnInitNotification: Notification
                 get() =
                     notificationService.createNotification(
@@ -68,6 +71,17 @@ val tunnelBackendProviderModule = module {
 
             override fun refreshTile(context: Context) {
                 TunnelTileRefresher.refresh(context)
+            }
+
+            override fun createVpnConfigurePendingIntent(context: Context): PendingIntent {
+                return PendingIntent.getActivity(
+                    context,
+                    0,
+                    Intent(context, MainActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    },
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
             }
         }
     }

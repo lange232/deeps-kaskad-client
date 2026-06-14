@@ -21,6 +21,8 @@ import com.zaneschepke.tunnel.util.parseDns
 import com.zaneschepke.tunnel.util.parseInetNetwork
 import com.zaneschepke.wireguardautotunnel.parser.Config
 import java.io.IOException
+import java.net.Inet4Address
+import java.net.Inet6Address
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +48,8 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
 
     @Volatile private var fd: ParcelFileDescriptor? = null
 
+    private val pendingIntent = backend.applicationProvider.createVpnConfigurePendingIntent(this)
+
     override fun onCreate() {
         serviceHolder.set(this)
         ProxyBackend.setSocketProtector(this)
@@ -56,8 +60,8 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
     fun launchForegroundNotification() {
         ServiceCompat.startForeground(
             this,
-            backend.notificationProvider.vpnNotificationId,
-            backend.notificationProvider.vpnInitNotification,
+            backend.applicationProvider.vpnNotificationId,
+            backend.applicationProvider.vpnInitNotification,
             SYSTEM_EXEMPT_SERVICE_TYPE_ID,
         )
     }
@@ -180,6 +184,7 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
             Builder()
                 .apply {
                     setSession(LOCKDOWN_SESSION_NAME)
+                    setConfigureIntent(pendingIntent)
                     addAddress(IPV4_INTERFACE_ADDRESS, 32)
                     if (config.dualStack) addAddress(IPV6_INTERFACE_ADDRESS, 128)
                     if (config.allowedIps.isEmpty()) {
@@ -194,6 +199,7 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         setMetered(config.metered)
                     }
+                    addAddress(IPV6_ULA, 128)
                     addRoute(IPV6_DEFAULT_ROUTE, 0)
                     setMtu(DEFAULT_MTU)
                     addDnsServer(DEFAULT_DNS_SERVER)
@@ -205,23 +211,30 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
         return Builder()
             .apply {
                 setSession(tunnel.name)
+                setConfigureIntent(pendingIntent)
+                setMtu(config.`interface`.mtu ?: DEFAULT_MTU)
+                setBlocking(true)
+                setUnderlyingNetworks(null)
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    setMetered(tunnel.isMetered)
+                }
 
                 config.`interface`.includedApplications?.forEach { addAllowedApplication(it) }
                 config.`interface`.excludedApplications?.forEach { addDisallowedApplication(it) }
 
+                var hasIpv4 = false
+                var hasIpv6 = false
+                var sawDefaultRoute = false
+
+                // Parse interface addresses
                 config.`interface`.address?.split(",")?.forEach { rawAddress ->
                     val (address, prefixLength) = rawAddress.parseInetNetwork()
                     addAddress(address, prefixLength)
+                    if (address is Inet4Address) hasIpv4 = true else hasIpv6 = true
                 }
 
-                config.`interface`.dns?.let { rawDns ->
-                    val dnsConfig = rawDns.parseDns()
-                    dnsConfig.dnsServers.forEach { addDnsServer(it) }
-                    dnsConfig.searchDomains.forEach { addSearchDomain(it) }
-                }
-
-                var sawDefaultRoute = false
-
+                // Parse peer routes
                 config.peers.forEach { peer ->
                     peer.allowedIPs
                         ?.split(",")
@@ -229,32 +242,55 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
                         ?.filter { it.isNotEmpty() }
                         ?.forEach { entry ->
                             val (address, prefix) = entry.parseInetNetwork()
+                            addRoute(address, prefix)
 
                             if (prefix == 0) {
                                 sawDefaultRoute = true
                             }
-
-                            Timber.d("Adding route from config: $address/$prefix")
-                            addRoute(address, prefix)
+                            if (address is Inet4Address) hasIpv4 = true else hasIpv6 = true
                         }
                 }
 
-                if (!(sawDefaultRoute && config.peers.size == 1)) {
+                // "Kill-switch" semantics (mirrors wireguard-android)
+                val isKillSwitchRouting = sawDefaultRoute && config.peers.size == 1
+
+                if (!isKillSwitchRouting) {
                     allowFamily(OsConstants.AF_INET)
                     allowFamily(OsConstants.AF_INET6)
                 }
 
-                val mtu = config.`interface`.mtu ?: DEFAULT_MTU
-                setMtu(mtu)
-
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    setMetered(tunnel.isMetered)
+                // Only add DNS servers whose family is supported
+                config.`interface`.dns?.let { rawDns ->
+                    val dnsConfig = rawDns.parseDns()
+                    dnsConfig.dnsServers.forEach { dnsServer ->
+                        val isIpv6 = dnsServer is Inet6Address
+                        if ((isIpv6 && hasIpv6) || (!isIpv6 && hasIpv4)) {
+                            addDnsServer(dnsServer)
+                        } else {
+                            Timber.w(
+                                "Dropped DNS server $dnsServer: IP family not allowed by interface/routes"
+                            )
+                        }
+                    }
+                    dnsConfig.searchDomains.forEach { addSearchDomain(it) }
                 }
-
-                setUnderlyingNetworks(null)
-                setBlocking(true)
             }
             .establish()
+    }
+
+    override fun onRevoke() {
+        Timber.w("VPN privilege revoked by system")
+
+        userActivatedShutdown = false
+
+        disableKillSwitch()
+        stopHevSocks5Bridge()
+
+        serviceScope.launch { backend.stopAllActiveTunnels() }
+
+        stopSelf()
+
+        super.onRevoke()
     }
 
     override fun startHevSocks5Bridge(port: Int, pass: String) {
@@ -295,6 +331,7 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
         private const val LOCKDOWN_SESSION_NAME = "Lockdown"
         private const val LOCALHOST = "127.0.0.1"
         private const val IPV4_INTERFACE_ADDRESS = "10.0.0.1"
+        private const val IPV6_ULA = "fd00::1"
         private const val IPV6_INTERFACE_ADDRESS = "2001:db8::1"
         const val LOCKDOWN_USERNAME = "local"
         private const val IPV4_DEFAULT_ROUTE = "0.0.0.0"

@@ -70,8 +70,8 @@ class TunnelService : LifecycleService() {
     fun launchForegroundNotification() {
         ServiceCompat.startForeground(
             this,
-            backend.notificationProvider.proxyNotificationId,
-            backend.notificationProvider.proxyInitNotification,
+            backend.applicationProvider.proxyNotificationId,
+            backend.applicationProvider.proxyInitNotification,
             SPECIAL_USE_SERVICE_TYPE_ID,
         )
     }

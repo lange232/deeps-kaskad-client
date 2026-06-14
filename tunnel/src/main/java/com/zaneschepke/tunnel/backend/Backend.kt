@@ -1,6 +1,6 @@
 package com.zaneschepke.tunnel.backend
 
-import com.zaneschepke.tunnel.NotificationProvider
+import com.zaneschepke.tunnel.ApplicationProvider
 import com.zaneschepke.tunnel.Tunnel
 import com.zaneschepke.tunnel.event.TunnelEvent
 import com.zaneschepke.tunnel.model.BackendMode
@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface Backend {
 
-    val notificationProvider: NotificationProvider
+    val applicationProvider: ApplicationProvider
 
     suspend fun start(tunnel: Tunnel, mode: BackendMode): Result<Unit>
 

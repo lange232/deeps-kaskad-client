@@ -5,7 +5,7 @@ import com.zaneschepke.networkmonitor.DnsInfo
 import com.zaneschepke.networkmonitor.NetworkMonitor
 import com.zaneschepke.networkmonitor.PrivateDnsMode
 import com.zaneschepke.networkmonitor.StableNetworkEngine
-import com.zaneschepke.tunnel.NotificationProvider
+import com.zaneschepke.tunnel.ApplicationProvider
 import com.zaneschepke.tunnel.StatusCallback
 import com.zaneschepke.tunnel.Tunnel
 import com.zaneschepke.tunnel.VpnBackend
@@ -68,7 +68,7 @@ import timber.log.Timber
 class TunnelBackend(
     private val scope: CoroutineScope,
     private val networkMonitor: NetworkMonitor,
-    override val notificationProvider: NotificationProvider,
+    override val applicationProvider: ApplicationProvider,
     private val stableNetworkEngine: StableNetworkEngine,
 ) : Backend {
 
@@ -124,7 +124,7 @@ class TunnelBackend(
                             mode = mode,
                         ),
                     )
-                    notificationProvider.refreshTile(serviceHolder.context)
+                    applicationProvider.refreshTile(serviceHolder.context)
 
                     val scriptsEnabled = tunnel.scriptsEnabled
 
@@ -193,7 +193,7 @@ class TunnelBackend(
             try {
                 stopTunnelInternal(id, activeTun)
             } finally {
-                notificationProvider.refreshTile(serviceHolder.context)
+                applicationProvider.refreshTile(serviceHolder.context)
                 if (isLast) VpnBackend.setStatusCallback(null)
                 if (isLastOfServiceType) {
                     when (mode) {
@@ -264,7 +264,7 @@ class TunnelBackend(
 
     override suspend fun stopAllActiveTunnels() = tunnelMutex.withLock {
         _status.value.activeTunnels.forEach { (id, tunnel) -> stopTunnelInternal(id, tunnel) }
-        notificationProvider.refreshTile(serviceHolder.context)
+        applicationProvider.refreshTile(serviceHolder.context)
         VpnBackend.setStatusCallback(null)
         serviceHolder.stopTunnelService()
         serviceHolder.stopVpnService()
