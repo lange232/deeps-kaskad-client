@@ -1,9 +1,9 @@
-package com.zaneschepke.wireguardautotunnel.core.service.tile
+package com.zaneschepke.wireguardautotunnel.service.tile
 
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.zaneschepke.wireguardautotunnel.core.orchestration.AutoTunnelCoordinator
-import com.zaneschepke.wireguardautotunnel.core.service.autotunnel.AutoTunnelStateHolder
+import com.zaneschepke.wireguardautotunnel.service.autotunnel.AutoTunnelStateHolder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

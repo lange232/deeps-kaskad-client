@@ -13,16 +13,17 @@ import com.zaneschepke.tunnel.util.RootShellException
 import com.zaneschepke.wireguardautotunnel.MainActivity
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.event.TunnelEventDispatcher
-import com.zaneschepke.wireguardautotunnel.core.notification.AndroidNotificationService.NotificationChannels
-import com.zaneschepke.wireguardautotunnel.core.notification.AndroidTunnelNotificationService
-import com.zaneschepke.wireguardautotunnel.core.notification.NotificationService
-import com.zaneschepke.wireguardautotunnel.core.notification.NotificationService.Companion.PROXY_GROUP_KEY
-import com.zaneschepke.wireguardautotunnel.core.notification.NotificationService.Companion.VPN_GROUP_KEY
-import com.zaneschepke.wireguardautotunnel.core.notification.TunnelNotificationService
-import com.zaneschepke.wireguardautotunnel.core.service.tile.TunnelTileRefresher
 import com.zaneschepke.wireguardautotunnel.core.tunnel.TunnelBackendProvider
 import com.zaneschepke.wireguardautotunnel.core.tunnel.TunnelProvider
 import com.zaneschepke.wireguardautotunnel.domain.repository.AutoTunnelSettingsRepository
+import com.zaneschepke.wireguardautotunnel.lifecyle.AppVisibilityObserver
+import com.zaneschepke.wireguardautotunnel.notification.AndroidNotificationService.NotificationChannels
+import com.zaneschepke.wireguardautotunnel.notification.AndroidTunnelNotificationService
+import com.zaneschepke.wireguardautotunnel.notification.NotificationService
+import com.zaneschepke.wireguardautotunnel.notification.NotificationService.Companion.PROXY_GROUP_KEY
+import com.zaneschepke.wireguardautotunnel.notification.NotificationService.Companion.VPN_GROUP_KEY
+import com.zaneschepke.wireguardautotunnel.notification.TunnelNotificationService
+import com.zaneschepke.wireguardautotunnel.service.tile.TunnelTileRefresher
 import com.zaneschepke.wireguardautotunnel.util.extensions.to
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +40,7 @@ import timber.log.Timber
 
 val tunnelBackendProviderModule = module {
     single<TunnelNotificationService> { AndroidTunnelNotificationService(get()) }
+    single { AppVisibilityObserver() }
     singleOf(::TunnelEventDispatcher)
 
     single<ApplicationProvider> {

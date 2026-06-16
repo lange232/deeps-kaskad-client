@@ -1,4 +1,4 @@
-package com.zaneschepke.wireguardautotunnel.core.notification
+package com.zaneschepke.wireguardautotunnel.notification
 
 import android.Manifest
 import android.app.Notification
@@ -17,8 +17,8 @@ import androidx.core.app.NotificationManagerCompat.IMPORTANCE_HIGH
 import com.zaneschepke.wireguardautotunnel.MainActivity
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.broadcast.NotificationActionReceiver
-import com.zaneschepke.wireguardautotunnel.core.notification.NotificationService.Companion.EXTRA_ID
 import com.zaneschepke.wireguardautotunnel.domain.enums.NotificationAction
+import com.zaneschepke.wireguardautotunnel.notification.NotificationService.Companion.EXTRA_ID
 import com.zaneschepke.wireguardautotunnel.util.StringValue
 
 class AndroidNotificationService(override val context: Context) : NotificationService {

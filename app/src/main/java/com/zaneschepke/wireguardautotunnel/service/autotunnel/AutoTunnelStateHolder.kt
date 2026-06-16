@@ -1,4 +1,4 @@
-package com.zaneschepke.wireguardautotunnel.core.service.autotunnel
+package com.zaneschepke.wireguardautotunnel.service.autotunnel
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

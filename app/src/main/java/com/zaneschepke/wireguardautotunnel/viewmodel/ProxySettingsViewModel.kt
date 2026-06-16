@@ -1,6 +1,7 @@
 package com.zaneschepke.wireguardautotunnel.viewmodel
 
 import androidx.lifecycle.ViewModel
+import com.dokar.sonner.ToastType
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelCoordinator
 import com.zaneschepke.wireguardautotunnel.domain.repository.GlobalEffectRepository
@@ -79,7 +80,8 @@ class ProxySettingsViewModel(
             if (socksPort == null || httpPort == null || socksPort == httpPort) {
                 return@intent postSideEffect(
                     GlobalSideEffect.Snackbar(
-                        StringValue.StringResource(R.string.ports_must_differ)
+                        StringValue.StringResource(R.string.ports_must_differ),
+                        ToastType.Error,
                     )
                 )
             }
@@ -96,7 +98,10 @@ class ProxySettingsViewModel(
 
         if (updated.proxyPassword?.any { it.isWhitespace() } == true) {
             postSideEffect(
-                GlobalSideEffect.Snackbar(StringValue.StringResource(R.string.password_no_spaces))
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.password_no_spaces),
+                    ToastType.Error,
+                )
             )
             return@intent reduce { state.copy(isPasswordError = true) }
         }
@@ -104,7 +109,10 @@ class ProxySettingsViewModel(
         proxySettingsRepository.upsert(updated)
 
         postSideEffect(
-            GlobalSideEffect.Snackbar(StringValue.StringResource(R.string.config_changes_saved))
+            GlobalSideEffect.Snackbar(
+                StringValue.StringResource(R.string.config_changes_saved),
+                ToastType.Success,
+            )
         )
         postSideEffect(GlobalSideEffect.PopBackStack)
     }

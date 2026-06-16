@@ -2,13 +2,12 @@ package com.zaneschepke.wireguardautotunnel.viewmodel
 
 import androidx.core.content.PermissionChecker.PERMISSION_GRANTED
 import androidx.lifecycle.ViewModel
+import com.dokar.sonner.ToastType
 import com.zaneschepke.networkmonitor.NetworkMonitor
 import com.zaneschepke.networkmonitor.StableNetworkEngine
 import com.zaneschepke.tunnel.backend.RootShell
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.orchestration.AutoTunnelCoordinator
-import com.zaneschepke.wireguardautotunnel.core.service.ServiceManager
-import com.zaneschepke.wireguardautotunnel.core.service.autotunnel.AutoTunnelStateHolder
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
 import com.zaneschepke.wireguardautotunnel.domain.enums.WifiDetectionMethod
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig
@@ -16,6 +15,8 @@ import com.zaneschepke.wireguardautotunnel.domain.repository.AutoTunnelSettingsR
 import com.zaneschepke.wireguardautotunnel.domain.repository.GlobalEffectRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
 import com.zaneschepke.wireguardautotunnel.domain.sideeffect.GlobalSideEffect
+import com.zaneschepke.wireguardautotunnel.service.ServiceManager
+import com.zaneschepke.wireguardautotunnel.service.autotunnel.AutoTunnelStateHolder
 import com.zaneschepke.wireguardautotunnel.ui.state.AutoTunnelUiState
 import com.zaneschepke.wireguardautotunnel.util.StringValue
 import kotlinx.coroutines.flow.combine
@@ -99,7 +100,10 @@ class AutoTunnelViewModel(
         val trimmed = name.trim()
         if (state.autoTunnelSettings.trustedNetworkSSIDs.contains(name)) {
             return@intent postSideEffect(
-                GlobalSideEffect.Snackbar(StringValue.StringResource(R.string.error_ssid_exists))
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.error_ssid_exists),
+                    ToastType.Error,
+                )
             )
         }
         setTrustedNetworkNames(
@@ -153,11 +157,19 @@ class AutoTunnelViewModel(
         when (method) {
             WifiDetectionMethod.ROOT -> {
                 val accepted = RootShell.requestRootPermission()
-                val message =
-                    if (!accepted) StringValue.StringResource(R.string.error_root_denied)
-                    else StringValue.StringResource(R.string.root_accepted)
-                postSideEffect(GlobalSideEffect.Snackbar(message))
-                if (!accepted) return@intent
+                if (!accepted)
+                    return@intent postSideEffect(
+                        GlobalSideEffect.Snackbar(
+                            StringValue.StringResource(R.string.error_root_denied),
+                            ToastType.Error,
+                        )
+                    )
+                postSideEffect(
+                    GlobalSideEffect.Snackbar(
+                        StringValue.StringResource(R.string.root_accepted),
+                        ToastType.Success,
+                    )
+                )
             }
             WifiDetectionMethod.SHIZUKU -> {
                 requestShizuku()
@@ -188,7 +200,10 @@ class AutoTunnelViewModel(
             )
         } catch (_: Exception) {
             postSideEffect(
-                GlobalSideEffect.Snackbar(StringValue.StringResource(R.string.shizuku_not_detected))
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.shizuku_not_detected),
+                    ToastType.Error,
+                )
             )
         }
     }

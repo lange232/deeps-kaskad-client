@@ -1,14 +1,19 @@
 package com.zaneschepke.wireguardautotunnel.core.event
 
 import android.content.Context
+import com.dokar.sonner.ToastType
 import com.zaneschepke.tunnel.event.TunnelEvent
 import com.zaneschepke.tunnel.model.BackendMode
 import com.zaneschepke.tunnel.state.BackendStatus
 import com.zaneschepke.wireguardautotunnel.R
-import com.zaneschepke.wireguardautotunnel.core.notification.TunnelNotificationLine
-import com.zaneschepke.wireguardautotunnel.core.notification.TunnelNotificationService
+import com.zaneschepke.wireguardautotunnel.domain.repository.GlobalEffectRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
+import com.zaneschepke.wireguardautotunnel.domain.sideeffect.GlobalSideEffect
+import com.zaneschepke.wireguardautotunnel.lifecyle.AppVisibilityObserver
+import com.zaneschepke.wireguardautotunnel.notification.TunnelNotificationLine
+import com.zaneschepke.wireguardautotunnel.notification.TunnelNotificationService
 import com.zaneschepke.wireguardautotunnel.ui.state.DisplayTunnelState
+import com.zaneschepke.wireguardautotunnel.util.StringValue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.FlowPreview
@@ -20,11 +25,14 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 class TunnelEventDispatcher(
     private val notificationManager: TunnelNotificationService,
     private val tunnelRepository: TunnelRepository,
     private val context: Context,
+    private val appVisibilityObserver: AppVisibilityObserver,
+    private val globalEffectRepository: GlobalEffectRepository,
 ) {
 
     @OptIn(FlowPreview::class)
@@ -36,52 +44,174 @@ class TunnelEventDispatcher(
         tunnelDisplayStates: StateFlow<Map<Int, DisplayTunnelState>>,
     ) {
 
-        // informational events
+        // Informational events from tunnel backend
         providerEvents
             .onEach { event ->
                 when (event) {
                     is TunnelEvent.FallbackToIpv4 -> {
                         val name = getTunnelName(event.tunnelId)
-                        notificationManager.showIpv4Fallback(name)
+                        showOrNotify(
+                            scope = scope,
+                            foregroundAction = {
+                                globalEffectRepository.post(
+                                    GlobalSideEffect.Snackbar(
+                                        message =
+                                            StringValue.DynamicString(
+                                                context.getString(
+                                                    R.string.notification_ipv4_fallback_message,
+                                                    name,
+                                                )
+                                            ),
+                                        type = ToastType.Info,
+                                    )
+                                )
+                            },
+                            backgroundAction = { notificationManager.showIpv4Fallback(name) },
+                        )
                     }
 
                     is TunnelEvent.RecoveredToIpv6 -> {
                         val name = getTunnelName(event.tunnelId)
-                        notificationManager.showIpv6Recovery(name)
+                        showOrNotify(
+                            scope = scope,
+                            foregroundAction = {
+                                globalEffectRepository.post(
+                                    GlobalSideEffect.Snackbar(
+                                        message =
+                                            StringValue.DynamicString(
+                                                context.getString(
+                                                    R.string.notification_ipv6_recovery_message,
+                                                    name,
+                                                )
+                                            ),
+                                        type = ToastType.Success,
+                                    )
+                                )
+                            },
+                            backgroundAction = { notificationManager.showIpv6Recovery(name) },
+                        )
                     }
 
                     is TunnelEvent.DynamicDnsUpdate -> {
                         val name = getTunnelName(event.tunnelId)
-                        notificationManager.showDynamicDnsUpdate(name)
+                        showOrNotify(
+                            scope = scope,
+                            foregroundAction = {
+                                globalEffectRepository.post(
+                                    GlobalSideEffect.Snackbar(
+                                        message =
+                                            StringValue.DynamicString(
+                                                context.getString(
+                                                    R.string.notification_dynamic_dns_message,
+                                                    name,
+                                                )
+                                            ),
+                                        type = ToastType.Info,
+                                    )
+                                )
+                            },
+                            backgroundAction = { notificationManager.showDynamicDnsUpdate(name) },
+                        )
                     }
 
                     is TunnelEvent.NoRootShellAccess -> {
-                        notificationManager.showRootShellAccess()
+                        showOrNotify(
+                            scope = scope,
+                            foregroundAction = {
+                                globalEffectRepository.post(
+                                    GlobalSideEffect.Snackbar(
+                                        message =
+                                            StringValue.DynamicString(
+                                                context.getString(R.string.error_root_denied)
+                                            ),
+                                        type = ToastType.Error,
+                                    )
+                                )
+                            },
+                            backgroundAction = { notificationManager.showRootShellAccess() },
+                        )
                     }
                 }
             }
             .launchIn(scope)
 
-        // errors from the coordinator
+        // Errors from our tunnel coordinator
         coordinatorErrors
             .onEach { error ->
                 when (error) {
                     is TunnelErrorEvent.VpnPermissionDenied -> {
-                        notificationManager.showVpnRequired()
+                        showOrNotify(
+                            scope = scope,
+                            foregroundAction = {
+                                globalEffectRepository.post(
+                                    GlobalSideEffect.Snackbar(
+                                        message =
+                                            StringValue.DynamicString(
+                                                context.getString(R.string.vpn_permission_required)
+                                            ),
+                                        type = ToastType.Error,
+                                    )
+                                )
+                            },
+                            backgroundAction = { notificationManager.showVpnRequired() },
+                        )
                     }
 
                     is TunnelErrorEvent.InternalFailure -> {
-                        notificationManager.showError(error.message)
+                        showOrNotify(
+                            scope = scope,
+                            foregroundAction = {
+                                globalEffectRepository.post(
+                                    GlobalSideEffect.Snackbar(
+                                        message = StringValue.DynamicString(error.message),
+                                        type = ToastType.Error,
+                                    )
+                                )
+                            },
+                            backgroundAction = { notificationManager.showError(error.message) },
+                        )
                     }
 
                     is TunnelErrorEvent.Socks5PortUnavailable -> {
                         val name = getTunnelName(error.tunnelId)
-                        notificationManager.showSocks5PortUnavailable(error.port, name)
+                        val message =
+                            context.getString(R.string.error_socks5_port_unavailable, error.port)
+
+                        showOrNotify(
+                            scope = scope,
+                            foregroundAction = {
+                                globalEffectRepository.post(
+                                    GlobalSideEffect.Snackbar(
+                                        message = StringValue.DynamicString(message),
+                                        type = ToastType.Error,
+                                    )
+                                )
+                            },
+                            backgroundAction = {
+                                notificationManager.showSocks5PortUnavailable(error.port, name)
+                            },
+                        )
                     }
 
                     is TunnelErrorEvent.HttpPortUnavailable -> {
                         val name = getTunnelName(error.tunnelId)
-                        notificationManager.showHttpPortUnavailable(error.port, name)
+                        val message =
+                            context.getString(R.string.error_http_port_unavailable, error.port)
+
+                        showOrNotify(
+                            scope = scope,
+                            foregroundAction = {
+                                globalEffectRepository.post(
+                                    GlobalSideEffect.Snackbar(
+                                        message = StringValue.DynamicString(message),
+                                        type = ToastType.Error,
+                                    )
+                                )
+                            },
+                            backgroundAction = {
+                                notificationManager.showHttpPortUnavailable(error.port, name)
+                            },
+                        )
                     }
                 }
             }
@@ -150,6 +280,18 @@ class TunnelEventDispatcher(
                 notificationManager.updateProxyPersistentNotification(proxyLines)
             }
             .launchIn(scope)
+    }
+
+    private fun showOrNotify(
+        scope: CoroutineScope,
+        foregroundAction: suspend () -> Unit,
+        backgroundAction: () -> Unit,
+    ) {
+        if (appVisibilityObserver.isForeground.value) {
+            scope.launch { foregroundAction() }
+        } else {
+            backgroundAction()
+        }
     }
 
     private suspend fun getTunnelName(tunnelId: Int): String {

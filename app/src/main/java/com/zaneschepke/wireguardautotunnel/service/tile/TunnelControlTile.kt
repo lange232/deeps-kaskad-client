@@ -1,4 +1,4 @@
-package com.zaneschepke.wireguardautotunnel.core.service.tile
+package com.zaneschepke.wireguardautotunnel.service.tile
 
 import android.os.Build
 import android.service.quicksettings.Tile

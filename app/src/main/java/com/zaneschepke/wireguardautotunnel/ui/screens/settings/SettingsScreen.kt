@@ -38,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.dp
+import com.dokar.sonner.ToastType
 import com.zaneschepke.wireguardautotunnel.MainActivity
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
@@ -56,7 +57,6 @@ import com.zaneschepke.wireguardautotunnel.util.StringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.asString
 import com.zaneschepke.wireguardautotunnel.util.extensions.asTitleString
 import com.zaneschepke.wireguardautotunnel.util.extensions.capitalize
-import com.zaneschepke.wireguardautotunnel.util.extensions.showToast
 import com.zaneschepke.wireguardautotunnel.viewmodel.SettingsViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
 import org.koin.androidx.compose.koinViewModel
@@ -99,9 +99,14 @@ fun SettingsScreen(
         }
 
     fun performBackupRestore(action: () -> Unit) {
-        if (uiState.tunnelActive || globalUiState.isAutoTunnelActive)
-            return context.showToast(R.string.all_services_disabled)
         showBackupSheet = false
+        if (uiState.tunnelActive || globalUiState.isAutoTunnelActive) {
+            sharedViewModel.showSnackMessage(
+                StringValue.StringResource(R.string.all_services_disabled),
+                ToastType.Warning,
+            )
+            return
+        }
         action()
     }
 
@@ -168,7 +173,8 @@ fun SettingsScreen(
                             StringValue.StringResource(
                                 R.string.mode_disabled_template,
                                 appMode.asString(context),
-                            )
+                            ),
+                            ToastType.Info,
                         )
                 },
             )

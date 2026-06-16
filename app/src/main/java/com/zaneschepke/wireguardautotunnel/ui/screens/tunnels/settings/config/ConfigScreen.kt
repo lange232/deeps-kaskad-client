@@ -28,14 +28,16 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.dokar.sonner.ToastType
 import com.zaneschepke.wireguardautotunnel.R
+import com.zaneschepke.wireguardautotunnel.domain.sideeffect.GlobalSideEffect
 import com.zaneschepke.wireguardautotunnel.ui.common.functions.rememberClipboardHelper
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.config.components.QrCodeDialog
 import com.zaneschepke.wireguardautotunnel.ui.sideeffect.LocalSideEffect
 import com.zaneschepke.wireguardautotunnel.ui.theme.ConfigHeaderColor
 import com.zaneschepke.wireguardautotunnel.ui.theme.ConfigKeyColor
+import com.zaneschepke.wireguardautotunnel.util.StringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.isTextTooLargeForQr
-import com.zaneschepke.wireguardautotunnel.util.extensions.showToast
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.TunnelViewModel
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -76,7 +78,12 @@ fun ConfigScreen(
         when (sideEffect) {
             is LocalSideEffect.Modal.QR -> {
                 if (tunnel.quickConfig.isTextTooLargeForQr()) {
-                    context.showToast(R.string.text_too_large_for_qr)
+                    sharedViewModel.postSideEffect(
+                        GlobalSideEffect.Snackbar(
+                            StringValue.StringResource(R.string.text_too_large_for_qr),
+                            ToastType.Error,
+                        )
+                    )
                 } else {
                     showQrModal = true
                 }

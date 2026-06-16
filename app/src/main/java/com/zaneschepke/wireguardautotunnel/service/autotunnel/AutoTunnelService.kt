@@ -1,4 +1,4 @@
-package com.zaneschepke.wireguardautotunnel.core.service.autotunnel
+package com.zaneschepke.wireguardautotunnel.service.autotunnel
 
 import android.content.Intent
 import androidx.core.app.ServiceCompat
@@ -7,10 +7,7 @@ import androidx.lifecycle.lifecycleScope
 import com.zaneschepke.networkmonitor.AndroidNetworkMonitor
 import com.zaneschepke.networkmonitor.StableNetworkEngine
 import com.zaneschepke.wireguardautotunnel.R
-import com.zaneschepke.wireguardautotunnel.core.notification.AndroidNotificationService
-import com.zaneschepke.wireguardautotunnel.core.notification.NotificationService
 import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelCoordinator
-import com.zaneschepke.wireguardautotunnel.core.service.tile.AutoTunnelTileRefresher
 import com.zaneschepke.wireguardautotunnel.di.Dispatcher
 import com.zaneschepke.wireguardautotunnel.domain.enums.NotificationAction
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelActionSource
@@ -23,6 +20,9 @@ import com.zaneschepke.wireguardautotunnel.domain.repository.GeneralSettingRepos
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
 import com.zaneschepke.wireguardautotunnel.domain.state.AutoTunnelState
 import com.zaneschepke.wireguardautotunnel.domain.state.toDomain
+import com.zaneschepke.wireguardautotunnel.notification.AndroidNotificationService
+import com.zaneschepke.wireguardautotunnel.notification.NotificationService
+import com.zaneschepke.wireguardautotunnel.service.tile.AutoTunnelTileRefresher
 import com.zaneschepke.wireguardautotunnel.util.Constants
 import com.zaneschepke.wireguardautotunnel.util.extensions.to
 import kotlin.time.Duration.Companion.milliseconds

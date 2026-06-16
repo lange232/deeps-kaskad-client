@@ -1,4 +1,4 @@
-package com.zaneschepke.wireguardautotunnel.core.notification
+package com.zaneschepke.wireguardautotunnel.notification
 
 import com.zaneschepke.wireguardautotunnel.ui.state.DisplayTunnelState
 

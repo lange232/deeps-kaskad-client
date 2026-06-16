@@ -1,4 +1,4 @@
-package com.zaneschepke.wireguardautotunnel.core.service.autotunnel
+package com.zaneschepke.wireguardautotunnel.service.autotunnel
 
 import com.zaneschepke.wireguardautotunnel.domain.events.AutoTunnelEvent
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig

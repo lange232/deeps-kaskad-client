@@ -225,6 +225,7 @@ dependencies {
     // UI utilities
     implementation(libs.bundles.ui.utilities)
     implementation(libs.lottie.compose)
+    implementation(libs.sonner)
 
     // Misc utilities
     implementation(libs.bundles.misc.utilities)

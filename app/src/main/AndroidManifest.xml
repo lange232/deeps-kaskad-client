@@ -169,7 +169,7 @@
                 tools:node="remove" />
         </provider>
         <service
-            android:name=".core.service.tile.TunnelControlTile"
+            android:name=".service.tile.TunnelControlTile"
             android:exported="true"
             android:icon="@drawable/ic_notification"
             android:label="@string/tunnel_control"
@@ -186,7 +186,7 @@
             </intent-filter>
         </service>
         <service
-            android:name=".core.service.tile.AutoTunnelControlTile"
+            android:name=".service.tile.AutoTunnelControlTile"
             android:exported="true"
             android:icon="@drawable/ic_notification"
             android:label="@string/auto_tunnel"
@@ -203,7 +203,7 @@
             </intent-filter>
         </service>
         <service
-            android:name=".core.service.autotunnel.AutoTunnelService"
+            android:name=".service.autotunnel.AutoTunnelService"
             android:enabled="true"
             android:exported="false"
             android:foregroundServiceType="specialUse"

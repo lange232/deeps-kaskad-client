@@ -19,17 +19,34 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircleOutline
+import androidx.compose.material.icons.outlined.Error
+import androidx.compose.material.icons.outlined.ErrorOutline
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Warning
+import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.compose.material.icons.rounded.Error
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Warning
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -41,15 +58,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.LinkAnnotation
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextLinkStyles
-import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withLink
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -59,6 +73,10 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.dokar.sonner.TextToastAction
+import com.dokar.sonner.ToastType
+import com.dokar.sonner.Toaster
+import com.dokar.sonner.rememberToasterState
 import com.zaneschepke.networkmonitor.NetworkMonitor
 import com.zaneschepke.wireguardautotunnel.data.AppDatabase
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
@@ -70,10 +88,6 @@ import com.zaneschepke.wireguardautotunnel.ui.LocalIsAndroidTV
 import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
 import com.zaneschepke.wireguardautotunnel.ui.common.banner.AppAlertBanner
 import com.zaneschepke.wireguardautotunnel.ui.common.dialog.VpnDeniedDialog
-import com.zaneschepke.wireguardautotunnel.ui.common.snackbar.CustomSnackBar
-import com.zaneschepke.wireguardautotunnel.ui.common.snackbar.SnackbarInfo
-import com.zaneschepke.wireguardautotunnel.ui.common.snackbar.SnackbarType
-import com.zaneschepke.wireguardautotunnel.ui.common.snackbar.rememberCustomSnackbarState
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
 import com.zaneschepke.wireguardautotunnel.ui.navigation.SecureRoute
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Tab
@@ -110,19 +124,23 @@ import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.settings.ipv6.IPv6
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.sort.SortScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.SplitTunnelScreen
 import com.zaneschepke.wireguardautotunnel.ui.theme.AlertRed
+import com.zaneschepke.wireguardautotunnel.ui.theme.Heart
 import com.zaneschepke.wireguardautotunnel.ui.theme.OffWhite
+import com.zaneschepke.wireguardautotunnel.ui.theme.SilverTree
+import com.zaneschepke.wireguardautotunnel.ui.theme.Straw
 import com.zaneschepke.wireguardautotunnel.ui.theme.WireguardAutoTunnelTheme
 import com.zaneschepke.wireguardautotunnel.util.LocaleUtil
+import com.zaneschepke.wireguardautotunnel.util.StringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.installApk
 import com.zaneschepke.wireguardautotunnel.util.extensions.isRunningOnTv
 import com.zaneschepke.wireguardautotunnel.util.extensions.openWebUrl
 import com.zaneschepke.wireguardautotunnel.util.extensions.restartApp
-import com.zaneschepke.wireguardautotunnel.util.extensions.showToast
 import com.zaneschepke.wireguardautotunnel.viewmodel.ConfigEditViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.SplitTunnelViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.TunnelViewModel
 import de.raphaelebner.roomdatabasebackup.core.RoomBackup
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -175,7 +193,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            val snackbarState = rememberCustomSnackbarState()
+            val toaster = rememberToasterState()
             var showVpnPermissionDialog by remember { mutableStateOf(false) }
             var vpnPermissionDenied by remember { mutableStateOf(false) }
             var requestingTunnelMode by remember {
@@ -232,22 +250,18 @@ class MainActivity : AppCompatActivity() {
                         }
 
                         is GlobalSideEffect.Snackbar -> {
-                            scope.launch {
-                                snackbarState.showSnackbar(
-                                    SnackbarInfo(
-                                        message =
-                                            buildAnnotatedString {
-                                                append(sideEffect.message.asString(context))
-                                            },
-                                        type = sideEffect.type ?: SnackbarType.INFO,
-                                        durationMs = sideEffect.durationMs ?: 4000L,
-                                    )
-                                )
+                            when (sideEffect.type) {
+                                ToastType.Warning,
+                                ToastType.Error -> toaster.dismissAll()
+                                else -> Unit
                             }
-                        }
 
-                        is GlobalSideEffect.Toast ->
-                            scope.launch { context.showToast(sideEffect.message.asString(context)) }
+                            toaster.show(
+                                message = sideEffect.message.asString(context),
+                                type = sideEffect.type,
+                                duration = (sideEffect.durationMs ?: 4000L).milliseconds,
+                            )
+                        }
 
                         is GlobalSideEffect.LaunchUrl -> context.openWebUrl(sideEffect.url)
                         is GlobalSideEffect.InstallApk -> context.installApk(sideEffect.apk)
@@ -275,49 +289,26 @@ class MainActivity : AppCompatActivity() {
                         },
                     )
 
-                    val annotatedMessage = buildAnnotatedString {
-                        append(context.getString(R.string.donation_prompt_prefix))
-                        append(" ")
-                        withLink(
-                            LinkAnnotation.Clickable(
-                                tag = context.getString(R.string.support),
-                                styles =
-                                    TextLinkStyles(
-                                        style =
-                                            SpanStyle(
-                                                textDecoration = TextDecoration.Underline,
-                                                color = MaterialTheme.colorScheme.primary,
-                                            ),
-                                        focusedStyle =
-                                            SpanStyle(
-                                                textDecoration = TextDecoration.Underline,
-                                                color = MaterialTheme.colorScheme.primary,
-                                                background =
-                                                    MaterialTheme.colorScheme.primary.copy(
-                                                        alpha = 0.2f
-                                                    ),
-                                            ),
-                                    ),
-                            ) {
-                                snackbarState.dismissCurrent()
-                                navController.push(Route.Donate)
-                            }
-                        ) {
-                            append(context.getString(R.string.donation_prompt_link))
-                        }
-                        append(" ")
-                        append(context.getString(R.string.donation_prompt_suffix))
-                    }
-
                     LaunchedEffect(Unit) {
                         if (uiState.shouldShowDonationSnackbar && !uiState.alreadyDonated) {
                             viewModel.setShouldShowDonationSnackbar(false)
-                            snackbarState.showSnackbar(
-                                SnackbarInfo(
-                                    message = annotatedMessage,
-                                    type = SnackbarType.THANK_YOU,
-                                    durationMs = 30_000L,
-                                )
+                            toaster.show(
+                                message =
+                                    context.getString(R.string.donation_prompt_prefix) +
+                                        " " +
+                                        context.getString(R.string.donation_prompt_link) +
+                                        " " +
+                                        context.getString(R.string.donation_prompt_suffix),
+                                type = ToastType.Normal,
+                                duration = 30_000L.milliseconds,
+                                action =
+                                    TextToastAction(
+                                        text = context.getString(R.string.donate_title),
+                                        onClick = { toastId ->
+                                            toaster.dismiss(toastId)
+                                            navController.push(Route.Donate)
+                                        },
+                                    ),
                             )
                         }
                     }
@@ -378,25 +369,6 @@ class MainActivity : AppCompatActivity() {
                                 )
                             }
                             Scaffold(
-                                snackbarHost = {
-                                    snackbarState.SnackbarHost(
-                                        modifier =
-                                            Modifier.align(Alignment.BottomCenter)
-                                                .padding(bottom = 80.dp)
-                                    ) { info ->
-                                        CustomSnackBar(
-                                            message = info.message,
-                                            type = info.type,
-                                            onDismiss = { snackbarState.dismissCurrent() },
-                                            containerColor =
-                                                MaterialTheme.colorScheme.surfaceColorAtElevation(
-                                                    2.dp
-                                                ),
-                                            modifier =
-                                                Modifier.wrapContentHeight(align = Alignment.Top),
-                                        )
-                                    }
-                                },
                                 topBar = { DynamicTopAppBar(navState) },
                                 bottomBar = {
                                     if (navState.showBottomItems) {
@@ -548,6 +520,70 @@ class MainActivity : AppCompatActivity() {
                                     )
                                 }
                             }
+                            Toaster(
+                                state = toaster,
+                                alignment = Alignment.BottomCenter,
+                                offset = IntOffset(0, -220),
+                                richColors = true,
+                                background = {
+                                    Brush.linearGradient(
+                                        listOf(
+                                            MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp),
+                                            MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp),
+                                        )
+                                    )
+                                },
+                                elevation = 1.dp,
+                                shadowAmbientColor =
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f),
+                                shadowSpotColor =
+                                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
+                                border = {
+                                    BorderStroke(
+                                        0.dp,
+                                        androidx.compose.ui.graphics.Color.Transparent,
+                                    )
+                                },
+                                actionSlot = { toast ->
+                                    (toast.action as? TextToastAction)?.let { action ->
+                                        TextButton(
+                                            onClick = { action.onClick(toast) },
+                                            colors =
+                                                ButtonDefaults.textButtonColors(
+                                                    contentColor = MaterialTheme.colorScheme.primary
+                                                ),
+                                            contentPadding = PaddingValues(horizontal = 12.dp),
+                                        ) {
+                                            Text(text = action.text, fontWeight = FontWeight.Medium)
+                                        }
+                                    }
+                                },
+                                iconSlot = { toast ->
+                                    val (icon, color) =
+                                        when (toast.type) {
+                                            ToastType.Success ->
+                                                Icons.Outlined.CheckCircleOutline to SilverTree
+                                            ToastType.Error ->
+                                                Icons.Outlined.ErrorOutline to AlertRed
+                                            ToastType.Warning ->
+                                                Icons.Outlined.WarningAmber to Straw
+                                            ToastType.Info ->
+                                                Icons.Outlined.Info to
+                                                    MaterialTheme.colorScheme.onSurface
+                                            ToastType.Normal ->
+                                                Icons.Outlined.FavoriteBorder to Heart
+                                        }
+                                    Icon(
+                                        imageVector = icon,
+                                        contentDescription = null,
+                                        tint = color,
+                                        modifier = Modifier.padding(end = 12.dp),
+                                    )
+                                },
+                                contentColor = { MaterialTheme.colorScheme.onSurface },
+                                shape = { RoundedCornerShape(16.dp) },
+                                showCloseButton = true,
+                            )
                         }
                     }
                 }
@@ -564,17 +600,22 @@ class MainActivity : AppCompatActivity() {
             .apply {
                 onCompleteListener { success, _, _ ->
                     lifecycleScope.launch {
-                        if (success) {
-                            showToast(
-                                getString(
-                                    R.string.backup_success,
-                                    getString(R.string.restarting_app),
+                        val sideEffect =
+                            if (success) {
+                                GlobalSideEffect.Snackbar(
+                                    StringValue.StringResource(
+                                        R.string.backup_success,
+                                        getString(R.string.restarting_app),
+                                    ),
+                                    ToastType.Success,
                                 )
-                            )
-                            restartApp()
-                        } else {
-                            showToast(R.string.backup_failed)
-                        }
+                            } else {
+                                GlobalSideEffect.Snackbar(
+                                    StringValue.StringResource(R.string.backup_failed),
+                                    ToastType.Error,
+                                )
+                            }
+                        viewModel.postSideEffect(sideEffect)
                     }
                 }
             }
@@ -589,17 +630,23 @@ class MainActivity : AppCompatActivity() {
             .apply {
                 onCompleteListener { success, _, _ ->
                     lifecycleScope.launch {
-                        if (success) {
-                            showToast(
-                                getString(
-                                    R.string.restore_success,
-                                    getString(R.string.restarting_app),
+                        val sideEffect =
+                            if (success) {
+                                GlobalSideEffect.Snackbar(
+                                    StringValue.StringResource(
+                                        R.string.restore_success,
+                                        getString(R.string.restarting_app),
+                                    ),
+                                    ToastType.Success,
                                 )
-                            )
-                            restartApp()
-                        } else {
-                            showToast(R.string.restore_failed)
-                        }
+                            } else {
+                                GlobalSideEffect.Snackbar(
+                                    StringValue.StringResource(R.string.restore_failed),
+                                    ToastType.Error,
+                                )
+                            }
+                        viewModel.postSideEffect(sideEffect)
+                        if (success) restartApp()
                     }
                 }
             }

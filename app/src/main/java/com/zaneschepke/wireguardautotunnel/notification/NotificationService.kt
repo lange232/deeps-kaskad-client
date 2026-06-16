@@ -1,10 +1,10 @@
-package com.zaneschepke.wireguardautotunnel.core.notification
+package com.zaneschepke.wireguardautotunnel.notification
 
 import android.app.Notification
 import android.content.Context
 import androidx.core.app.NotificationCompat
-import com.zaneschepke.wireguardautotunnel.core.notification.AndroidNotificationService.NotificationChannels
 import com.zaneschepke.wireguardautotunnel.domain.enums.NotificationAction
+import com.zaneschepke.wireguardautotunnel.notification.AndroidNotificationService.NotificationChannels
 import com.zaneschepke.wireguardautotunnel.util.StringValue
 
 interface NotificationService {

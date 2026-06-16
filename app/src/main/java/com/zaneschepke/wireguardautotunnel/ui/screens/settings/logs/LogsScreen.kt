@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import com.dokar.sonner.ToastType
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.logs.components.LogList
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.logs.components.LogsBottomSheet
@@ -86,13 +87,15 @@ fun LogsScreen(
             },
             onCanceled = {
                 sharedViewModel.showSnackMessage(
-                    StringValue.StringResource(R.string.export_canceled)
+                    StringValue.StringResource(R.string.export_canceled),
+                    ToastType.Warning,
                 )
                 showLogsSheet = false
             },
             onUnsupported = {
                 sharedViewModel.showSnackMessage(
-                    StringValue.StringResource(R.string.export_unsupported)
+                    StringValue.StringResource(R.string.export_unsupported),
+                    ToastType.Warning,
                 )
                 showLogsSheet = false
             },

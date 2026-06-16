@@ -2,6 +2,7 @@ package com.zaneschepke.wireguardautotunnel.viewmodel
 
 import android.net.Uri
 import androidx.lifecycle.ViewModel
+import com.dokar.sonner.ToastType
 import com.zaneschepke.logcatter.LogReader
 import com.zaneschepke.wireguardautotunnel.BuildConfig
 import com.zaneschepke.wireguardautotunnel.R
@@ -61,7 +62,10 @@ class LoggerViewModel(
     fun exportLogs(uri: Uri?) = intent {
         if (uri == null) {
             postSideEffect(
-                GlobalSideEffect.Toast(StringValue.StringResource(R.string.export_unsupported))
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.export_unsupported),
+                    ToastType.Warning,
+                )
             )
             return@intent
         }
@@ -76,11 +80,12 @@ class LoggerViewModel(
             Timber.e(action)
             intent {
                 postSideEffect(
-                    GlobalSideEffect.Toast(
+                    GlobalSideEffect.Snackbar(
                         StringValue.StringResource(
                             R.string.export_failed,
                             ": ${action.localizedMessage}",
-                        )
+                        ),
+                        ToastType.Error,
                     )
                 )
             }

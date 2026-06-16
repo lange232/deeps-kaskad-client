@@ -2,7 +2,6 @@ package com.zaneschepke.wireguardautotunnel.core.orchestration
 
 import com.zaneschepke.tunnel.model.BackendMode
 import com.zaneschepke.wireguardautotunnel.core.event.TunnelErrorEvent
-import com.zaneschepke.wireguardautotunnel.core.service.ServiceManager
 import com.zaneschepke.wireguardautotunnel.core.tunnel.TunnelProvider
 import com.zaneschepke.wireguardautotunnel.data.repository.RoomDnsSettingsRepository
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelActionSource
@@ -17,6 +16,7 @@ import com.zaneschepke.wireguardautotunnel.domain.repository.GeneralSettingRepos
 import com.zaneschepke.wireguardautotunnel.domain.repository.MonitoringSettingsRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.ProxySettingsRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
+import com.zaneschepke.wireguardautotunnel.service.ServiceManager
 import com.zaneschepke.wireguardautotunnel.ui.state.DisplayTunnelState
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope

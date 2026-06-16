@@ -1,9 +1,9 @@
-package com.zaneschepke.wireguardautotunnel.core.service
+package com.zaneschepke.wireguardautotunnel.service
 
 import android.content.Context
 import android.content.Intent
 import android.net.VpnService
-import com.zaneschepke.wireguardautotunnel.core.service.autotunnel.AutoTunnelService
+import com.zaneschepke.wireguardautotunnel.service.autotunnel.AutoTunnelService
 
 class ServiceManager(private val context: Context) {
 

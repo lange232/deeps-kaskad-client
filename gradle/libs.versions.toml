@@ -48,6 +48,7 @@ parser = "1.1.1"
 relinker = "1.4.5"
 libsu = "6.0.0"
 jetbrainsKotlinJvm = "2.4.0"
+sonner = "0.3.9"
 
 [bundles]
 # Core AndroidX foundations
@@ -139,6 +140,7 @@ androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", versi
 androidx-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
 androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", version.ref = "navigation3" }
+sonner = { module = "io.github.dokar3:sonner", version.ref = "sonner" }
 
 # lifecycle
 androidx-lifecycle-process = { module = "androidx.lifecycle:lifecycle-process", version.ref = "lifecycle-runtime-compose" }
