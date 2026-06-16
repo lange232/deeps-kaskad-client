@@ -38,7 +38,6 @@ class TunnelEventDispatcher(
 
         // informational events
         providerEvents
-            .distinctUntilChanged()
             .onEach { event ->
                 when (event) {
                     is TunnelEvent.FallbackToIpv4 -> {
@@ -65,7 +64,6 @@ class TunnelEventDispatcher(
 
         // errors from the coordinator
         coordinatorErrors
-            .distinctUntilChanged()
             .onEach { error ->
                 when (error) {
                     is TunnelErrorEvent.VpnPermissionDenied -> {
