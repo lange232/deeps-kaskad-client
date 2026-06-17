@@ -34,34 +34,54 @@ fun buildLanguagesArray(languages: List<String>): String {
     return languages.joinToString(separator = ", ") { "\"$it\"" }
 }
 
+fun bumpToNextPatchVersion(version: String): String {
+    val parts = version.split(".")
+    return if (parts.size == 3) {
+        val patch = parts[2].toIntOrNull() ?: 0
+        "${parts[0]}.${parts[1]}.${patch + 1}"
+    } else {
+        "$version-next"
+    }
+}
+
 fun Project.getGitCommitHash(): String {
-    return providers.provider {
-        val ciSha = System.getenv("GITHUB_SHA")
-            ?: System.getenv("CI_COMMIT_SHA")
-            ?: System.getenv("GIT_COMMIT")
+    return providers
+        .provider {
+            val ciSha =
+                System.getenv("GITHUB_SHA")
+                    ?: System.getenv("CI_COMMIT_SHA")
+                    ?: System.getenv("GIT_COMMIT")
 
-        if (ciSha != null) {
-            return@provider ciSha.take(7)
+            if (ciSha != null) {
+                return@provider ciSha.take(7)
+            }
+
+            // Local only
+            runGitCommand(listOf("rev-parse", "--short", "HEAD"))
         }
-
-        // Local only
-        runGitCommand(listOf("rev-parse", "--short", "HEAD"))
-    }.get()
+        .get()
 }
 
 private fun Project.runGitCommand(args: List<String>): String {
-    return providers.exec {
-        commandLine("git", *args.toTypedArray())
-        workingDir = projectDir
-        isIgnoreExitValue = true
-    }.standardOutput.asText.get().trim()
+    return providers
+        .exec {
+            commandLine("git", *args.toTypedArray())
+            workingDir = projectDir
+            isIgnoreExitValue = true
+        }
+        .standardOutput
+        .asText
+        .get()
+        .trim()
 }
 
 fun Project.getCommitCountSinceLastCommit(): Int {
-    return providers.provider {
-        val output = runGitCommand(listOf("rev-list", "--count", "HEAD"))
-        output.toIntOrNull() ?: 0
-    }.get()
+    return providers
+        .provider {
+            val output = runGitCommand(listOf("rev-list", "--count", "HEAD"))
+            output.toIntOrNull() ?: 0
+        }
+        .get()
 }
 
 // Get versionCode increment for nightly

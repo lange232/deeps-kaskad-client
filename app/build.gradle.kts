@@ -146,10 +146,16 @@ androidComponents {
 
         if (isNightly) {
             variant.outputs.forEach { output ->
-                output.versionCode.set(output.versionCode.get() + 1)
-                val baseVersion = output.versionName.get()
+
+                output.versionCode.set(
+                    output.versionCode.get() + project.getVersionCodeIncrement()
+                )
+
+                val currentVersion = output.versionName.get()
+                val nextVersion = bumpToNextPatchVersion(currentVersion)
                 val gitHash = project.getGitCommitHash()
-                output.versionName.set("$baseVersion-nightly+git.$gitHash")
+
+                output.versionName.set("$nextVersion-nightly+git.$gitHash")
             }
         }
 
