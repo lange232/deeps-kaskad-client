@@ -36,10 +36,16 @@ fun buildLanguagesArray(languages: List<String>): String {
 
 fun Project.getGitCommitHash(): String {
     return providers.provider {
-        System.getenv("GITHUB_SHA")
+        val ciSha = System.getenv("GITHUB_SHA")
             ?: System.getenv("CI_COMMIT_SHA")
             ?: System.getenv("GIT_COMMIT")
-            ?: runGitCommand(listOf("rev-parse", "--short", "HEAD"))
+
+        if (ciSha != null) {
+            return@provider ciSha.take(7)
+        }
+
+        // Local only
+        runGitCommand(listOf("rev-parse", "--short", "HEAD"))
     }.get()
 }
 
