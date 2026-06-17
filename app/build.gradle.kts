@@ -23,13 +23,6 @@ licensee {
     ignoreDependencies("com.github.topjohnwu.libsu")
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget = JvmTarget.JVM_17
-        freeCompilerArgs = listOf("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
-    }
-}
-
 configure<ApplicationExtension> {
     namespace = Constants.APP_ID
     compileSdk = Constants.TARGET_SDK
@@ -134,8 +127,6 @@ configure<ApplicationExtension> {
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
 
     buildFeatures {

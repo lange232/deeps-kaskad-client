@@ -1,4 +1,5 @@
 import com.ncorti.ktfmt.gradle.tasks.KtfmtFormatTask
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
 	alias(libs.plugins.android.application) apply false
@@ -14,6 +15,18 @@ plugins {
 subprojects {
 	apply {
 		plugin(rootProject.libs.plugins.ktfmt.get().pluginId)
+	}
+
+	plugins.withId("org.jetbrains.kotlin.android") {
+		extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension> {
+			jvmToolchain(21)
+		}
+	}
+
+	plugins.withId("org.jetbrains.kotlin.jvm") {
+		extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension> {
+			jvmToolchain(21)
+		}
 	}
 
 	tasks.register<KtfmtFormatTask>("format") {
