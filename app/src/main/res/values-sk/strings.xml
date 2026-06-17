@@ -108,7 +108,7 @@
     <string name="auto_tunnel_channel_description">A channel for auto-tunnel state notifications</string>
     <string name="show_qr">Show QR</string>
     <string name="wifi_settings">Wi-Fi settings</string>
-    <string name="backup_success">Backup success. %1$s</string>
+    <string name="backup_success">Backup success</string>
     <string name="info">Info</string>
     <string name="backup_failed">Failed to create backup.</string>
     <string name="junk_packet_minimum_size">Junk packet minimálna veľkosť</string>

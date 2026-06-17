@@ -231,8 +231,8 @@
     <string name="auto_tunnel_running">Auto-tunnel is running</string>
     <string name="auto_tunnel_not_running">Auto-tunnel is not running</string>
     <string name="tunnel_monitoring">Tunnel monitoring</string>
-    <string name="backup_success">Backup success. %1$s</string>
-    <string name="restore_success">Restore success. %1$s</string>
+    <string name="backup_success">Backup success</string>
+    <string name="restore_success">Restore success</string>
     <string name="restarting_app">Restarting app to apply changes…</string>
     <string name="restore_failed">Failed to restore from backup.</string>
     <string name="backup_failed">Failed to create backup.</string>
@@ -525,4 +525,14 @@
     <string name="remote_control">Remote control</string>
     <string name="remote_control_desc">Allow other apps (like Tasker) to control tunnels</string>
     <string name="endpoint_template">endpoint: %1$s</string>
+
+    <string name="encrypted">Encrypted</string>
+    <string name="confirm_password">Confirm password</string>
+    <string name="passwords_do_not_match">Passwords do not match</string>
+
+    <string name="backup">Backup</string>
+    <string name="restore">Restore</string>
+    <string name="hide_password">Hide password</string>
+    <string name="restore_failed_wrong_password">Restore failed. Wrong password</string>
+    <string name="restore_failed_invalid_file">Restore failed. Select a valid backup file (.sqlite3 or .sqlite3.aes)</string>
 </resources>

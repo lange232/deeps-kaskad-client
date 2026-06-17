@@ -194,7 +194,7 @@
     <string name="recommended_template">%1$s (soovitatav)</string>
     <string name="hint_template">(%1$s)</string>
     <string name="tunnel_monitoring">Tunnelo monitooring</string>
-    <string name="backup_success">Varundus õnnestus. %1$s</string>
+    <string name="backup_success">Varundus õnnestus</string>
     <string name="restore_success">Taastamine õnnestus. %1$s</string>
     <string name="restarting_app">Muudatuste jõustamiseks taaskäivitan rakenduse…</string>
     <string name="restore_failed">Varukoopiast taastamine ei õnnestunud.</string>

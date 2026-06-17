@@ -129,6 +129,7 @@ import com.zaneschepke.wireguardautotunnel.ui.theme.OffWhite
 import com.zaneschepke.wireguardautotunnel.ui.theme.SilverTree
 import com.zaneschepke.wireguardautotunnel.ui.theme.Straw
 import com.zaneschepke.wireguardautotunnel.ui.theme.WireguardAutoTunnelTheme
+import com.zaneschepke.wireguardautotunnel.util.FileUtils
 import com.zaneschepke.wireguardautotunnel.util.LocaleUtil
 import com.zaneschepke.wireguardautotunnel.util.StringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.installApk
@@ -139,6 +140,10 @@ import com.zaneschepke.wireguardautotunnel.viewmodel.ConfigEditViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.SplitTunnelViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.TunnelViewModel
+import de.raphaelebner.roomdatabasebackup.core.OnCompleteListener.Companion.EXIT_CODE_ERROR
+import de.raphaelebner.roomdatabasebackup.core.OnCompleteListener.Companion.EXIT_CODE_ERROR_DECRYPTION_ERROR
+import de.raphaelebner.roomdatabasebackup.core.OnCompleteListener.Companion.EXIT_CODE_ERROR_RESTORE_BACKUP_IS_ENCRYPTED
+import de.raphaelebner.roomdatabasebackup.core.OnCompleteListener.Companion.EXIT_CODE_ERROR_WRONG_DECRYPTION_PASSWORD
 import de.raphaelebner.roomdatabasebackup.core.RoomBackup
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.awaitCancellation
@@ -150,6 +155,7 @@ import org.koin.androidx.compose.koinViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 import org.orbitmvi.orbit.compose.collectAsState
+import timber.log.Timber
 import xyz.teamgravity.pin_lock_compose.PinManager
 
 class MainActivity : AppCompatActivity() {
@@ -173,9 +179,9 @@ class MainActivity : AppCompatActivity() {
         }
         super.onCreate(savedInstanceState)
 
-        handleIncomingIntent(intent)
+        roomBackup = RoomBackup(this).database(appDatabase).enableLogDebug(true).maxFileCount(5)
 
-        roomBackup = RoomBackup(this)
+        handleIncomingIntent(intent)
 
         installSplashScreen().apply {
             setKeepOnScreenCondition { !viewModel.container.stateFlow.value.isAppLoaded }
@@ -591,62 +597,76 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun performBackup() = lifecycleScope.launch {
+    fun performBackup(encrypt: Boolean = false, password: String? = null) {
         roomBackup
-            .database(appDatabase)
             .backupLocation(RoomBackup.BACKUP_FILE_LOCATION_CUSTOM_DIALOG)
-            .enableLogDebug(true)
-            .maxFileCount(5)
             .apply {
-                onCompleteListener { success, _, _ ->
-                    lifecycleScope.launch {
-                        val sideEffect =
-                            if (success) {
-                                GlobalSideEffect.Snackbar(
-                                    StringValue.StringResource(
-                                        R.string.backup_success,
-                                        getString(R.string.restarting_app),
-                                    ),
-                                    ToastType.Success,
-                                )
-                            } else {
-                                GlobalSideEffect.Snackbar(
-                                    StringValue.StringResource(R.string.backup_failed),
-                                    ToastType.Error,
-                                )
-                            }
-                        viewModel.postSideEffect(sideEffect)
-                    }
+                if (encrypt && !password.isNullOrBlank()) {
+                    backupIsEncrypted(true)
+                    customEncryptPassword(password)
+                }
+            }
+            .onCompleteListener { success, _, _ ->
+                lifecycleScope.launch {
+                    val sideEffect =
+                        if (success) {
+                            GlobalSideEffect.Snackbar(
+                                StringValue.StringResource(R.string.backup_success),
+                                ToastType.Success,
+                            )
+                        } else {
+                            GlobalSideEffect.Snackbar(
+                                StringValue.StringResource(R.string.backup_failed),
+                                ToastType.Error,
+                            )
+                        }
+                    viewModel.postSideEffect(sideEffect)
                 }
             }
             .backup()
     }
 
-    fun performRestore() = lifecycleScope.launch {
+    fun performRestore(encrypt: Boolean = false, password: String? = null) {
         roomBackup
-            .database(appDatabase)
-            .enableLogDebug(true)
             .backupLocation(RoomBackup.BACKUP_FILE_LOCATION_CUSTOM_DIALOG)
             .apply {
-                onCompleteListener { success, _, _ ->
-                    lifecycleScope.launch {
-                        val sideEffect =
-                            if (success) {
-                                GlobalSideEffect.Snackbar(
-                                    StringValue.StringResource(
-                                        R.string.restore_success,
-                                        getString(R.string.restarting_app),
-                                    ),
-                                    ToastType.Success,
-                                )
-                            } else {
-                                GlobalSideEffect.Snackbar(
-                                    StringValue.StringResource(R.string.restore_failed),
-                                    ToastType.Error,
-                                )
+                if (encrypt && !password.isNullOrBlank()) {
+                    backupIsEncrypted(true)
+                    customEncryptPassword(password)
+                }
+            }
+            .onCompleteListener { success, message, exitCode ->
+                lifecycleScope.launch {
+                    if (success) {
+                        viewModel.postSideEffect(
+                            GlobalSideEffect.Snackbar(
+                                StringValue.StringResource(R.string.restore_success),
+                                ToastType.Success,
+                            )
+                        )
+                        roomBackup.restartApp(Intent(this@MainActivity, MainActivity::class.java))
+                    } else {
+                        Timber.w("Restore failed, exitCode=$exitCode, message=$message")
+
+                        val errorMessage =
+                            when (exitCode) {
+                                EXIT_CODE_ERROR_WRONG_DECRYPTION_PASSWORD ->
+                                    getString(R.string.restore_failed_wrong_password)
+
+                                EXIT_CODE_ERROR,
+                                EXIT_CODE_ERROR_DECRYPTION_ERROR,
+                                EXIT_CODE_ERROR_RESTORE_BACKUP_IS_ENCRYPTED ->
+                                    getString(R.string.restore_failed_invalid_file)
+
+                                else -> getString(R.string.restore_failed)
                             }
-                        viewModel.postSideEffect(sideEffect)
-                        if (success) restartApp()
+
+                        viewModel.postSideEffect(
+                            GlobalSideEffect.Snackbar(
+                                StringValue.DynamicString(errorMessage),
+                                ToastType.Error,
+                            )
+                        )
                     }
                 }
             }
@@ -666,13 +686,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleIncomingIntent(intent: Intent?) {
         intent ?: return
-
         when (intent.action) {
             Intent.ACTION_VIEW,
             Intent.ACTION_EDIT,
             Intent.ACTION_SEND -> {
-                val uri: Uri? = intent.data
-                uri?.let { viewModel.importFromUri(it) }
+                val uri: Uri? = intent.data ?: return
+                val name = uri?.lastPathSegment?.lowercase() ?: return
+                if (
+                    !name.endsWith(FileUtils.CONF_FILE_EXTENSION) &&
+                        !name.endsWith(FileUtils.ZIP_FILE_EXTENSION)
+                ) {
+                    Timber.d("Ignoring non-config URI in handleIncomingIntent: $uri")
+                    return
+                }
+                viewModel.importFromUri(uri)
             }
         }
     }

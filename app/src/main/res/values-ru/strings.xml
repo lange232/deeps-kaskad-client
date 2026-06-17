@@ -207,7 +207,7 @@
     <string name="backup_application">Резервирование данных</string>
     <string name="restore_application">Восстановление данных</string>
     <string name="tunnel_monitoring">Отслеживание туннеля</string>
-    <string name="backup_success">Резервное копирование выполнено. %1$s</string>
+    <string name="backup_success">Резервное копирование выполнено</string>
     <string name="restore_success">Восстановление выполнено. %1$s</string>
     <string name="root_required_template">%1$s (требуется root)</string>
     <string name="recommended_template">%1$s (рекомендуется)</string>

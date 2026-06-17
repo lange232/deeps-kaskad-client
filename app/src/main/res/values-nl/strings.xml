@@ -222,7 +222,7 @@
     <string name="website">App website</string>
     <string name="mimic_quic">Mimic QUIC</string>
     <string name="wifi_settings">Wi-Fi instellingen</string>
-    <string name="backup_success">Backup succesvol. %1$s</string>
+    <string name="backup_success">Backup succesvol</string>
     <string name="info">Info</string>
     <string name="backup_failed">Backup maken mislukt.</string>
     <string name="unknown">Onbekend</string>

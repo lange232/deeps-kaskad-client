@@ -165,7 +165,7 @@
     <string name="mimic_quic">Імітація QUIC</string>
     <string name="show_qr">Показати QR-код</string>
     <string name="wifi_settings">Параметри Wi-Fi</string>
-    <string name="backup_success">Рез. копіювання успішне. %1$s</string>
+    <string name="backup_success">Рез. копіювання успішне</string>
     <string name="info">Інформація</string>
     <string name="backup_failed">Не вдалося створити резервну копію.</string>
     <string name="location_permissions">Дозволи на доступ до геолокації</string>

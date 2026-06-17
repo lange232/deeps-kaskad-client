@@ -52,6 +52,7 @@ import com.zaneschepke.wireguardautotunnel.ui.common.label.GroupLabel
 import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.components.BackupBottomSheet
+import com.zaneschepke.wireguardautotunnel.ui.screens.settings.components.BackupEncryptionDialog
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.proxy.compoents.AppModeBottomSheet
 import com.zaneschepke.wireguardautotunnel.util.StringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.asString
@@ -88,6 +89,9 @@ fun SettingsScreen(
     }
 
     var showBackupSheet by rememberSaveable { mutableStateOf(false) }
+    var showEncryptionDialog by rememberSaveable { mutableStateOf(false) }
+    var isRestoreAction by remember { mutableStateOf(false) }
+
     var showAppModeSheet by rememberSaveable { mutableStateOf(false) }
 
     val appMode = uiState.settings.tunnelMode
@@ -110,13 +114,42 @@ fun SettingsScreen(
         action()
     }
 
-    if (showBackupSheet)
+    if (showBackupSheet) {
         BackupBottomSheet(
-            { performBackupRestore { (context as? MainActivity)?.performBackup() } },
-            { performBackupRestore { (context as? MainActivity)?.performRestore() } },
-        ) {
-            showBackupSheet = false
-        }
+            onBackup = {
+                showBackupSheet = false
+                isRestoreAction = false
+                showEncryptionDialog = true
+            },
+            onRestore = {
+                showBackupSheet = false
+                isRestoreAction = true
+                showEncryptionDialog = true
+            },
+            onDismiss = { showBackupSheet = false },
+        )
+    }
+
+    if (showEncryptionDialog) {
+        BackupEncryptionDialog(
+            isRestore = isRestoreAction,
+            onConfirm = { encrypt, password ->
+                showEncryptionDialog = false
+
+                if (isRestoreAction) {
+                    performBackupRestore {
+                        (context as? MainActivity)?.performRestore(encrypt, password)
+                    }
+                } else {
+                    performBackupRestore {
+                        (context as? MainActivity)?.performBackup(encrypt, password)
+                    }
+                }
+            },
+            onDismiss = { showEncryptionDialog = false },
+        )
+    }
+
     if (showAppModeSheet)
         AppModeBottomSheet(sharedViewModel::setAppMode, uiState.settings.tunnelMode) {
             showAppModeSheet = false

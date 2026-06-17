@@ -58,7 +58,7 @@
     <string name="wifi_settings">Wi-Fi 설정</string>
     <string name="tunnel_on_wifi">Wi-Fi에서 터널 사용</string>
     <string name="add_peer">피어 추가</string>
-    <string name="backup_success">백업 성공. %1$s</string>
+    <string name="backup_success">백업 성공</string>
     <string name="persistent_keepalive">지속적 연결 유지</string>
     <string name="info">정보</string>
     <string name="exclude">제외</string>

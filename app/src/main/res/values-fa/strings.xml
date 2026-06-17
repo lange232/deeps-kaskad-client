@@ -70,7 +70,7 @@
     <string name="wifi_settings">Wi-Fi settings</string>
     <string name="tunnel_on_wifi">Tunnel on Wi-Fi</string>
     <string name="add_peer">Add peer</string>
-    <string name="backup_success">Backup success. %1$s</string>
+    <string name="backup_success">Backup success</string>
     <string name="persistent_keepalive">Persistent keepalive</string>
     <string name="info">Info</string>
     <string name="exclude">Exclude</string>

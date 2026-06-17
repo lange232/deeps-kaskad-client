@@ -116,7 +116,7 @@
     <string name="auto_tunnel_channel_description">Saluran untuk notifikasi status terowongan otomatis</string>
     <string name="show_qr">Tampilkan QR</string>
     <string name="wifi_settings">Pengaturan Wi-Fi</string>
-    <string name="backup_success">Pencadangan berhasil. %1$s</string>
+    <string name="backup_success">Pencadangan berhasil</string>
     <string name="info">Info</string>
     <string name="exclude">Kecualikan</string>
     <string name="backup_failed">Gagal membuat cadangan.</string>

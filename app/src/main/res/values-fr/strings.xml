@@ -171,7 +171,7 @@
     <string name="mimic_quic">Imiter QUIC</string>
     <string name="show_qr">Afficher le QR</string>
     <string name="wifi_settings">Paramètres Wi-Fi</string>
-    <string name="backup_success">Sauvegarde réussie. %1$s</string>
+    <string name="backup_success">Sauvegarde réussie</string>
     <string name="info">Info</string>
     <string name="backup_failed">Échec de la création de la sauvegarde.</string>
     <string name="location_permissions">Permissions de localisation</string>
