@@ -112,6 +112,9 @@ jobs:
               ./gradlew :app:assemble${flavor^}Debug --stacktrace
               ;;
           esac
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
       - name: Get release apk path
         id: apk-path
         run: echo "path=$(find . -regex '^.*/build/outputs/apk/${{ inputs.flavor }}/${{ inputs.build_type }}/.*\.apk$' -type f | head -1 | tail -c+2)" >> $GITHUB_OUTPUT
