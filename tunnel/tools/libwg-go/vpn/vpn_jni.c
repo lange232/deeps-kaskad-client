@@ -13,6 +13,7 @@ extern int awgTurnOn(struct go_string ifname, int tun_fd, struct go_string setti
 extern void awgTurnOff(int handle);
 extern char *awgGetConfig(int handle);
 extern char *awgVersion();
+extern void awgTriggerBindUpdate(int handle);
 extern int awgUpdateTunnelPeers(int handle, struct go_string settings);
 
 JNIEXPORT jint JNICALL  Java_com_zaneschepke_tunnel_VpnBackend_awgTurnOn(JNIEnv *env, jclass c, jstring ifname, jint tun_fd, jstring settings, jstring uapipath)
@@ -76,4 +77,9 @@ int ret = awgUpdateTunnelPeers(handle, (struct go_string){
 });
 (*env)->ReleaseStringUTFChars(env, settings, settings_str);
 return ret;
+}
+
+JNIEXPORT void JNICALL Java_com_zaneschepke_tunnel_VpnBackend_awgTriggerBindUpdate
+(JNIEnv *env, jclass clazz, jint handle) {
+    awgTriggerBindUpdate(handle);
 }

@@ -89,6 +89,16 @@ internal class ServiceHolder(val context: Context) {
         withTimeoutOrNull(1_000L.milliseconds) { tunnelServiceFlow.first { it == null } }
     }
 
+    /**
+     * Gets the VpnService and starts if needed while ensuring the protector is registered. This is
+     * needed before any native call that uses NewStdNetBindWithControl.
+     */
+    suspend fun ensureVpnProtectorRegistered(): VpnService {
+        val service = getVpnService()
+        ProxyBackend.setSocketProtector(service)
+        return service
+    }
+
     companion object {
         const val DEFAULT_MTU = 1280
         // for consumer to set AOVPN callback

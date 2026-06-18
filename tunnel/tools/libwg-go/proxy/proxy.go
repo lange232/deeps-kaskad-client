@@ -225,6 +225,21 @@ func awgGetProxyConfig(tunnelHandle int32) *C.char {
 	return C.CString(settings)
 }
 
+//export awgTriggerProxyBindUpdate
+func awgTriggerProxyBindUpdate(handle int32) {
+	tunnelMu.RLock()
+	vt, ok := virtualTunnelHandles[handle]
+	tunnelMu.RUnlock()
+	if !ok {
+		shared.LogDebug(tag, "awgTriggerProxyBindUpdate: handle %d not found", handle)
+		return
+	}
+	if vt.Dev != nil {
+		shared.LogDebug(tag, "Calling BindUpdate on Proxy handle %d", handle)
+		vt.Dev.BindUpdate()
+	}
+}
+
 //export awgTurnProxyTunnelOff
 func awgTurnProxyTunnelOff(virtualTunnelHandle int32) {
 

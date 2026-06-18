@@ -324,7 +324,6 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
     }
 
     companion object {
-        const val HEV_BRIDGE_TRAFFIC_TAG = 0xF00D
         private const val LOCKDOWN_SESSION_NAME = "Lockdown"
         private const val LOCALHOST = "127.0.0.1"
         private const val IPV4_INTERFACE_ADDRESS = "10.0.0.1"
@@ -336,5 +335,6 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
         private const val DEFAULT_DNS_SERVER = "1.1.1.1"
 
         private const val SYSTEM_EXEMPT_SERVICE_TYPE_ID = 1 shl 10
+        const val HEV_BRIDGE_TRAFFIC_TAG = 0xF00D
     }
 }
