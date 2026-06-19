@@ -7,6 +7,7 @@ import com.zaneschepke.tunnel.util.BackendException
 import java.lang.ref.WeakReference
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -94,6 +95,8 @@ internal class ServiceHolder(val context: Context) {
     suspend fun ensureVpnProtectorRegistered(): VpnService {
         val service = getVpnService()
         ProxyBackend.setSocketProtector(service)
+        // Small delay to give JNI time to propagate on slow devices
+        delay(50.milliseconds)
         return service
     }
 
