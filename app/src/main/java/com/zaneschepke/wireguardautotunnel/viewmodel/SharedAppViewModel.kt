@@ -78,7 +78,7 @@ class SharedAppViewModel(
 
                 val displayStates =
                     backendStatus.activeTunnels.mapValues { (_, activeTunnel) ->
-                        DisplayTunnelState.from(activeTunnel, System.currentTimeMillis())
+                        DisplayTunnelState.from(activeTunnel)
                     }
 
                 TunnelsUiState(

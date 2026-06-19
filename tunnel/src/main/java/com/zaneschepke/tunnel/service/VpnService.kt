@@ -1,5 +1,6 @@
 package com.zaneschepke.tunnel.service
 
+import android.app.NotificationManager
 import android.content.Intent
 import android.net.TrafficStats
 import android.os.Build
@@ -26,10 +27,13 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
 import timber.log.Timber
@@ -42,6 +46,10 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val shutdownScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    private val notificationManager: NotificationManager by lazy {
+        getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    }
+
     @Volatile private var userActivatedShutdown = false
     private var hevBridgeJob: Job? = null
 
@@ -50,6 +58,7 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
     override fun onCreate() {
         serviceHolder.set(this)
         launchForegroundNotification()
+        observeVpnPersistentNotification()
         super.onCreate()
     }
 
@@ -82,6 +91,24 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
             }
         } finally {
             super.onDestroy()
+        }
+    }
+
+    @OptIn(FlowPreview::class)
+    private fun observeVpnPersistentNotification() {
+        serviceScope.launch {
+            backend.status
+                .distinctUntilChanged { old, new -> old.activeTunnels == new.activeTunnels }
+                .debounce(1_000.milliseconds)
+                .collect { status ->
+                    val notification =
+                        backend.applicationProvider.buildVpnPersistentNotification(status)
+
+                    notificationManager.notify(
+                        backend.applicationProvider.vpnNotificationId,
+                        notification,
+                    )
+                }
         }
     }
 

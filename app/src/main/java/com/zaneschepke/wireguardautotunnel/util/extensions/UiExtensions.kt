@@ -124,7 +124,7 @@ fun DnsError.labelRes(): Int {
 fun ActiveTunnel.statusText(context: Context): String {
     return context.getString(
         R.string.status_template,
-        DisplayTunnelState.from(this, System.currentTimeMillis()).asLocalizedString(context),
+        DisplayTunnelState.from(this).asLocalizedString(context),
     )
 }
 

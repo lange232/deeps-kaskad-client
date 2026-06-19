@@ -55,7 +55,7 @@ class TunnelCoordinator(
         tunnelProvider.backendStatus
             .map { status ->
                 status.activeTunnels.mapValues { (_, activeTunnel) ->
-                    DisplayTunnelState.from(activeTunnel, System.currentTimeMillis())
+                    DisplayTunnelState.from(activeTunnel)
                 }
             }
             .debounce(400L.milliseconds)

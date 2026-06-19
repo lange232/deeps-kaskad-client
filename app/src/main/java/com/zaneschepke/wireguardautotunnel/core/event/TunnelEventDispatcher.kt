@@ -234,8 +234,7 @@ class TunnelEventDispatcher(
                         val tunnel = allTunnels.find { it.id == id } ?: return@mapNotNull null
 
                         val displayState =
-                            displayStates[id]
-                                ?: DisplayTunnelState.from(activeTunnel, System.currentTimeMillis())
+                            displayStates[id] ?: DisplayTunnelState.from(activeTunnel)
 
                         TunnelNotificationLine(
                             id = id,
@@ -263,8 +262,7 @@ class TunnelEventDispatcher(
 
                         val tunnel = allTunnels.find { it.id == id } ?: return@mapNotNull null
                         val displayState =
-                            displayStates[id]
-                                ?: DisplayTunnelState.from(activeTunnel, System.currentTimeMillis())
+                            displayStates[id] ?: DisplayTunnelState.from(activeTunnel)
 
                         TunnelNotificationLine(
                             id = id,

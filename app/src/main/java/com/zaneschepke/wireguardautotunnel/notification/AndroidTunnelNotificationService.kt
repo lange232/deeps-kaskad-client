@@ -16,6 +16,101 @@ class AndroidTunnelNotificationService(private val notificationService: Notifica
 
     private val context = notificationService.context
 
+    private fun createGroupNotification(
+        tunnelNotificationLines: Map<Int, TunnelNotificationLine>,
+        channel: NotificationChannels.Tunnel,
+        groupKey: String,
+    ): android.app.Notification {
+        val title =
+            if (tunnelNotificationLines.size == 1) {
+                val name = tunnelNotificationLines.values.first().name
+                when (channel) {
+                    is NotificationChannels.Tunnel.VPN ->
+                        "${context.getString(R.string.vpn)} • $name"
+                    is NotificationChannels.Tunnel.Proxy ->
+                        "${context.getString(R.string.proxy)} • $name"
+                }
+            } else {
+                when (channel) {
+                    is NotificationChannels.Tunnel.VPN -> context.getString(R.string.vpn)
+                    is NotificationChannels.Tunnel.Proxy -> context.getString(R.string.proxy)
+                }
+            }
+
+        val formattedLines =
+            tunnelNotificationLines.values.map { line ->
+                val status = line.displayState.asLocalizedString(context)
+
+                if (tunnelNotificationLines.size == 1) {
+                    status
+                } else {
+                    context.getString(R.string.notification_tunnel_status_format, line.name, status)
+                }
+            }
+        val description = formattedLines.joinToString("\n")
+
+        val actions =
+            if (tunnelNotificationLines.size == 1) {
+                val tunnelId = tunnelNotificationLines.keys.first()
+                listOf(
+                    notificationService.createNotificationAction(
+                        notificationAction = NotificationAction.TUNNEL_OFF,
+                        extraId = tunnelId,
+                    )
+                )
+            } else {
+                listOf(
+                    notificationService.createNotificationAction(
+                        notificationAction = NotificationAction.STOP_ALL,
+                        extraId = null,
+                    )
+                )
+            }
+
+        val style =
+            if (tunnelNotificationLines.size > 1) {
+                NotificationCompat.InboxStyle()
+                    .setBigContentTitle(title)
+                    .setSummaryText(
+                        "${tunnelNotificationLines.size} ${context.getString(R.string.tunnels).lowercase()}"
+                    )
+                    .also { inbox -> formattedLines.forEach { inbox.addLine(it) } }
+            } else {
+                null
+            }
+
+        return notificationService.createNotification(
+            channel = channel,
+            title = title,
+            description = description,
+            actions = actions,
+            onGoing = true,
+            onlyAlertOnce = true,
+            groupKey = groupKey,
+            style = style,
+        )
+    }
+
+    override fun buildVpnPersistentNotification(
+        tunnelNotificationLines: Map<Int, TunnelNotificationLine>
+    ): android.app.Notification {
+        return createGroupNotification(
+            tunnelNotificationLines,
+            NotificationChannels.Tunnel.VPN,
+            VPN_GROUP_KEY,
+        )
+    }
+
+    override fun buildProxyPersistentNotification(
+        tunnelNotificationLines: Map<Int, TunnelNotificationLine>
+    ): android.app.Notification {
+        return createGroupNotification(
+            tunnelNotificationLines,
+            NotificationChannels.Tunnel.Proxy,
+            PROXY_GROUP_KEY,
+        )
+    }
+
     private fun updateGroupNotification(
         tunnelNotificationLines: Map<Int, TunnelNotificationLine>,
         notificationId: Int,
@@ -88,26 +183,36 @@ class AndroidTunnelNotificationService(private val notificationService: Notifica
         notificationService.show(notificationId, notification)
     }
 
-    override fun updateProxyPersistentNotification(
-        tunnelNotificationLines: Map<Int, TunnelNotificationLine>
-    ) {
-        updateGroupNotification(
-            tunnelNotificationLines = tunnelNotificationLines,
-            notificationId = PROXY_NOTIFICATION_ID,
-            channel = NotificationChannels.Tunnel.Proxy,
-            groupKey = PROXY_GROUP_KEY,
-        )
-    }
-
     override fun updateVpnPersistentNotification(
         tunnelNotificationLines: Map<Int, TunnelNotificationLine>
     ) {
-        updateGroupNotification(
-            tunnelNotificationLines = tunnelNotificationLines,
-            notificationId = VPN_NOTIFICATION_ID,
-            channel = NotificationChannels.Tunnel.VPN,
-            groupKey = VPN_GROUP_KEY,
-        )
+        if (tunnelNotificationLines.isEmpty()) {
+            notificationService.remove(VPN_NOTIFICATION_ID)
+            return
+        }
+        val notification =
+            createGroupNotification(
+                tunnelNotificationLines,
+                NotificationChannels.Tunnel.VPN,
+                VPN_GROUP_KEY,
+            )
+        notificationService.show(VPN_NOTIFICATION_ID, notification)
+    }
+
+    override fun updateProxyPersistentNotification(
+        tunnelNotificationLines: Map<Int, TunnelNotificationLine>
+    ) {
+        if (tunnelNotificationLines.isEmpty()) {
+            notificationService.remove(PROXY_NOTIFICATION_ID)
+            return
+        }
+        val notification =
+            createGroupNotification(
+                tunnelNotificationLines,
+                NotificationChannels.Tunnel.Proxy,
+                PROXY_GROUP_KEY,
+            )
+        notificationService.show(PROXY_NOTIFICATION_ID, notification)
     }
 
     override fun showIpv4Fallback(tunnelName: String) {

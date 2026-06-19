@@ -1,6 +1,5 @@
 package com.zaneschepke.tunnel.backend
 
-import com.zaneschepke.networkmonitor.NetworkMonitor
 import com.zaneschepke.networkmonitor.StableNetworkEngine
 import com.zaneschepke.tunnel.ApplicationProvider
 import com.zaneschepke.tunnel.StatusCallback
@@ -56,7 +55,6 @@ import timber.log.Timber
 
 class TunnelBackend(
     private val scope: CoroutineScope,
-    private val networkMonitor: NetworkMonitor,
     override val applicationProvider: ApplicationProvider,
     private val stableNetworkEngine: StableNetworkEngine,
 ) : Backend {

@@ -20,7 +20,7 @@ val tunnelModule = module {
 
     single { ServiceHolder(androidContext()) }
     // expect networkMonitor and NotificationProvider to be available to koin from app
-    single<Backend> { TunnelBackend(get(named(CoroutineScopes.IO_SCOPE)), get(), get(), get()) }
+    single<Backend> { TunnelBackend(get(named(CoroutineScopes.IO_SCOPE)), get(), get()) }
     single<TunnelEngine> { WireGuardTunnelEngine(get()) }
 }
 

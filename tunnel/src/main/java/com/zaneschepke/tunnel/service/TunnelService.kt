@@ -1,15 +1,21 @@
 package com.zaneschepke.tunnel.service
 
+import android.app.NotificationManager
 import android.content.Intent
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
+import androidx.lifecycle.lifecycleScope
 import com.zaneschepke.tunnel.backend.Backend
 import com.zaneschepke.tunnel.backend.ServiceHolder
 import com.zaneschepke.tunnel.backend.ServiceHolder.Companion.alwaysOnCallback
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
 import timber.log.Timber
@@ -20,11 +26,16 @@ class TunnelService : LifecycleService() {
     private val serviceHolder: ServiceHolder by inject(ServiceHolder::class.java)
     private val shutdownScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    private val notificationManager: NotificationManager by lazy {
+        getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+    }
+
     @Volatile private var userActivatedShutdown = false
 
     override fun onCreate() {
         serviceHolder.set(this)
         launchForegroundNotification()
+        observeProxyPersistentNotification()
         super.onCreate()
     }
 
@@ -44,6 +55,24 @@ class TunnelService : LifecycleService() {
         }
 
         return START_STICKY
+    }
+
+    @OptIn(FlowPreview::class)
+    private fun observeProxyPersistentNotification() {
+        lifecycleScope.launch {
+            backend.status
+                .distinctUntilChanged { old, new -> old.activeTunnels == new.activeTunnels }
+                .debounce(1_000.milliseconds)
+                .collect { status ->
+                    val notification =
+                        backend.applicationProvider.buildProxyPersistentNotification(status)
+
+                    notificationManager.notify(
+                        backend.applicationProvider.proxyNotificationId,
+                        notification,
+                    )
+                }
+        }
     }
 
     @OptIn(ExperimentalAtomicApi::class)
