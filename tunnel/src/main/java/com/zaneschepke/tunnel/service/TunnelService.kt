@@ -2,12 +2,12 @@ package com.zaneschepke.tunnel.service
 
 import android.app.NotificationManager
 import android.content.Intent
+import android.os.IBinder
 import androidx.core.app.ServiceCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import com.zaneschepke.tunnel.backend.Backend
-import com.zaneschepke.tunnel.backend.ServiceHolder
-import com.zaneschepke.tunnel.backend.ServiceHolder.Companion.alwaysOnCallback
+import com.zaneschepke.tunnel.service.ServiceHolder.Companion.alwaysOnCallback
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
@@ -96,16 +96,17 @@ class TunnelService : LifecycleService() {
         super.onDestroy()
     }
 
+    override fun onBind(intent: Intent): IBinder? {
+        super.onBind(intent)
+        return null
+    }
+
     fun launchForegroundNotification() {
         ServiceCompat.startForeground(
             this,
             backend.applicationProvider.proxyNotificationId,
             backend.applicationProvider.proxyInitNotification,
-            SPECIAL_USE_SERVICE_TYPE_ID,
+            ServiceHolder.SPECIAL_USE_SERVICE_TYPE_ID,
         )
-    }
-
-    companion object {
-        private const val SPECIAL_USE_SERVICE_TYPE_ID = 1 shl 30
     }
 }

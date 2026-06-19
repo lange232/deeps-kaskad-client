@@ -1,10 +1,8 @@
-package com.zaneschepke.tunnel.backend
+package com.zaneschepke.tunnel.service
 
 import android.content.Context
 import android.content.Intent
 import com.zaneschepke.tunnel.ProxyBackend
-import com.zaneschepke.tunnel.service.TunnelService
-import com.zaneschepke.tunnel.service.VpnService
 import com.zaneschepke.tunnel.util.BackendException
 import java.lang.ref.WeakReference
 import kotlin.time.Duration.Companion.milliseconds
@@ -51,7 +49,7 @@ internal class ServiceHolder(val context: Context) {
         }
 
         if (_vpnService.value == null) {
-            context.startForegroundService(Intent(context, VpnService::class.java))
+            context.startService(Intent(context, VpnService::class.java))
         }
 
         return try {
@@ -100,6 +98,7 @@ internal class ServiceHolder(val context: Context) {
     }
 
     companion object {
+        const val SPECIAL_USE_SERVICE_TYPE_ID = 1 shl 30
         const val DEFAULT_MTU = 1280
         // for consumer to set AOVPN callback
         var alwaysOnCallback: WeakReference<VpnService.AlwaysOnCallback>? = null

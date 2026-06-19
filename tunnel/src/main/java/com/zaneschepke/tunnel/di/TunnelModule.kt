@@ -2,10 +2,10 @@ package com.zaneschepke.tunnel.di
 
 import com.zaneschepke.tunnel.TunnelLibraryInitializer
 import com.zaneschepke.tunnel.backend.Backend
-import com.zaneschepke.tunnel.backend.ServiceHolder
 import com.zaneschepke.tunnel.backend.TunnelBackend
 import com.zaneschepke.tunnel.backend.TunnelEngine
 import com.zaneschepke.tunnel.backend.WireGuardTunnelEngine
+import com.zaneschepke.tunnel.service.ServiceHolder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

@@ -13,12 +13,14 @@ import com.zaneschepke.tunnel.model.DnsBootstrapResult
 import com.zaneschepke.tunnel.model.Host
 import com.zaneschepke.tunnel.model.KillSwitchConfig
 import com.zaneschepke.tunnel.model.PublicKey
+import com.zaneschepke.tunnel.service.ServiceHolder
 import com.zaneschepke.tunnel.service.VpnService
 import com.zaneschepke.tunnel.state.ActiveTunnel
 import com.zaneschepke.tunnel.state.BackendStatus
 import com.zaneschepke.tunnel.state.BootstrapState
 import com.zaneschepke.tunnel.state.EngineStartResult
 import com.zaneschepke.tunnel.state.KillSwitchState
+import com.zaneschepke.tunnel.util.RootShell
 import com.zaneschepke.tunnel.util.RootShellException
 import com.zaneschepke.tunnel.util.buildResolvedPeers
 import com.zaneschepke.tunnel.util.isLastTunnelOfServiceType

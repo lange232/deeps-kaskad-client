@@ -4,7 +4,7 @@ import com.zaneschepke.networkmonitor.AndroidNetworkMonitor
 import com.zaneschepke.networkmonitor.NetworkMonitor
 import com.zaneschepke.networkmonitor.StableNetworkEngine
 import com.zaneschepke.tunnel.ApplicationProvider
-import com.zaneschepke.tunnel.backend.RootShell
+import com.zaneschepke.tunnel.util.RootShell
 import com.zaneschepke.tunnel.util.RootShellException
 import com.zaneschepke.wireguardautotunnel.core.event.TunnelEventDispatcher
 import com.zaneschepke.wireguardautotunnel.core.tunnel.AndroidApplicationProvider

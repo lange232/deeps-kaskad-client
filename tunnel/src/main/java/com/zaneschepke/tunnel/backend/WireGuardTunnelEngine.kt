@@ -5,6 +5,7 @@ import com.zaneschepke.tunnel.Tunnel
 import com.zaneschepke.tunnel.VpnBackend
 import com.zaneschepke.tunnel.model.BackendMode
 import com.zaneschepke.tunnel.model.ProxyConfig
+import com.zaneschepke.tunnel.service.ServiceHolder
 import com.zaneschepke.tunnel.service.VpnService
 import com.zaneschepke.tunnel.state.EngineStartResult
 import com.zaneschepke.tunnel.util.BackendException

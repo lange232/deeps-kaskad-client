@@ -1,4 +1,4 @@
-package com.zaneschepke.tunnel.backend
+package com.zaneschepke.tunnel.util
 
 import com.topjohnwu.superuser.Shell
 import com.zaneschepke.tunnel.model.ShellResult

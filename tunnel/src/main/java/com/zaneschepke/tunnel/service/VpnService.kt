@@ -1,22 +1,19 @@
 package com.zaneschepke.tunnel.service
 
-import android.app.NotificationManager
 import android.content.Intent
 import android.net.TrafficStats
 import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.system.OsConstants
-import androidx.core.app.ServiceCompat
 import com.zaneschepke.hevtunnel.HevTunnelConfig
 import com.zaneschepke.hevtunnel.TProxyService
 import com.zaneschepke.tunnel.Tunnel
 import com.zaneschepke.tunnel.backend.Backend
 import com.zaneschepke.tunnel.backend.KillSwitch
-import com.zaneschepke.tunnel.backend.ServiceHolder
-import com.zaneschepke.tunnel.backend.ServiceHolder.Companion.DEFAULT_MTU
-import com.zaneschepke.tunnel.backend.ServiceHolder.Companion.alwaysOnCallback
 import com.zaneschepke.tunnel.backend.SocketProtector
 import com.zaneschepke.tunnel.model.KillSwitchConfig
+import com.zaneschepke.tunnel.service.ServiceHolder.Companion.DEFAULT_MTU
+import com.zaneschepke.tunnel.service.ServiceHolder.Companion.alwaysOnCallback
 import com.zaneschepke.tunnel.util.parseDns
 import com.zaneschepke.tunnel.util.parseInetNetwork
 import com.zaneschepke.wireguardautotunnel.parser.Config
@@ -27,13 +24,10 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
 import timber.log.Timber
@@ -46,29 +40,13 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val shutdownScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    private val notificationManager: NotificationManager by lazy {
-        getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-    }
-
     @Volatile private var userActivatedShutdown = false
     private var hevBridgeJob: Job? = null
-
     @Volatile private var fd: ParcelFileDescriptor? = null
 
     override fun onCreate() {
         serviceHolder.set(this)
-        launchForegroundNotification()
-        observeVpnPersistentNotification()
         super.onCreate()
-    }
-
-    fun launchForegroundNotification() {
-        ServiceCompat.startForeground(
-            this,
-            backend.applicationProvider.vpnNotificationId,
-            backend.applicationProvider.vpnInitNotification,
-            SYSTEM_EXEMPT_SERVICE_TYPE_ID,
-        )
     }
 
     @OptIn(ExperimentalAtomicApi::class)
@@ -76,39 +54,20 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
         Timber.d("VpnService destroyed")
         try {
             serviceHolder.clearVpnService()
-            ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+
+            // Stop the companion foreground service alongside the VPN teardown
+            stopService(Intent(this, VpnCompanionService::class.java))
+
             disableKillSwitch()
             hevBridgeJob?.cancel()
             serviceScope.cancel()
             stopHevSocks5Bridge()
             if (!userActivatedShutdown) {
                 Timber.d("Service being killed by system, clean up tunnels")
-                shutdownScope.launch {
-                    // TODO eventually, this should only shut down vpn mode tunnels with future
-                    // multi tunnel
-                    backend.stopAllActiveTunnels()
-                }
+                shutdownScope.launch { backend.stopAllActiveTunnels() }
             }
         } finally {
             super.onDestroy()
-        }
-    }
-
-    @OptIn(FlowPreview::class)
-    private fun observeVpnPersistentNotification() {
-        serviceScope.launch {
-            backend.status
-                .distinctUntilChanged { old, new -> old.activeTunnels == new.activeTunnels }
-                .debounce(1_000.milliseconds)
-                .collect { status ->
-                    val notification =
-                        backend.applicationProvider.buildVpnPersistentNotification(status)
-
-                    notificationManager.notify(
-                        backend.applicationProvider.vpnNotificationId,
-                        notification,
-                    )
-                }
         }
     }
 
@@ -118,9 +77,21 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
         stopSelf()
     }
 
+    override fun onRevoke() {
+        Timber.w("VPN privilege revoked by system")
+        userActivatedShutdown = false
+        disableKillSwitch()
+        stopHevSocks5Bridge()
+        serviceScope.launch { backend.stopAllActiveTunnels() }
+        stopSelf()
+        super.onRevoke()
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         serviceHolder.set(this)
-        launchForegroundNotification()
+
+        // Ensure the companion service is up immediately to provide foreground process
+        bootKeepaliveService()
 
         // Service restarted by system or Always-on VPN started
         if (
@@ -128,10 +99,20 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
                 intent.component == null ||
                 (intent.component!!.packageName != packageName)
         ) {
-            Timber.d("VpnService started by system")
+            Timber.d("VpnService started by system (Always-On trigger)")
             alwaysOnCallback?.get()?.alwaysOnTriggered()
         }
         return START_STICKY
+    }
+
+    private fun bootKeepaliveService() {
+        try {
+            val intent = Intent(this, VpnCompanionService::class.java)
+            // Works for starts and within the temporary AOVPN boot window
+            startForegroundService(intent)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to start companion keepalive service")
+        }
     }
 
     private fun startHevBridge(port: Int, pass: String): Job {
@@ -302,21 +283,6 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
             .establish()
     }
 
-    override fun onRevoke() {
-        Timber.w("VPN privilege revoked by system")
-
-        userActivatedShutdown = false
-
-        disableKillSwitch()
-        stopHevSocks5Bridge()
-
-        serviceScope.launch { backend.stopAllActiveTunnels() }
-
-        stopSelf()
-
-        super.onRevoke()
-    }
-
     override fun startHevSocks5Bridge(port: Int, pass: String) {
         if (hevBridgeJob != null) return
         hevBridgeJob = startHevBridge(port, pass)
@@ -360,8 +326,6 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
         private const val IPV4_DEFAULT_ROUTE = "0.0.0.0"
         private const val IPV6_DEFAULT_ROUTE = "::"
         private const val DEFAULT_DNS_SERVER = "1.1.1.1"
-
-        private const val SYSTEM_EXEMPT_SERVICE_TYPE_ID = 1 shl 10
         const val HEV_BRIDGE_TRAFFIC_TAG = 0xF00D
     }
 }
