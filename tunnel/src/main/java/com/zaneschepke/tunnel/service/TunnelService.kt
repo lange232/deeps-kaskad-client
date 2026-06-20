@@ -15,7 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import org.koin.java.KoinJavaComponent.inject
 import timber.log.Timber
@@ -61,12 +61,11 @@ class TunnelService : LifecycleService() {
     private fun observeProxyPersistentNotification() {
         lifecycleScope.launch {
             backend.status
-                .distinctUntilChanged { old, new -> old.activeTunnels == new.activeTunnels }
-                .debounce(1_000.milliseconds)
+                .distinctUntilChangedBy { it.toNotificationComparisonKey() }
+                .debounce(700.milliseconds)
                 .collect { status ->
                     val notification =
                         backend.applicationProvider.buildProxyPersistentNotification(status)
-
                     notificationManager.notify(
                         backend.applicationProvider.proxyNotificationId,
                         notification,

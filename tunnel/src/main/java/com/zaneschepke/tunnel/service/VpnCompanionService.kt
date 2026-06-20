@@ -10,7 +10,7 @@ import com.zaneschepke.tunnel.backend.Backend
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import timber.log.Timber
@@ -43,8 +43,8 @@ class VpnCompanionService : LifecycleService() {
     private fun observeVpnPersistentNotification() {
         lifecycleScope.launch {
             backend.status
-                .distinctUntilChanged { old, new -> old.activeTunnels == new.activeTunnels }
-                .debounce(1000.milliseconds)
+                .distinctUntilChangedBy { it.toNotificationComparisonKey() }
+                .debounce(700.milliseconds)
                 .collect { status ->
                     val notification =
                         backend.applicationProvider.buildVpnPersistentNotification(status)

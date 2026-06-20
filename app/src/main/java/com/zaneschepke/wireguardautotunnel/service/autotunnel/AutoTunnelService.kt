@@ -27,13 +27,14 @@ import com.zaneschepke.wireguardautotunnel.util.Constants
 import com.zaneschepke.wireguardautotunnel.util.extensions.to
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
@@ -77,13 +78,16 @@ class AutoTunnelService : LifecycleService() {
     @Volatile private var hasUserOverride = false
     private var lastNetworkFingerprint: AutoTunnelState.NetworkFingerprint? = null
 
+    @OptIn(FlowPreview::class)
     private val autoTunnelStateFlow: Flow<AutoTunnelState> by lazy {
         val networkFlow = networkEngine.stableState.mapNotNull { it?.state?.toDomain() }
 
         val settingsFlow = combineSettings()
 
         val backendFlow =
-            tunnelCoordinator.backendStatus.distinctUntilChangedBy { it.activeTunnels.keys.toSet() }
+            tunnelCoordinator.backendStatus
+                .distinctUntilChanged { old, new -> old.activeTunnels == new.activeTunnels }
+                .debounce(300L.milliseconds)
 
         combine(networkFlow, settingsFlow, backendFlow) { network, settings, backend ->
                 AutoTunnelState(
