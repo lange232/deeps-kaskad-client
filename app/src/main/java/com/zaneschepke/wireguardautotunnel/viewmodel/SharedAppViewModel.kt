@@ -254,15 +254,17 @@ class SharedAppViewModel(
                 TunnelConfig.tunnelConfFromQuick(config, name)
             }
             tunnelRepository.saveTunnelsUniquely(tunnelConfigs, state.tunnelNames.map { it.value })
-        } catch (_: IOException) {
-            postSideEffect(
-                GlobalSideEffect.Snackbar(
-                    StringValue.StringResource(R.string.read_failed),
-                    ToastType.Error,
+        } catch (e: Exception) {
+            if (e is ConfigParseException) {
+                postSideEffect(GlobalSideEffect.Snackbar(e.asStringValue(), ToastType.Error))
+            } else {
+                postSideEffect(
+                    GlobalSideEffect.Snackbar(
+                        StringValue.StringResource(R.string.config_error),
+                        ToastType.Error,
+                    )
                 )
-            )
-        } catch (e: ConfigParseException) {
-            postSideEffect(GlobalSideEffect.Snackbar(e.asStringValue(), ToastType.Error))
+            }
         }
     }
 
