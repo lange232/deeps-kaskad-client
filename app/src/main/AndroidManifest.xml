@@ -178,7 +178,7 @@
         <service
             android:name=".service.tile.TunnelControlTile"
             android:exported="true"
-            android:icon="@drawable/ic_notification"
+            android:icon="@drawable/ic_qs_logo"
             android:label="@string/tunnel_control"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <meta-data
@@ -195,7 +195,7 @@
         <service
             android:name=".service.tile.AutoTunnelControlTile"
             android:exported="true"
-            android:icon="@drawable/ic_notification"
+            android:icon="@drawable/ic_qs_logo"
             android:label="@string/auto_tunnel"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <meta-data
