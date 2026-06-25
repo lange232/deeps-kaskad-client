@@ -1,5 +1,4 @@
 import com.ncorti.ktfmt.gradle.tasks.KtfmtFormatTask
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
 	alias(libs.plugins.android.application) apply false

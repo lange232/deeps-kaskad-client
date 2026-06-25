@@ -1,12 +1,14 @@
 package com.zaneschepke.wireguardautotunnel
 
 import ProxySettingsScreen
+import android.Manifest
 import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.view.WindowManager
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -50,6 +52,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,6 +64,7 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.core.app.ActivityCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -83,6 +87,7 @@ import com.zaneschepke.wireguardautotunnel.ui.LocalIsAndroidTV
 import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
 import com.zaneschepke.wireguardautotunnel.ui.common.banner.AppAlertBanner
 import com.zaneschepke.wireguardautotunnel.ui.common.dialog.InfoDialog
+import com.zaneschepke.wireguardautotunnel.ui.common.dialog.LocalNetworkPermissionDialog
 import com.zaneschepke.wireguardautotunnel.ui.common.dialog.VpnDeniedDialog
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
 import com.zaneschepke.wireguardautotunnel.ui.navigation.SecureRoute
@@ -132,6 +137,7 @@ import com.zaneschepke.wireguardautotunnel.util.extensions.installApk
 import com.zaneschepke.wireguardautotunnel.util.extensions.isRunningOnTv
 import com.zaneschepke.wireguardautotunnel.util.extensions.openWebUrl
 import com.zaneschepke.wireguardautotunnel.util.extensions.restartApp
+import com.zaneschepke.wireguardautotunnel.util.permission.LocalNetworkPermissionHelper
 import com.zaneschepke.wireguardautotunnel.viewmodel.ConfigEditViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.SplitTunnelViewModel
@@ -201,6 +207,68 @@ class MainActivity : AppCompatActivity() {
             var vpnPermissionDenied by remember { mutableStateOf(false) }
             var requestingTunnelMode by remember {
                 mutableStateOf<Pair<TunnelMode?, TunnelConfig?>>(Pair(null, null))
+            }
+            var showLocalNetworkRationale by remember { mutableStateOf(false) }
+            var hasPromptedLocalNetwork by rememberSaveable { mutableStateOf(false) }
+
+            val localNetworkPermissionLauncher =
+                rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.RequestPermission()
+                ) { isGranted ->
+                    if (!isGranted) {
+                        val canAskAgain =
+                            ActivityCompat.shouldShowRequestPermissionRationale(
+                                this,
+                                Manifest.permission.ACCESS_LOCAL_NETWORK,
+                            )
+
+                        if (!canAskAgain) {
+                            val intent =
+                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", packageName, null)
+                                }
+                            startActivity(intent)
+                        } else {
+                            toaster.show(
+                                message =
+                                    context.getString(R.string.local_network_permission_denied),
+                                type = ToastType.Warning,
+                                duration = 6000.milliseconds,
+                            )
+                        }
+                    }
+                }
+
+            LaunchedEffect(uiState.isAppLoaded) {
+                if (
+                    uiState.isAppLoaded &&
+                        !hasPromptedLocalNetwork &&
+                        LocalNetworkPermissionHelper.shouldRequestPermission() &&
+                        !LocalNetworkPermissionHelper.isPermissionGranted(context)
+                ) {
+                    hasPromptedLocalNetwork = true
+                    showLocalNetworkRationale = true
+                }
+            }
+
+            if (showLocalNetworkRationale) {
+                LocalNetworkPermissionDialog(
+                    onDismiss = {
+                        showLocalNetworkRationale = false
+                        toaster.show(
+                            message = context.getString(R.string.local_network_permission_denied),
+                            type = ToastType.Warning,
+                            duration = 6000.milliseconds,
+                        )
+                    },
+                    onContinue = {
+                        showLocalNetworkRationale = false
+
+                        localNetworkPermissionLauncher.launch(
+                            Manifest.permission.ACCESS_LOCAL_NETWORK
+                        )
+                    },
+                )
             }
 
             val startingStack = buildList {

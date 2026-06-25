@@ -537,4 +537,21 @@
     <string name="restore_failed_wrong_password">Restore failed. Wrong password</string>
     <string name="restore_failed_invalid_file">Restore failed. Select a valid backup file (.sqlite3 or .sqlite3.aes)</string>
     <string name="error_invalid_config_url">This link returned an invalid config file. Make sure you are using a direct download link</string>
+
+    <string name="local_network_permission_title">Local Network Access Needed</string>
+
+    <string name="local_network_permission_intro">WG Tunnel needs access to your local network for several features to work properly.</string>
+
+    <string name="local_network_permission_issues_intro">Without this permission, you may experience issues with:</string>
+
+    <string name="local_network_permission_feature_tunnels">- Connecting to certain tunnels</string>
+    <string name="local_network_permission_feature_autotunnel">- Auto-tunneling and split tunneling features</string>
+    <string name="local_network_permission_feature_proxy">- Local proxy and bypass functionality</string>
+
+    <string name="local_network_permission_recommendation">Granting this permission is strongly recommended.</string>
+    <string name="local_network_permission_nearby_devices">Note: Android labels this permission as “nearby devices”.</string>
+
+    <string name="not_now">Not now</string>
+
+    <string name="local_network_permission_denied">Local network access denied. Some features may not work properly</string>
 </resources>
