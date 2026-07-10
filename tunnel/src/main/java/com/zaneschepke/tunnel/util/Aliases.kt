@@ -1,4 +1,4 @@
-package com.zaneschepke.tunnel.model
+package com.zaneschepke.tunnel.util
 
 typealias PublicKey = String
 

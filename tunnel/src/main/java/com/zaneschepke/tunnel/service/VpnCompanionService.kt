@@ -13,11 +13,13 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
+import org.koin.java.KoinJavaComponent.inject
 import timber.log.Timber
 
 class VpnCompanionService : LifecycleService() {
 
     private val backend: Backend by inject()
+    private val serviceHolder: ServiceHolder by inject(ServiceHolder::class.java)
 
     private val notificationManager: NotificationManager by lazy {
         getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -25,9 +27,25 @@ class VpnCompanionService : LifecycleService() {
 
     override fun onCreate() {
         super.onCreate()
+        serviceHolder.set(this)
         Timber.d("CompanionService created")
         launchForegroundNotification()
         observeVpnPersistentNotification()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+        serviceHolder.set(this)
+        val isSystemRestart =
+            intent == null ||
+                intent.component == null ||
+                intent.component!!.packageName != packageName
+
+        if (isSystemRestart) {
+            Timber.d("VpnCompanionService started by system")
+            launchForegroundNotification()
+        }
+        return START_STICKY
     }
 
     private fun launchForegroundNotification() {
@@ -37,23 +55,6 @@ class VpnCompanionService : LifecycleService() {
             backend.applicationProvider.vpnInitNotification,
             ServiceHolder.SPECIAL_USE_SERVICE_TYPE_ID,
         )
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
-
-        val isSystemRestart =
-            intent == null ||
-                intent.component == null ||
-                intent.component!!.packageName != packageName
-
-        if (isSystemRestart) {
-            Timber.d("VpnCompanionService started by system")
-        }
-
-        launchForegroundNotification()
-
-        return START_STICKY
     }
 
     @OptIn(FlowPreview::class)
@@ -80,6 +81,7 @@ class VpnCompanionService : LifecycleService() {
 
     override fun onDestroy() {
         Timber.d("CompanionService destroyed")
+        serviceHolder.clearCompanionService()
         super.onDestroy()
     }
 }

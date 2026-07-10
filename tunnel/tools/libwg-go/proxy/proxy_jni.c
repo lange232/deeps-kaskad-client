@@ -16,7 +16,6 @@ struct go_string { const char *str; long n; };
 
 extern int awgStartProxy(struct go_string ifname, struct go_string settings, struct go_string uapipath, int bypass);
 extern char *awgGetProxyConfig(int handle);
-extern void awgTriggerProxyBindUpdate(int handle);
 extern int awgUpdateProxyTunnelPeers(int handle, struct go_string settings);
 extern void awgTurnProxyTunnelOff(int handle);
 
@@ -301,9 +300,4 @@ void awgNotifyStatus(int32_t handle, int32_t code) {
         (*env)->ExceptionClear(env);
     }
     (*env)->DeleteLocalRef(env, local_callback);
-}
-
-JNIEXPORT void JNICALL Java_com_zaneschepke_tunnel_ProxyBackend_awgTriggerProxyBindUpdate
-(JNIEnv *env, jclass clazz, jint handle) {
-    awgTriggerProxyBindUpdate(handle);
 }

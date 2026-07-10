@@ -1,7 +1,6 @@
 package com.zaneschepke.tunnel.backend
 
 import com.zaneschepke.tunnel.ProxyBackend
-import com.zaneschepke.tunnel.Tunnel
 import com.zaneschepke.tunnel.VpnBackend
 import com.zaneschepke.tunnel.model.BackendMode
 import com.zaneschepke.tunnel.model.ProxyConfig
@@ -17,9 +16,9 @@ import java.util.UUID
 
 internal class WireGuardTunnelEngine(private val serviceHolder: ServiceHolder) : TunnelEngine {
 
-    override suspend fun start(tunnel: Tunnel, mode: BackendMode): EngineStartResult {
+    override suspend fun start(tunnelId: Int, mode: BackendMode): EngineStartResult {
 
-        val ifName = WGT_INTERFACE_PREFIX + tunnel.id
+        val ifName = WGT_INTERFACE_PREFIX + tunnelId
 
         // guard against static listenPort issues
         val listenPort = mode.config.`interface`.listenPort
@@ -66,7 +65,7 @@ internal class WireGuardTunnelEngine(private val serviceHolder: ServiceHolder) :
         }
 
         return EngineStartResult(
-            tunnelId = tunnel.id,
+            tunnelId = tunnelId,
             handle = handle,
             interfaceName = ifName,
             mode = mode,
@@ -104,14 +103,6 @@ internal class WireGuardTunnelEngine(private val serviceHolder: ServiceHolder) :
                 is BackendMode.Vpn -> VpnBackend.awgGetConfig(handle)
             }
         return rawConfig?.let { ActiveConfig.parseFromIpc(it) }
-    }
-
-    override suspend fun updateBind(handle: Int, mode: BackendMode) {
-        when (mode) {
-            is BackendMode.Proxy.KillSwitchPrimary,
-            is BackendMode.Proxy.Standard -> ProxyBackend.awgTriggerProxyBindUpdate(handle)
-            is BackendMode.Vpn -> VpnBackend.awgTriggerBindUpdate(handle)
-        }
     }
 
     override suspend fun stop(handle: Int, mode: BackendMode) {

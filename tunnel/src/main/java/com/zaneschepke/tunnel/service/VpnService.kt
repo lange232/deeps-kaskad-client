@@ -56,10 +56,6 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
         Timber.d("VpnService destroyed")
         try {
             serviceHolder.clearVpnService()
-
-            // Stop the companion foreground service alongside the VPN teardown
-            stopService(Intent(this, VpnCompanionService::class.java))
-
             closeVpnTunnelFd()
             disableKillSwitch()
             hevBridgeJob?.cancel()
@@ -75,6 +71,9 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
         disableKillSwitch()
         stopHevSocks5Bridge()
         shutdownScope.launch { backend.stopAllActiveTunnels() }
+        // Stop the companion foreground service alongside the VPN teardown from revoke
+        stopService(Intent(this, VpnCompanionService::class.java))
+        closeVpnTunnelFd()
         stopSelf()
         super.onRevoke()
     }
@@ -82,7 +81,7 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         serviceHolder.set(this)
 
-        bootKeepaliveService()
+        serviceScope.launch { serviceHolder.getCompanionService() }
 
         // system recovery restart
         if (intent == null) {
@@ -114,16 +113,6 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
         closeVpnTunnelFd()
         disableKillSwitch()
         stopSelf()
-    }
-
-    private fun bootKeepaliveService() {
-        try {
-            val intent = Intent(this, VpnCompanionService::class.java)
-            // Works for starts and within the temporary AOVPN boot window
-            startForegroundService(intent)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to start companion keepalive service")
-        }
     }
 
     private fun startHevBridge(port: Int, pass: String): Job {
@@ -307,15 +296,15 @@ class VpnService : android.net.VpnService(), KillSwitch, SocketProtector {
     }
 
     fun detachVpnTunnelFd(): Int? {
-        val tunFd = vpnTunFd
-        vpnTunFd = null
-        return tunFd?.detachFd()
+        return vpnTunFd?.dup()?.detachFd()
     }
 
     fun closeVpnTunnelFd() {
         try {
             vpnTunFd?.close()
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Timber.e(e)
+        }
         vpnTunFd = null
     }
 

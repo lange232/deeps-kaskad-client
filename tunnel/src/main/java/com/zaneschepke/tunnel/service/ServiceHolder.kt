@@ -25,6 +25,9 @@ internal class ServiceHolder(val context: Context) {
     private val _tunnelService = MutableStateFlow<TunnelService?>(null)
     val tunnelServiceFlow: StateFlow<TunnelService?> = _tunnelService.asStateFlow()
 
+    private val _companionService = MutableStateFlow<VpnCompanionService?>(null)
+    val companionServiceFlow: StateFlow<VpnCompanionService?> = _companionService.asStateFlow()
+
     fun set(service: VpnService) {
         _vpnService.value = service
         ProxyBackend.setSocketProtector(service)
@@ -32,6 +35,14 @@ internal class ServiceHolder(val context: Context) {
 
     fun set(service: TunnelService) {
         _tunnelService.value = service
+    }
+
+    fun set(service: VpnCompanionService) {
+        _companionService.value = service
+    }
+
+    fun clearCompanionService() {
+        _companionService.value = null
     }
 
     fun clearVpnService() {
@@ -60,6 +71,19 @@ internal class ServiceHolder(val context: Context) {
         }
     }
 
+    suspend fun getCompanionService(): VpnCompanionService {
+        if (_companionService.value == null) {
+            context.startForegroundService(Intent(context, VpnCompanionService::class.java))
+        }
+
+        return try {
+            withTimeout(3_000L.milliseconds) { companionServiceFlow.filterNotNull().first() }
+        } catch (e: TimeoutCancellationException) {
+            Timber.e(e, "Timed out getting TunnelService")
+            throw BackendException.InternalError("Failed to get TunnelService")
+        }
+    }
+
     suspend fun getTunnelService(): TunnelService {
         if (_tunnelService.value == null) {
             context.startForegroundService(Intent(context, TunnelService::class.java))
@@ -82,6 +106,8 @@ internal class ServiceHolder(val context: Context) {
             clearVpnService()
         }
     }
+
+    suspend fun stopCompanionService() {}
 
     suspend fun stopTunnelService() {
         val service = _tunnelService.value ?: return

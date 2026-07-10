@@ -208,6 +208,7 @@ class TunnelCoordinator(
                     tunnelConfig.toBackendTunnel(
                         monitoringSettings,
                         settings.tunnelScriptingEnabled,
+                        settings,
                     ),
                 mode = backendMode,
             )
