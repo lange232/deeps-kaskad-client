@@ -38,7 +38,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
 
 JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
     JNIEnv *env = NULL;
-    if ((*vm)->GetEnv(vm, (JNIEnv **)&env, JNI_VERSION_1_6) == JNI_OK) {
+    if ((*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_6) == JNI_OK) {
         if (g_protector != NULL) {
             (*env)->DeleteGlobalRef(env, g_protector);
             g_protector = NULL;
@@ -140,7 +140,7 @@ int bypass_socket(int fd) {
         return 0;
     }
 
-    jint rs = (*g_jvm)->GetEnv(g_jvm, (JNIEnv **)&env, JNI_VERSION_1_6);
+    jint rs = (*g_jvm)->GetEnv(g_jvm, (void **)&env, JNI_VERSION_1_6);
 
     // Short retry for AttachCurrentThreadAsDaemon
     if (rs == JNI_EDETACHED) {
@@ -266,7 +266,7 @@ void awgNotifyStatus(int32_t handle, int32_t code) {
         LOGE("g_jvm is NULL in awgNotifyStatus");
         return;
     }
-    jint rs = (*g_jvm)->GetEnv(g_jvm, (JNIEnv **)&env, JNI_VERSION_1_6);
+    jint rs = (*g_jvm)->GetEnv(g_jvm, (void **)&env, JNI_VERSION_1_6);
     if (rs == JNI_EDETACHED) {
         if ((*g_jvm)->AttachCurrentThreadAsDaemon(g_jvm, (JNIEnv **)&env, NULL) != JNI_OK) {
             LOGE("AttachCurrentThreadAsDaemon failed in awgNotifyStatus");

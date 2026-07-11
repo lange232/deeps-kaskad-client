@@ -6,7 +6,7 @@
 #include <jni.h>
 #include <stdlib.h>
 #include <string.h>
-#include <vpn_jni.h>
+#include "vpn_jni.h"
 
 struct go_string { const char *str; long n; };
 extern int awgTurnOn(struct go_string ifname, int tun_fd, struct go_string settings, struct go_string uapipath);
