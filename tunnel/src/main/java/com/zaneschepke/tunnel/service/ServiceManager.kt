@@ -16,7 +16,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import timber.log.Timber
 
-internal class ServiceHolder(val context: Context) {
+internal class ServiceManager(val context: Context) {
 
     internal val uapiPath = context.dataDir.absolutePath
 
@@ -63,11 +63,8 @@ internal class ServiceHolder(val context: Context) {
             VpnService.start(context, VpnService::class.java)
         }
 
-        return try {
-            withTimeout(3_000L.milliseconds) { vpnServiceFlow.filterNotNull().first() }
-        } catch (e: TimeoutCancellationException) {
-            Timber.e(e, "Timed out getting VpnService")
-            throw BackendException.InternalError("Failed to get VpnService")
+        return withTimeoutOrThrow(SERVICE_START_TIMEOUT_MILLIS) {
+            vpnServiceFlow.filterNotNull().first()
         }
     }
 
@@ -76,11 +73,8 @@ internal class ServiceHolder(val context: Context) {
             context.startForegroundService(Intent(context, VpnCompanionService::class.java))
         }
 
-        return try {
-            withTimeout(3_000L.milliseconds) { companionServiceFlow.filterNotNull().first() }
-        } catch (e: TimeoutCancellationException) {
-            Timber.e(e, "Timed out getting TunnelService")
-            throw BackendException.InternalError("Failed to get TunnelService")
+        return withTimeoutOrThrow(SERVICE_START_TIMEOUT_MILLIS) {
+            companionServiceFlow.filterNotNull().first()
         }
     }
 
@@ -89,11 +83,8 @@ internal class ServiceHolder(val context: Context) {
             context.startForegroundService(Intent(context, TunnelService::class.java))
         }
 
-        return try {
-            withTimeout(3_000L.milliseconds) { tunnelServiceFlow.filterNotNull().first() }
-        } catch (e: TimeoutCancellationException) {
-            Timber.e(e, "Timed out getting TunnelService")
-            throw BackendException.InternalError("Failed to get TunnelService")
+        return withTimeoutOrThrow(SERVICE_START_TIMEOUT_MILLIS) {
+            tunnelServiceFlow.filterNotNull().first()
         }
     }
 
@@ -101,37 +92,70 @@ internal class ServiceHolder(val context: Context) {
         val service = _vpnService.value ?: return
         try {
             service.shutdown()
-            withTimeoutOrNull(1_500L.milliseconds) { vpnServiceFlow.first { it == null } }
+            withTimeoutOrNull(SERVICE_SHUTDOWN_TIMEOUT_MILLIS.milliseconds) {
+                vpnServiceFlow.first { it == null }
+            }
         } finally {
             clearVpnService()
         }
     }
 
-    suspend fun stopCompanionService() {}
+    suspend fun stopCompanionService() {
+        val service = _companionService.value ?: return
+        try {
+            service.shutdown()
+            withTimeoutOrNull(SERVICE_SHUTDOWN_TIMEOUT_MILLIS.milliseconds) {
+                companionServiceFlow.first { it == null }
+            }
+        } finally {
+            clearCompanionService()
+        }
+    }
 
     suspend fun stopTunnelService() {
         val service = _tunnelService.value ?: return
         try {
             service.shutdown()
-            withTimeoutOrNull(1_500L.milliseconds) { tunnelServiceFlow.first { it == null } }
+            withTimeoutOrNull(SERVICE_SHUTDOWN_TIMEOUT_MILLIS.milliseconds) {
+                tunnelServiceFlow.first { it == null }
+            }
         } finally {
             clearTunnelService()
         }
     }
 
-    /**
-     * Gets the VpnService and starts if needed while ensuring the protector is registered. This is
-     * needed before any native call that uses NewStdNetBindWithControl.
-     */
-    suspend fun ensureVpnProtectorRegistered(): VpnService {
-        val service = getVpnService()
-        ProxyBackend.setSocketProtector(service)
-        // Small delay to give JNI time to propagate on slow devices
-        delay(50.milliseconds)
-        return service
+    suspend fun ensureVpnReady(): VpnService {
+        // needed for foreground
+        getCompanionService()
+        val vpnService = getVpnService()
+        // we can safely call this again here
+        ProxyBackend.setSocketProtector(vpnService)
+        delay(JNI_PROP_DELAY_MILLIS.milliseconds)
+        return vpnService
+    }
+
+    // shuts down the vpn services, protector clean up handled by clearVpnService
+    suspend fun ensureVpnShutdown() {
+        stopVpnService()
+        stopCompanionService()
+    }
+
+    private suspend inline fun <T> withTimeoutOrThrow(
+        timeoutMs: Long,
+        crossinline block: suspend () -> T,
+    ): T {
+        return try {
+            withTimeout(timeoutMs.milliseconds) { block() }
+        } catch (e: TimeoutCancellationException) {
+            Timber.e(e, "Timed out waiting for service")
+            throw BackendException.InternalError("Failed to acquire service")
+        }
     }
 
     companion object {
+        const val JNI_PROP_DELAY_MILLIS = 50L
+        const val SERVICE_START_TIMEOUT_MILLIS = 3_000L
+        const val SERVICE_SHUTDOWN_TIMEOUT_MILLIS = 1_500L
         const val SPECIAL_USE_SERVICE_TYPE_ID = 1 shl 30
         const val DEFAULT_MTU = 1280
         // for consumer to set AOVPN callback

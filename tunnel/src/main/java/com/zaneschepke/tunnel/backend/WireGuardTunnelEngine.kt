@@ -4,7 +4,7 @@ import com.zaneschepke.tunnel.ProxyBackend
 import com.zaneschepke.tunnel.VpnBackend
 import com.zaneschepke.tunnel.model.BackendMode
 import com.zaneschepke.tunnel.model.ProxyConfig
-import com.zaneschepke.tunnel.service.ServiceHolder
+import com.zaneschepke.tunnel.service.ServiceManager
 import com.zaneschepke.tunnel.service.VpnService
 import com.zaneschepke.tunnel.state.EngineStartResult
 import com.zaneschepke.tunnel.util.BackendException
@@ -14,7 +14,7 @@ import com.zaneschepke.wireguardautotunnel.parser.Config
 import com.zaneschepke.wireguardautotunnel.parser.PeerSection
 import java.util.UUID
 
-internal class WireGuardTunnelEngine(private val serviceHolder: ServiceHolder) : TunnelEngine {
+internal class WireGuardTunnelEngine(private val serviceManager: ServiceManager) : TunnelEngine {
 
     override suspend fun start(tunnelId: Int, mode: BackendMode): EngineStartResult {
 
@@ -55,7 +55,7 @@ internal class WireGuardTunnelEngine(private val serviceHolder: ServiceHolder) :
                     startProxyTunnel(ifName, mode.config, proxyConfig, false)
                 }
                 is BackendMode.Vpn -> {
-                    val service = serviceHolder.getVpnService()
+                    val service = serviceManager.getVpnService()
                     startVpnTunnel(ifName, mode.config, service.detachVpnTunnelFd())
                 }
             }
@@ -115,7 +115,7 @@ internal class WireGuardTunnelEngine(private val serviceHolder: ServiceHolder) :
 
     private suspend fun stopKillSwitchPrimaryTunnel(handle: Int) {
         ProxyBackend.awgTurnProxyTunnelOff(handle)
-        val service = serviceHolder.getVpnService()
+        val service = serviceManager.getVpnService()
         service.stopHevSocks5Bridge()
     }
 
@@ -131,7 +131,7 @@ internal class WireGuardTunnelEngine(private val serviceHolder: ServiceHolder) :
         val tunFd = fd ?: throw BackendException.Unauthorized("Failed to create tun interface")
 
         val handle =
-            VpnBackend.awgTurnOn(ifName, tunFd, config.asQuickString(), serviceHolder.uapiPath)
+            VpnBackend.awgTurnOn(ifName, tunFd, config.asQuickString(), serviceManager.uapiPath)
         if (handle < 0) {
             throw BackendException.InternalError("Internal native error with code: $handle")
         }
@@ -150,7 +150,7 @@ internal class WireGuardTunnelEngine(private val serviceHolder: ServiceHolder) :
             ProxyBackend.awgStartProxy(
                 ifName,
                 quickConfig,
-                serviceHolder.uapiPath,
+                serviceManager.uapiPath,
                 if (withBridge) 1 else 0,
             )
         if (handle < 0) {
@@ -170,7 +170,7 @@ internal class WireGuardTunnelEngine(private val serviceHolder: ServiceHolder) :
                         "Bridge pass not set for kill switch proxy config"
                     )
 
-            serviceHolder.getVpnService().startHevSocks5Bridge(port, pass)
+            serviceManager.getVpnService().startHevSocks5Bridge(port, pass)
         }
 
         return handle

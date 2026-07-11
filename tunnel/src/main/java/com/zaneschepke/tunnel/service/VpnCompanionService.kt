@@ -19,15 +19,19 @@ import timber.log.Timber
 class VpnCompanionService : LifecycleService() {
 
     private val backend: Backend by inject()
-    private val serviceHolder: ServiceHolder by inject(ServiceHolder::class.java)
+    private val serviceManager: ServiceManager by inject(ServiceManager::class.java)
 
     private val notificationManager: NotificationManager by lazy {
         getSystemService(NOTIFICATION_SERVICE) as NotificationManager
     }
 
+    fun shutdown() {
+        stopSelf()
+    }
+
     override fun onCreate() {
         super.onCreate()
-        serviceHolder.set(this)
+        serviceManager.set(this)
         Timber.d("CompanionService created")
         launchForegroundNotification()
         observeVpnPersistentNotification()
@@ -35,7 +39,7 @@ class VpnCompanionService : LifecycleService() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-        serviceHolder.set(this)
+        serviceManager.set(this)
         val isSystemRestart =
             intent == null ||
                 intent.component == null ||
@@ -53,7 +57,7 @@ class VpnCompanionService : LifecycleService() {
             this,
             backend.applicationProvider.vpnNotificationId,
             backend.applicationProvider.vpnInitNotification,
-            ServiceHolder.SPECIAL_USE_SERVICE_TYPE_ID,
+            ServiceManager.SPECIAL_USE_SERVICE_TYPE_ID,
         )
     }
 
@@ -81,7 +85,7 @@ class VpnCompanionService : LifecycleService() {
 
     override fun onDestroy() {
         Timber.d("CompanionService destroyed")
-        serviceHolder.clearCompanionService()
+        serviceManager.clearCompanionService()
         super.onDestroy()
     }
 }

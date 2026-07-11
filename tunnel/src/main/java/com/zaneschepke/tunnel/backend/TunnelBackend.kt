@@ -11,7 +11,7 @@ import com.zaneschepke.tunnel.event.TunnelEvent
 import com.zaneschepke.tunnel.model.BackendMode
 import com.zaneschepke.tunnel.model.DnsBoostrapMode
 import com.zaneschepke.tunnel.model.KillSwitchConfig
-import com.zaneschepke.tunnel.service.ServiceHolder
+import com.zaneschepke.tunnel.service.ServiceManager
 import com.zaneschepke.tunnel.service.VpnService
 import com.zaneschepke.tunnel.state.ActiveTunnel
 import com.zaneschepke.tunnel.state.BackendStatus
@@ -60,7 +60,7 @@ class TunnelBackend(
     private val stableNetworkEngine: StableNetworkEngine,
 ) : Backend {
 
-    private val serviceHolder: ServiceHolder by inject(ServiceHolder::class.java)
+    private val serviceManager: ServiceManager by inject(ServiceManager::class.java)
     private val engine: TunnelEngine by inject(TunnelEngine::class.java)
 
     private val _status = MutableStateFlow(BackendStatus())
@@ -110,7 +110,7 @@ class TunnelBackend(
                             mode = mode,
                         ),
                     )
-                    applicationProvider.refreshTile(serviceHolder.context)
+                    applicationProvider.refreshTile(serviceManager.context)
 
                     val scriptsEnabled = tunnel.scriptsEnabled
 
@@ -119,7 +119,7 @@ class TunnelBackend(
                     if (scriptsEnabled)
                         mode.config.`interface`.preUp?.let { runScripts(it, tunnel.id) }
 
-                    setupServiceForMode(tunnel, mode)
+                    setupServicesAndProtectorForMode(tunnel, mode)
 
                     if (hasDynamicEndpoints(mode)) {
                         pendingResolutionJobs[tunnel.id] = startTunnelBootstrapJob(tunnel, mode)
@@ -195,17 +195,17 @@ class TunnelBackend(
         }
     }
 
-    private suspend fun setupServiceForMode(tunnel: Tunnel, mode: BackendMode) {
+    private suspend fun setupServicesAndProtectorForMode(tunnel: Tunnel, mode: BackendMode) {
         when (mode) {
             is BackendMode.Proxy.KillSwitchPrimary -> {
-                val service = serviceHolder.ensureVpnProtectorRegistered()
+                val service = serviceManager.ensureVpnReady()
                 service.setKillSwitch(mode.killSwitchConfig)
             }
             is BackendMode.Proxy.Standard -> {
-                serviceHolder.getTunnelService()
+                serviceManager.getTunnelService()
             }
             is BackendMode.Vpn -> {
-                val service = serviceHolder.ensureVpnProtectorRegistered()
+                val service = serviceManager.ensureVpnReady()
                 service.createTunInterface(tunnel, mode.config)
             }
         }
@@ -234,11 +234,10 @@ class TunnelBackend(
         byTunnelId.remove(tunnelId)
 
         if (vpnTypeCount == 1 && !_status.value.killSwitch.enabled) {
-            serviceHolder.stopVpnService()
-            serviceHolder.stopCompanionService()
+            serviceManager.ensureVpnShutdown()
         }
         if (proxyTypeCount == 1) {
-            serviceHolder.stopTunnelService()
+            serviceManager.stopTunnelService()
         }
     }
 
@@ -258,7 +257,7 @@ class TunnelBackend(
     }
 
     override fun setAlwaysOnCallback(alwaysOnCallback: VpnService.AlwaysOnCallback) {
-        ServiceHolder.alwaysOnCallback = alwaysOnCallback
+        ServiceManager.alwaysOnCallback = alwaysOnCallback
     }
 
     override suspend fun stop(id: Int): Result<Unit> = tunnelMutex.withLock {
@@ -269,7 +268,7 @@ class TunnelBackend(
             try {
                 stopTunnelInternal(id, activeTun)
             } finally {
-                applicationProvider.refreshTile(serviceHolder.context)
+                applicationProvider.refreshTile(serviceManager.context)
                 if (_status.value.activeTunnels.isEmpty()) {
                     VpnBackend.setStatusCallback(null)
                 }
@@ -300,7 +299,7 @@ class TunnelBackend(
     }
 
     override suspend fun setKillSwitch(config: KillSwitchConfig) = runCatching {
-        val service = serviceHolder.getVpnService()
+        val service = serviceManager.getVpnService()
         service.setKillSwitch(config)
         _status.update { current ->
             current.copy(killSwitch = current.killSwitch.copy(enabled = true, config = config))
@@ -308,7 +307,7 @@ class TunnelBackend(
     }
 
     override suspend fun disableKillSwitch() = runCatching {
-        val service = serviceHolder.getVpnService()
+        val service = serviceManager.getVpnService()
         service.setKillSwitch(null)
         _status.update { current ->
             current.copy(
@@ -329,12 +328,12 @@ class TunnelBackend(
 
     override suspend fun stopAllActiveTunnels() = tunnelMutex.withLock {
         _status.value.activeTunnels.forEach { (id, tunnel) -> stopTunnelInternal(id, tunnel) }
-        applicationProvider.refreshTile(serviceHolder.context)
+        applicationProvider.refreshTile(serviceManager.context)
         VpnBackend.setStatusCallback(null)
-        serviceHolder.stopTunnelService()
+        serviceManager.stopTunnelService()
         if (!_status.value.killSwitch.enabled) {
-            serviceHolder.stopVpnService()
-            serviceHolder.stopCompanionService()
+            serviceManager.stopVpnService()
+            serviceManager.stopCompanionService()
         }
         Result.success(Unit)
     }
