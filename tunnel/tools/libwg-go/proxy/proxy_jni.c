@@ -18,9 +18,10 @@ extern int awgStartProxy(struct go_string ifname, struct go_string settings, str
 extern char *awgGetProxyConfig(int handle);
 extern int awgUpdateProxyTunnelPeers(int handle, struct go_string settings);
 extern void awgTurnProxyTunnelOff(int handle);
+extern JavaVM *g_jvm;
 
 // Global JNI state
-static JavaVM *g_jvm = NULL;
+JavaVM *g_jvm = NULL;
 
 // Socket protector
 static jobject g_protector = NULL;
