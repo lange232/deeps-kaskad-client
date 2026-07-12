@@ -1,5 +1,6 @@
 package com.zaneschepke.tunnel.backend.dns
 
+import androidx.annotation.Keep
 import com.zaneschepke.tunnel.model.DnsBootstrapResult
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.atomics.AtomicLong
@@ -29,6 +30,7 @@ internal object NativeDnsResolver {
         bypass: Int,
     )
 
+    @Keep
     @JvmStatic
     fun onResolutionComplete(id: Long, result: String) {
         val callback = callbacks.remove(id)
