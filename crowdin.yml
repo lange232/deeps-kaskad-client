@@ -48,6 +48,9 @@ files:
         tr: tr
         uk: uk
         vi: vi
+    excluded_target_languages:
+      - en
+      - en-US
 
   - source: "/fastlane/metadata/android/en-US/title.txt"
     translation: "/fastlane/metadata/android/%locale%/%original_file_name%"
