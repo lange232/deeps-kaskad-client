@@ -3,9 +3,7 @@ package com.zaneschepke.tunnel.backend
 import com.zaneschepke.networkmonitor.ActiveNetwork
 import com.zaneschepke.networkmonitor.StableNetworkEngine
 import com.zaneschepke.tunnel.ApplicationProvider
-import com.zaneschepke.tunnel.StatusCallback
 import com.zaneschepke.tunnel.Tunnel
-import com.zaneschepke.tunnel.VpnBackend
 import com.zaneschepke.tunnel.backend.dns.EndpointResolver
 import com.zaneschepke.tunnel.event.TunnelEvent
 import com.zaneschepke.tunnel.model.BackendMode
@@ -58,7 +56,7 @@ class TunnelBackend(
     private val scope: CoroutineScope,
     override val applicationProvider: ApplicationProvider,
     private val stableNetworkEngine: StableNetworkEngine,
-) : Backend {
+) : Backend, NativeTunnelCallback {
 
     private val serviceManager: ServiceManager by inject(ServiceManager::class.java)
     private val engine: TunnelEngine by inject(TunnelEngine::class.java)
@@ -83,9 +81,9 @@ class TunnelBackend(
             isKillSwitchEnabled = { _status.value.killSwitch.enabled },
         )
 
-    private val statusCallback = StatusCallback { handle, code ->
-        val state = Tunnel.State.fromNative(code) ?: return@StatusCallback
-        val tunnelId = byHandle[handle] ?: return@StatusCallback
+    override fun handleNativeStatusChange(handle: Int, code: Int) {
+        val state = Tunnel.State.fromNative(code) ?: return
+        val tunnelId = byHandle[handle] ?: return
         val current = _status.value.activeTunnels[tunnelId]?.transportState
         if (current != state) {
             updateTunnelTransportState(tunnelId, state)
@@ -100,8 +98,6 @@ class TunnelBackend(
                         return@runCatching
                     }
 
-                    val isFirst = _status.value.activeTunnels.isEmpty()
-
                     addOrReplaceActiveTunnel(
                         tunnel.id,
                         ActiveTunnel(
@@ -113,8 +109,6 @@ class TunnelBackend(
                     applicationProvider.refreshTile(serviceManager.context)
 
                     val scriptsEnabled = tunnel.scriptsEnabled
-
-                    if (isFirst) VpnBackend.setStatusCallback(statusCallback)
 
                     if (scriptsEnabled)
                         mode.config.`interface`.preUp?.let { runScripts(it, tunnel.id) }
@@ -264,14 +258,10 @@ class TunnelBackend(
         runCatching {
             val activeTun = _status.value.activeTunnels[id] ?: return@runCatching
             updateTunnelTransportState(id, Tunnel.State.Stopping)
-
             try {
                 stopTunnelInternal(id, activeTun)
             } finally {
                 applicationProvider.refreshTile(serviceManager.context)
-                if (_status.value.activeTunnels.isEmpty()) {
-                    VpnBackend.setStatusCallback(null)
-                }
             }
         }
     }
@@ -329,7 +319,6 @@ class TunnelBackend(
     override suspend fun stopAllActiveTunnels() = tunnelMutex.withLock {
         _status.value.activeTunnels.forEach { (id, tunnel) -> stopTunnelInternal(id, tunnel) }
         applicationProvider.refreshTile(serviceManager.context)
-        VpnBackend.setStatusCallback(null)
         serviceManager.stopTunnelService()
         if (!_status.value.killSwitch.enabled) {
             serviceManager.stopVpnService()

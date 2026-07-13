@@ -2,7 +2,7 @@ package com.zaneschepke.tunnel.service
 
 import android.content.Context
 import android.content.Intent
-import com.zaneschepke.tunnel.ProxyBackend
+import com.zaneschepke.tunnel.backend.ProxyBackend
 import com.zaneschepke.tunnel.util.BackendException
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.TimeoutCancellationException

@@ -1,7 +1,5 @@
 package com.zaneschepke.tunnel.backend
 
-import com.zaneschepke.tunnel.ProxyBackend
-import com.zaneschepke.tunnel.VpnBackend
 import com.zaneschepke.tunnel.model.BackendMode
 import com.zaneschepke.tunnel.model.ProxyConfig
 import com.zaneschepke.tunnel.service.ServiceManager

@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import timber.log.Timber
 
+@Keep
 internal object NativeDnsResolver {
 
     private const val NATIVE_RESOLUTION_TIMEOUT_MILLIS = 7_000L

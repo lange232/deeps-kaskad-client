@@ -1,18 +1,9 @@
-package com.zaneschepke.tunnel
+package com.zaneschepke.tunnel.backend
 
 import androidx.annotation.Keep
-import timber.log.Timber
 
 @Keep
 internal object VpnBackend {
-
-    fun setStatusCallback(callback: StatusCallback?) {
-        Timber.d("setStatusCallback called with ${if (callback != null) "callback" else "null"}")
-        awgSetStatusCallback(callback)
-    }
-
-    private external fun awgSetStatusCallback(callback: StatusCallback?)
-
     external fun awgGetConfig(handle: Int): String?
 
     external fun awgTurnOff(handle: Int)

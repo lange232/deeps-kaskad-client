@@ -1,7 +1,6 @@
-package com.zaneschepke.tunnel
+package com.zaneschepke.tunnel.backend
 
 import androidx.annotation.Keep
-import com.zaneschepke.tunnel.backend.SocketProtector
 import timber.log.Timber
 
 @Keep

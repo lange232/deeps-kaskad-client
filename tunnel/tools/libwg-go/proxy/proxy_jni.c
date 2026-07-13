@@ -6,9 +6,8 @@
 #include <pthread.h>
 
 static pthread_mutex_t g_protector_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t g_status_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-#define LOG_TAG "AmneziaWG/BypassSocket"
+#define LOG_TAG "Bridge/BypassSocket"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
@@ -18,7 +17,10 @@ extern int awgStartProxy(struct go_string ifname, struct go_string settings, str
 extern char *awgGetProxyConfig(int handle);
 extern int awgUpdateProxyTunnelPeers(int handle, struct go_string settings);
 extern void awgTurnProxyTunnelOff(int handle);
-extern JavaVM *g_jvm;
+
+
+extern void setupDnsJni(JNIEnv* env);
+extern void teardownDnsJni(JNIEnv* env);
 
 // Global JNI state
 JavaVM *g_jvm = NULL;
@@ -28,12 +30,43 @@ static jobject g_protector = NULL;
 static jmethodID g_protectMethod = NULL;
 
 // Status callback
-static jobject g_statusCallbackObj = NULL;
-static jmethodID g_statusCallbackMethod = NULL;
+static jclass    g_tunnelStatusBridgeClass = NULL;
+static jmethodID g_onStatusChangedMethod   = NULL;
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     g_jvm = vm;
     LOGD("JNI_OnLoad: g_jvm cached = %p", g_jvm);
+
+    JNIEnv *env = NULL;
+    if ((*vm)->GetEnv(vm, (void **)&env, JNI_VERSION_1_6) != JNI_OK) {
+        LOGE("JNI_OnLoad: Failed to get JNIEnv");
+        return JNI_VERSION_1_6;
+    }
+
+    jclass clazz = (*env)->FindClass(env, "com/zaneschepke/tunnel/backend/TunnelStatusBridge");
+    if (clazz == NULL) {
+        LOGE("JNI_OnLoad: CRITICAL - Failed to find TunnelStatusBridge class!");
+        return JNI_VERSION_1_6;
+    }
+
+    g_tunnelStatusBridgeClass = (*env)->NewGlobalRef(env, clazz);
+    (*env)->DeleteLocalRef(env, clazz);
+
+    g_onStatusChangedMethod = (*env)->GetStaticMethodID(
+            env,
+            g_tunnelStatusBridgeClass,
+            "onStatusChanged",
+            "(II)V"
+    );
+
+    if (g_onStatusChangedMethod == NULL) {
+        LOGE("JNI_OnLoad: CRITICAL - Failed to find onStatusChanged method ID!");
+    } else {
+        LOGD("JNI_OnLoad: TunnelStatusBridge successfully linked up.");
+    }
+
+    setupDnsJni(env);
+
     return JNI_VERSION_1_6;
 }
 
@@ -44,18 +77,19 @@ JNIEXPORT void JNICALL JNI_OnUnload(JavaVM *vm, void *reserved) {
             (*env)->DeleteGlobalRef(env, g_protector);
             g_protector = NULL;
         }
-        if (g_statusCallbackObj != NULL) {
-            (*env)->DeleteGlobalRef(env, g_statusCallbackObj);
-            g_statusCallbackObj = NULL;
+        if (g_tunnelStatusBridgeClass != NULL) {
+            (*env)->DeleteGlobalRef(env, g_tunnelStatusBridgeClass);
+            g_tunnelStatusBridgeClass = NULL;
         }
+        teardownDnsJni(env);
     }
     g_protectMethod = NULL;
-    g_statusCallbackMethod = NULL;
+    g_onStatusChangedMethod = NULL;
     g_jvm = NULL;
-    LOGD("JNI_OnUnload: cleared all globals");
 }
 
-JNIEXPORT jint JNICALL Java_com_zaneschepke_tunnel_ProxyBackend_awgStartProxy(JNIEnv *env, jclass c, jstring ifname, jstring settings, jstring uapipath, jint bypass)
+JNIEXPORT jint JNICALL
+Java_com_zaneschepke_tunnel_backend_ProxyBackend_awgStartProxy(JNIEnv *env, jclass c, jstring ifname, jstring settings, jstring uapipath, jint bypass)
 {
     const char *ifname_str = (*env)->GetStringUTFChars(env, ifname, 0);
     size_t ifname_len = (*env)->GetStringUTFLength(env, ifname);
@@ -79,12 +113,14 @@ JNIEXPORT jint JNICALL Java_com_zaneschepke_tunnel_ProxyBackend_awgStartProxy(JN
     return ret;
 }
 
-JNIEXPORT void JNICALL Java_com_zaneschepke_tunnel_ProxyBackend_awgTurnProxyTunnelOff(JNIEnv *env, jclass c, jint handle)
+JNIEXPORT void JNICALL
+Java_com_zaneschepke_tunnel_backend_ProxyBackend_awgTurnProxyTunnelOff(JNIEnv *env, jclass c, jint handle)
 {
     awgTurnProxyTunnelOff(handle);
 }
 
-JNIEXPORT jstring JNICALL Java_com_zaneschepke_tunnel_ProxyBackend_awgGetProxyConfig(JNIEnv *env, jclass c, jint handle)
+JNIEXPORT jstring JNICALL
+Java_com_zaneschepke_tunnel_backend_ProxyBackend_awgGetProxyConfig(JNIEnv *env, jclass c, jint handle)
 {
     jstring ret;
     char *config = awgGetProxyConfig(handle);
@@ -95,22 +131,20 @@ JNIEXPORT jstring JNICALL Java_com_zaneschepke_tunnel_ProxyBackend_awgGetProxyCo
     return ret;
 }
 
-JNIEXPORT void JNICALL Java_com_zaneschepke_tunnel_ProxyBackend_awgSetSocketProtector(
+JNIEXPORT void JNICALL
+Java_com_zaneschepke_tunnel_backend_ProxyBackend_awgSetSocketProtector(
         JNIEnv *env, jclass c, jobject protector) {
     pthread_mutex_lock(&g_protector_mutex);
-    LOGD("JNI: awgSetSocketProtector called from Kotlin - protector=%p", protector);
 
     // Clear old protector
     if (g_protector != NULL) {
         (*env)->DeleteGlobalRef(env, g_protector);
         g_protector = NULL;
         g_protectMethod = NULL;
-        LOGD("JNI: Cleared previous socket protector");
     }
 
     if (protector != NULL) {
         g_protector = (*env)->NewGlobalRef(env, protector);
-        LOGD("JNI: Created new global ref for protector = %p", g_protector);
 
         jclass protectorClass = (*env)->GetObjectClass(env, protector);
         if (protectorClass != NULL) {
@@ -119,14 +153,27 @@ JNIEXPORT void JNICALL Java_com_zaneschepke_tunnel_ProxyBackend_awgSetSocketProt
         }
 
         if (g_protectMethod != NULL) {
-            LOGD("JNI: Socket protector SUCCESSFULLY REGISTERED (methodID = %p)", g_protectMethod);
+            LOGD("awgSetSocketProtector: successfully registered (methodID = %p)", g_protectMethod);
         } else {
-            LOGE("JNI: FAILED to get bypass method ID");
+            LOGE("awgSetSocketProtector: Socket protector failed to get bypass method ID");
         }
     } else {
-        LOGD("JNI: Socket protector CLEARED (null passed)");
+        LOGD("awgSetSocketProtector: Socket protector cleared successfully");
     }
     pthread_mutex_unlock(&g_protector_mutex);
+}
+
+JNIEXPORT jint JNICALL
+Java_com_zaneschepke_tunnel_backend_ProxyBackend_awgUpdateProxyTunnelPeers(JNIEnv *env, jclass c, jint handle, jstring settings)
+{
+    const char *settings_str = (*env)->GetStringUTFChars(env, settings, 0);
+    size_t settings_len = (*env)->GetStringUTFLength(env, settings);
+    int ret = awgUpdateProxyTunnelPeers(handle, (struct go_string){
+        .str = settings_str,
+        .n = settings_len
+    });
+    (*env)->ReleaseStringUTFChars(env, settings, settings_str);
+    return ret;
 }
 
 int bypass_socket(int fd) {
@@ -218,87 +265,50 @@ int bypass_socket(int fd) {
     return 0;
 }
 
-JNIEXPORT jint JNICALL Java_com_zaneschepke_tunnel_ProxyBackend_awgUpdateProxyTunnelPeers(JNIEnv *env, jclass c, jint handle, jstring settings)
-{
-    const char *settings_str = (*env)->GetStringUTFChars(env, settings, 0);
-    size_t settings_len = (*env)->GetStringUTFLength(env, settings);
-    int ret = awgUpdateProxyTunnelPeers(handle, (struct go_string){
-        .str = settings_str,
-        .n = settings_len
-    });
-    (*env)->ReleaseStringUTFChars(env, settings, settings_str);
-    return ret;
-}
-
-JNIEXPORT void JNICALL Java_com_zaneschepke_tunnel_VpnBackend_awgSetStatusCallback(
-        JNIEnv *env, jclass clazz, jobject callback) {
-    pthread_mutex_lock(&g_status_mutex);
-    LOGD("JNI: awgSetStatusCallback called - callback=%p", callback);
-
-    if (g_statusCallbackObj != NULL) {
-        (*env)->DeleteGlobalRef(env, g_statusCallbackObj);
-        g_statusCallbackObj = NULL;
-        g_statusCallbackMethod = NULL;
-    }
-
-    if (callback != NULL) {
-        g_statusCallbackObj = (*env)->NewGlobalRef(env, callback);
-        jclass callbackClass = (*env)->GetObjectClass(env, callback);
-        if (callbackClass != NULL) {
-            g_statusCallbackMethod = (*env)->GetMethodID(env, callbackClass,
-                    "onStatusChanged", "(II)V");
-            (*env)->DeleteLocalRef(env, callbackClass);
-        }
-        if (g_statusCallbackMethod != NULL) {
-            LOGD("JNI: Status callback SUCCESSFULLY REGISTERED (2-param)");
-        } else {
-            LOGE("JNI: FAILED to get onStatusChanged method ID");
-        }
-    } else {
-        LOGD("JNI: Status callback CLEARED");
-    }
-    pthread_mutex_unlock(&g_status_mutex);
-}
-
+#undef LOG_TAG
+#define LOG_TAG "Bridge/TunnelStatus"
 
 void awgNotifyStatus(int32_t handle, int32_t code) {
-    JNIEnv *env = NULL;
     if (g_jvm == NULL) {
-        LOGE("g_jvm is NULL in awgNotifyStatus");
+        LOGE("awgNotifyStatus: g_jvm is NULL, dropping event.");
         return;
     }
+
+    JNIEnv *env = NULL;
     jint rs = (*g_jvm)->GetEnv(g_jvm, (void **)&env, JNI_VERSION_1_6);
+
     if (rs == JNI_EDETACHED) {
         if ((*g_jvm)->AttachCurrentThreadAsDaemon(g_jvm, (JNIEnv **)&env, NULL) != JNI_OK) {
-            LOGE("AttachCurrentThreadAsDaemon failed in awgNotifyStatus");
+            LOGE("awgNotifyStatus: Failed to attach native Go thread to JVM.");
             return;
         }
     } else if (rs != JNI_OK) {
-        LOGE("GetEnv failed with code %d in awgNotifyStatus", rs);
+        LOGE("awgNotifyStatus: GetEnv failed with code %d", rs);
         return;
     }
-    if (env == NULL) {
+
+    if (env == NULL) return;
+
+    // Check if JNI_OnLoad failed to resolve the references earlier
+    if (g_tunnelStatusBridgeClass == NULL || g_onStatusChangedMethod == NULL) {
+        LOGE("awgNotifyStatus: Cannot callback; cached class/method references are missing.");
         return;
     }
-    pthread_mutex_lock(&g_status_mutex);
-    if (g_statusCallbackObj == NULL || g_statusCallbackMethod == NULL) {
-        pthread_mutex_unlock(&g_status_mutex);
-        return;
-    }
-    jobject local_callback = (*env)->NewLocalRef(env, g_statusCallbackObj);
-    jmethodID local_method = g_statusCallbackMethod;
-    pthread_mutex_unlock(&g_status_mutex);
-    if (local_callback == NULL) {
-        return;
-    }
+
+    LOGD("awgNotifyStatus: Forwarding event to Kotlin (handle=%d, code=%d)", handle, code);
+
+    (*env)->CallStaticVoidMethod(
+            env,
+            g_tunnelStatusBridgeClass,
+            g_onStatusChangedMethod,
+            (jint)handle,
+            (jint)code
+    );
+
+    // Check for exceptions thrown inside Kotlin code execution
     if ((*env)->ExceptionCheck(env)) {
-        (*env)->ExceptionClear(env);
-    }
-    (*env)->CallVoidMethod(env, local_callback, local_method, (jint)handle, (jint)code);
-    if ((*env)->ExceptionCheck(env)) {
-        LOGE("Exception thrown from status callback onStatusChanged()");
+        LOGE("awgNotifyStatus: Exception occurred within TunnelStatusBridge.onStatusChanged");
         (*env)->ExceptionDescribe(env);
         (*env)->ExceptionClear(env);
     }
-    (*env)->DeleteLocalRef(env, local_callback);
 }
