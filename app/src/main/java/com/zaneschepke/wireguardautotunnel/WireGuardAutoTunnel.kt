@@ -96,17 +96,10 @@ class WireGuardAutoTunnel : Application(), KoinComponent {
         backend.setAlwaysOnCallback(alwaysOnCallback)
 
         val dispatcher = get<TunnelEventDispatcher>()
-        val coordinator = get<TunnelCoordinator>()
         val provider = get<TunnelProvider>()
 
         // for notifications
-        dispatcher.bind(
-            applicationScope,
-            provider.events,
-            provider.backendStatus,
-            coordinator.errors,
-            tunnelCoordinator.tunnelDisplayStates,
-        )
+        dispatcher.bind(applicationScope, provider.events, tunnelCoordinator.errors)
 
         applicationScope.launch(ioDispatcher) { boostrapCoordinator.bootstrap() }
     }
