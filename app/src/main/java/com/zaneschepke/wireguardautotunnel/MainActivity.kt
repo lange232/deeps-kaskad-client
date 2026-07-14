@@ -84,6 +84,7 @@ import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig
 import com.zaneschepke.wireguardautotunnel.domain.repository.AppStateRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
 import com.zaneschepke.wireguardautotunnel.domain.sideeffect.GlobalSideEffect
+import com.zaneschepke.wireguardautotunnel.service.tile.TunnelTileRefresher
 import com.zaneschepke.wireguardautotunnel.ui.LocalIsAndroidTV
 import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
 import com.zaneschepke.wireguardautotunnel.ui.common.banner.AppAlertBanner
@@ -311,6 +312,9 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (!uiState.isAppLoaded) return@setContent
+
+            // Refresh tiles on tunnel size changes to catch deletes and adds
+            LaunchedEffect(uiState.tunnelNames.size) { TunnelTileRefresher.refresh(context) }
 
             LaunchedEffect(Unit) {
                 var currentToast: Toast? = null
