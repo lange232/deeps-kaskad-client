@@ -380,7 +380,7 @@ class AndroidNetworkMonitor(
                     // ignore onAvailable has it doesn't contain detailed network information in
                     // capabilities
                     Timber.d("WiFi onAvailable: $network")
-                }   
+                }
                 val onLost: (Network) -> Unit = { network ->
                     Timber.d("WiFi onLost: $network")
                     trySend(TransportEvent.Lost(network))
@@ -556,7 +556,8 @@ class AndroidNetworkMonitor(
                         WifiDetails(ssid, bssid.uppercase())
                     }
                     LEGACY -> {
-                        // LEGACY mode intentionally does a fresh location-based query because cache is now handled in buildWifiNetwork
+                        // LEGACY mode intentionally does a fresh location-based query because cache
+                        // is now handled in buildWifiNetwork
                         Timber.d("Triggering new location ping for SSID and BSSID (LEGACY mode)")
                         val (ssid, bssid) =
                             wifiManager?.getWifiSsidAndBssid()
@@ -767,19 +768,19 @@ class AndroidNetworkMonitor(
                         }
                     }
 
-            // Only store a Wi-Fi network if it has both a real SSID and BSSID
-            // This prevents lastKnownActiveNetwork from being updated with
-            // android default ssid bssid values, especially on VPN starts
-            if (
-                physicalNetwork is ActiveNetwork.Wifi &&
-                physicalNetwork.ssid != ANDROID_UNKNOWN_SSID &&
-                physicalNetwork.bssid != ANDROID_UNKNOWN_BSSID
-            ) {
-                lastKnownActiveNetwork.value = physicalNetwork
-            } else if (physicalNetwork !is ActiveNetwork.Wifi) {
-                // Cellular, Ethernet, or Disconnected are always safe to store
-                lastKnownActiveNetwork.value = physicalNetwork
-            }
+                // Only store a Wi-Fi network if it has both a real SSID and BSSID
+                // This prevents lastKnownActiveNetwork from being updated with
+                // android default ssid bssid values, especially on VPN starts
+                if (
+                    physicalNetwork is ActiveNetwork.Wifi &&
+                        physicalNetwork.ssid != ANDROID_UNKNOWN_SSID &&
+                        physicalNetwork.bssid != ANDROID_UNKNOWN_BSSID
+                ) {
+                    lastKnownActiveNetwork.value = physicalNetwork
+                } else if (physicalNetwork !is ActiveNetwork.Wifi) {
+                    // Cellular, Ethernet, or Disconnected are always safe to store
+                    lastKnownActiveNetwork.value = physicalNetwork
+                }
 
                 val underlyingNetwork: Network? =
                     when (physicalNetwork) {
