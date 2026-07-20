@@ -44,7 +44,7 @@ class ConfigEditViewModel(
             combine(
                     tunnelCoordinator.backendStatus,
                     tunnelRepository.flow,
-                    dnsSettingsRepository.flow.map { it.isGlobalTunnelDnsEnabled },
+                    dnsSettingsRepository.flow.map { it.isGlobalTunnelConfigDnsEnabled },
                     settingsRepository.flow.map { it.isGlobalAmneziaEnabled },
                 ) { backendStatus, tunnels, globalDnsEnabled, globalAmneziaEnabled ->
                     val tunnel = tunnels.firstOrNull { it.id == tunnelId }
