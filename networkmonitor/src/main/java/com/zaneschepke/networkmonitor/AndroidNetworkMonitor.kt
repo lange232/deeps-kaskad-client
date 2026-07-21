@@ -874,7 +874,8 @@ class AndroidNetworkMonitor(
 
         return ActiveNetwork.Wifi(
             ssid = wifiDetails.ssid,
-            bssid = wifiDetails.bssid,
+            // normalize to uppercase
+            bssid = wifiDetails.bssid.uppercase(),
             securityType = fetchedSecurity,
             networkId = currentNetworkId,
             network = network,
