@@ -207,7 +207,10 @@ class ConfigEditViewModel(
                     if (peer.isLanExcluded()) {
                         peer.includeLan()
                     } else {
-                        peer.excludeLan()
+                        val dnsServers =
+                            state.draft.config.`interface`.dnsServers.split(",").map { it.trim() }
+                                ?: emptyList()
+                        peer.excludeLan(dnsServers)
                     }
 
                 set(index, updated)
