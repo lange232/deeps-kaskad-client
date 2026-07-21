@@ -23,8 +23,8 @@ import com.zaneschepke.wireguardautotunnel.util.StringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.asStringValue
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import org.orbitmvi.orbit.ContainerHost
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 import timber.log.Timber
 
 class ConfigEditViewModel(
@@ -34,10 +34,10 @@ class ConfigEditViewModel(
     private val globalEffectRepository: GlobalEffectRepository,
     private val tunnelCoordinator: TunnelCoordinator,
     val tunnelId: Int?,
-) : ContainerHost<ConfigUiState, Nothing>, ViewModel() {
+) : OrbitContainerHost<ConfigUiState, ConfigUiState, Nothing>, ViewModel() {
 
     override val container =
-        container<ConfigUiState, Nothing>(
+        orbitContainer<ConfigUiState, Nothing>(
             ConfigUiState(),
             buildSettings = { repeatOnSubscribedStopTimeout = 5000L },
         ) {

@@ -15,18 +15,18 @@ import com.zaneschepke.wireguardautotunnel.util.StringValue
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import org.orbitmvi.orbit.ContainerHost
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 
 class SplitTunnelViewModel(
     private val tunnelRepository: TunnelRepository,
     private val packageRepository: InstalledPackageRepository,
     private val globalEffectRepository: GlobalEffectRepository,
     val tunnelId: Int,
-) : ContainerHost<SplitTunnelUiState, Nothing>, ViewModel() {
+) : OrbitContainerHost<SplitTunnelUiState, SplitTunnelUiState, Nothing>, ViewModel() {
 
     override val container =
-        container<SplitTunnelUiState, Nothing>(
+        orbitContainer<SplitTunnelUiState, Nothing>(
             SplitTunnelUiState(),
             buildSettings = { repeatOnSubscribedStopTimeout = 5000L },
         ) {

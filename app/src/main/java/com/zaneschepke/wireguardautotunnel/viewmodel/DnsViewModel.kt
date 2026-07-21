@@ -17,8 +17,8 @@ import com.zaneschepke.wireguardautotunnel.util.DnsValidator
 import com.zaneschepke.wireguardautotunnel.util.StringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.labelRes
 import kotlinx.coroutines.flow.combine
-import org.orbitmvi.orbit.ContainerHost
-import org.orbitmvi.orbit.viewmodel.container
+import org.orbitmvi.orbit.OrbitContainerHost
+import org.orbitmvi.orbit.viewmodel.orbitContainer
 
 class DnsViewModel(
     private val dnsSettingsRepository: DnsSettingsRepository,
@@ -26,10 +26,10 @@ class DnsViewModel(
     private val networkMonitor: NetworkMonitor,
     private val globalEffectRepository: GlobalEffectRepository,
     private val dnsSettingsCoordinator: DnsSettingsCoordinator,
-) : ContainerHost<DnsUiState, Nothing>, ViewModel() {
+) : OrbitContainerHost<DnsUiState, DnsUiState, Nothing>, ViewModel() {
 
     override val container =
-        container<DnsUiState, Nothing>(
+        orbitContainer<DnsUiState, Nothing>(
             DnsUiState(),
             buildSettings = { repeatOnSubscribedStopTimeout = 5000L },
         ) {
