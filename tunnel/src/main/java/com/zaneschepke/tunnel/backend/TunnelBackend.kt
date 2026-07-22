@@ -499,8 +499,8 @@ class TunnelBackend(
             val handle =
                 byTunnelId[tunnelId]
                     ?: run {
-                        Timber.w("Failed to find tunnel handle, skipping stats")
-                        continue
+                        Timber.w("Failed to find tunnel handle, stopping stats job")
+                        return@launch
                     }
             val activeConfig = engine.getActiveConfig(handle, mode)
             updateActiveTunnel(tunnelId) { it.copy(activeConfig = activeConfig) }
