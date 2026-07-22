@@ -208,8 +208,21 @@ class DnsViewModel(
 
     fun setTunnelDnsMode(tunnelDnsMode: TunnelDnsMode) = intent {
         reduce {
+            val protocol =
+                if (
+                    state.dnsSettings.tunnelDnsProtocol == TunnelDnsProtocol.Plain &&
+                        tunnelDnsMode == TunnelDnsMode.Encrypted
+                ) {
+                    TunnelDnsProtocol.Doh
+                } else {
+                    state.dnsSettings.tunnelDnsProtocol
+                }
             state.copy(
-                dnsSettings = state.dnsSettings.copy(tunnelDnsMode = tunnelDnsMode),
+                dnsSettings =
+                    state.dnsSettings.copy(
+                        tunnelDnsMode = tunnelDnsMode,
+                        tunnelDnsProtocol = protocol,
+                    ),
                 tunnelEndpointError = null,
                 localSuffixesError = null,
             )
