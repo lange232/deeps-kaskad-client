@@ -3,11 +3,13 @@ package com.zaneschepke.tunnel.util
 import android.os.Build
 import com.zaneschepke.tunnel.model.DnsBootstrapResult
 import com.zaneschepke.tunnel.model.DnsConfig
+import com.zaneschepke.tunnel.model.ResolvedHost
 import com.zaneschepke.wireguardautotunnel.parser.Config
 import com.zaneschepke.wireguardautotunnel.parser.InterfaceSection
 import com.zaneschepke.wireguardautotunnel.parser.PeerSection
 import java.net.Inet4Address
 import java.net.InetAddress
+import timber.log.Timber
 
 /** Parses a CIDR string and returns the address + prefix length */
 internal fun String.parseInetNetwork(): Pair<InetAddress, Int> {
@@ -64,23 +66,41 @@ internal fun String.parseDns(): DnsConfig {
     return DnsConfig(servers, domains)
 }
 
-internal fun Config.buildResolvedPeers(hostMap: Map<PublicKey, Host>): List<PeerSection> {
+internal fun Config.buildResolvedPeers(hostMap: Map<PublicKey, ResolvedHost>): List<PeerSection> {
     return this.peers.map { peer ->
-        val updatedHost = hostMap[peer.publicKey] ?: return@map peer
-        val port = peer.endpoint?.substringAfterLast(":") ?: return@map peer
-        peer.copy(endpoint = "$updatedHost:$port")
+        val resolved = hostMap[peer.publicKey] ?: return@map peer
+
+        val port =
+            resolved.forcedPort?.toString()
+                ?: peer.endpoint?.substringAfterLast(":")
+                ?: return@map peer
+
+        peer.copy(endpoint = "${resolved.host}:$port")
     }
 }
 
-fun Map<PublicKey, DnsBootstrapResult>.toHostMap(preferIpv6: Boolean): Map<PublicKey, Host> =
+internal fun Map<PublicKey, DnsBootstrapResult>.toHostMap(
+    preferIpv6: Boolean
+): Map<PublicKey, ResolvedHost> =
     mapNotNull { (pubKey, result) ->
+            val ip4p = result.ipv6.firstNotNullOfOrNull { DnsHostUtils.decodeIp4p(it) }
+
+            // IP4P support
+            if (ip4p != null) {
+                val (ipv4, port) = ip4p
+                Timber.i("IP4P detected for peer!")
+                return@mapNotNull pubKey to ResolvedHost(host = ipv4, forcedPort = port)
+            }
+
+            // Normal path
             val host =
                 if (preferIpv6) {
                     result.ipv6.firstOrNull() ?: result.ipv4.firstOrNull()
                 } else {
                     result.ipv4.firstOrNull() ?: result.ipv6.firstOrNull()
                 }
-            host?.let { pubKey to it }
+
+            host?.let { pubKey to ResolvedHost(it) }
         }
         .toMap()
 
