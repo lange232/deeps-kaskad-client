@@ -104,16 +104,23 @@ class AndroidNetworkMonitor(
         val manufacturer = Build.MANUFACTURER.lowercase()
         val brand = Build.BRAND.lowercase()
 
-        val problematic = setOf(
-            // Vivo family
-            "vivo", "iqoo",
-            // OPPO family
-            "oppo", "realme", "oneplus",
-            // Xiaomi family
-            "xiaomi", "redmi", "poco", "blackshark",
-            // Honor
-            "honor"
-        )
+        val problematic =
+            setOf(
+                // Vivo family
+                "vivo",
+                "iqoo",
+                // OPPO family
+                "oppo",
+                "realme",
+                "oneplus",
+                // Xiaomi family
+                "xiaomi",
+                "redmi",
+                "poco",
+                "blackshark",
+                // Honor
+                "honor",
+            )
 
         manufacturer in problematic || brand in problematic
     }
