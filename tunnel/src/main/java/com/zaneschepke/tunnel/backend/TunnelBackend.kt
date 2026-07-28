@@ -294,6 +294,12 @@ class TunnelBackend(
     }
 
     private fun onEngineStartResult(tunnelId: Int, result: EngineStartResult) {
+        // old handle should be removed if exists
+        byTunnelId[tunnelId]?.let { oldHandle ->
+            if (oldHandle != result.handle) {
+                byHandle.remove(oldHandle)
+            }
+        }
         updateActiveTunnel(tunnelId) {
             it.copy(interfaceName = result.interfaceName, uptime = System.currentTimeMillis())
         }
