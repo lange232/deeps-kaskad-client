@@ -1,6 +1,5 @@
 package com.zaneschepke.tunnel.backend
 
-import com.zaneschepke.networkmonitor.ActiveNetwork
 import com.zaneschepke.networkmonitor.StableNetworkEngine
 import com.zaneschepke.tunnel.ApplicationProvider
 import com.zaneschepke.tunnel.Tunnel
@@ -522,29 +521,27 @@ class TunnelBackend(
                     stableNetworkEngine.stableState.filterNotNull(),
                 ) { tunnelState, networkState ->
                     val isHandshakeFailure = tunnelState is Tunnel.State.Up.HandshakeFailure
-                    val isNetworkConnected =
-                        networkState.state.activeNetwork !is ActiveNetwork.Disconnected
+                    val isNetworkUsable = networkState.state.hasUsableNetwork()
 
-                    isHandshakeFailure && isNetworkConnected
+                    isHandshakeFailure && isNetworkUsable
                 }
                 .distinctUntilChanged()
 
         while (isActive) {
-            Timber.i("Advanced recovery: waiting for recovery conditions to be met")
+            Timber.i("Seamless recovery: waiting for recovery conditions to be met")
             shouldRecoverFlow.first { it }
 
             if (!isActive) break
 
             Timber.i(
-                "Advanced recovery: entered HandshakeFailure while network connected. Waiting for tunnel to stabilize..."
+                "Seamless recovery: entered HandshakeFailure while network connected. Waiting for tunnel to stabilize..."
             )
             delay(TUNNEL_HEALTH_STABILIZE_WINDOW_MILLIS.milliseconds)
 
             // get fresh snapshots
             val currentState = _status.value.activeTunnels[tunnelId]?.transportState
             val isNetworkStillConnected =
-                stableNetworkEngine.stableState.value?.state?.activeNetwork !is
-                    ActiveNetwork.Disconnected
+                stableNetworkEngine.stableState.value?.state?.hasUsableNetwork() == true
 
             if (currentState is Tunnel.State.Up.HandshakeFailure && isNetworkStillConnected) {
                 val currentAttempts = _status.value.activeTunnels[tunnelId]?.recoveryAttempts ?: 0
@@ -557,7 +554,7 @@ class TunnelBackend(
                 }
                 _events.emit(TunnelEvent.SeamlessRecoveryAttempted(tunnelId))
                 Timber.i(
-                    "Advanced recovery: bouncing tunnel $tunnelId after persistent handshake failure"
+                    "Seamless recovery: bouncing tunnel $tunnelId after persistent handshake failure"
                 )
                 bounceTunnelDevice(tunnelId)
 
