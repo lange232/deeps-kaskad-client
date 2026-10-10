@@ -2,6 +2,8 @@ package com.zaneschepke.wireguardautotunnel.ui.screens.settings.dns.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelDnsMode
 import com.zaneschepke.wireguardautotunnel.ui.common.sheet.CustomBottomSheet
 import com.zaneschepke.wireguardautotunnel.ui.common.sheet.SheetOption
@@ -29,7 +31,9 @@ fun TunnelDnsModeBottomSheet(
                 description = it.asDescription(context),
                 selected = tunnelDnsMode == it,
             )
-        }
+        },
+        title = stringResource(R.string.tunnel_dns_mode),
+        description = stringResource(R.string.tunnel_dns_mode_desc),
     ) {
         onDismiss()
     }
