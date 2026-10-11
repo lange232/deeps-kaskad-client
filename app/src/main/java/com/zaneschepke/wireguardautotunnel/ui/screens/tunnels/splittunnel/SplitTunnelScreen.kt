@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.components.SelectTunnelModal
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.components.SplitTunnelContent
+import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.state.SplitBehavior
 import com.zaneschepke.wireguardautotunnel.ui.sideeffect.LocalSideEffect
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.SplitTunnelViewModel
@@ -64,9 +65,16 @@ fun SplitTunnelScreen(
     )
 
     SplitTunnelContent(
-        splitConfig = uiState.splitOption to uiState.selectedPackages,
+        isSplitTunnelingEnabled = uiState.isSplitTunnelingEnabled,
+        activeBehavior = uiState.activeBehavior,
+        selectedPackages =
+            when (uiState.activeBehavior) {
+                SplitBehavior.INCLUDE -> uiState.includedPackages
+                SplitBehavior.EXCLUDE -> uiState.excludedPackages
+            },
         installedPackages = uiState.installedPackages,
-        onSplitOptionChange = { viewModel.setSplitOption(it) },
+        onSplitTunnelingEnabledChange = { viewModel.setSplitTunnelingEnabled(it) },
+        onActiveBehaviorChange = { viewModel.setActiveBehavior(it) },
         onAppSelectionToggle = { appPackage, enabled ->
             viewModel.togglePackage(appPackage, enabled)
         },

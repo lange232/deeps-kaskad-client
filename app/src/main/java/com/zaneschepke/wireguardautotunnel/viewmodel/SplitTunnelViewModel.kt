@@ -7,7 +7,7 @@ import com.zaneschepke.wireguardautotunnel.domain.repository.GlobalEffectReposit
 import com.zaneschepke.wireguardautotunnel.domain.repository.InstalledPackageRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
 import com.zaneschepke.wireguardautotunnel.domain.sideeffect.GlobalSideEffect
-import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.state.SplitOption
+import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.state.SplitBehavior
 import com.zaneschepke.wireguardautotunnel.ui.state.EditableConfig
 import com.zaneschepke.wireguardautotunnel.ui.state.EditableInterface
 import com.zaneschepke.wireguardautotunnel.ui.state.SplitTunnelUiState
@@ -40,17 +40,11 @@ class SplitTunnelViewModel(
                     val currentState = state
 
                     val config = tunnel?.getConfig()
-
-                    val (initialOption, initialPkgs) =
-                        when {
-                            config?.`interface`?.allExcludedApps?.isNotEmpty() == true ->
-                                SplitOption.EXCLUDE to config.`interface`.allExcludedApps.toSet()
-
-                            config?.`interface`?.allIncludedApps?.isNotEmpty() == true ->
-                                SplitOption.INCLUDE to config.`interface`.allIncludedApps.toSet()
-
-                            else -> SplitOption.ALL to emptySet()
-                        }
+                    val included = config?.`interface`?.allIncludedApps.orEmpty().toSet()
+                    val excluded = config?.`interface`?.allExcludedApps.orEmpty().toSet()
+                    val initialEnabled = included.isNotEmpty() || excluded.isNotEmpty()
+                    val initialBehavior =
+                        if (excluded.isNotEmpty()) SplitBehavior.EXCLUDE else SplitBehavior.INCLUDE
 
                     val isInitialized = currentState.tunnel != null
 
@@ -59,10 +53,15 @@ class SplitTunnelViewModel(
                         tunnels = tunnels.map { it.toSummary() },
                         tunnel = tunnel,
                         isLoading = packages.isEmpty(),
-                        splitOption =
-                            if (isInitialized) currentState.splitOption else initialOption,
-                        selectedPackages =
-                            if (isInitialized) currentState.selectedPackages else initialPkgs,
+                        isSplitTunnelingEnabled =
+                            if (isInitialized) currentState.isSplitTunnelingEnabled
+                            else initialEnabled,
+                        activeBehavior =
+                            if (isInitialized) currentState.activeBehavior else initialBehavior,
+                        includedPackages =
+                            if (isInitialized) currentState.includedPackages else included,
+                        excludedPackages =
+                            if (isInitialized) currentState.excludedPackages else excluded,
                         selectedCopySourceTunnelId = currentState.selectedCopySourceTunnelId,
                     )
                 }
@@ -79,10 +78,13 @@ class SplitTunnelViewModel(
         val editableConfig = EditableConfig.from(config)
         val editableInterface = EditableInterface.from(config.`interface`)
         val (included, excluded) =
-            when (state.splitOption) {
-                SplitOption.INCLUDE -> Pair(state.selectedPackages, emptySet<String>())
-                SplitOption.ALL -> Pair(emptySet(), emptySet())
-                SplitOption.EXCLUDE -> Pair(emptySet(), state.selectedPackages)
+            if (!state.isSplitTunnelingEnabled) {
+                Pair(emptySet(), emptySet())
+            } else {
+                when (state.activeBehavior) {
+                    SplitBehavior.INCLUDE -> Pair(state.includedPackages, emptySet<String>())
+                    SplitBehavior.EXCLUDE -> Pair(emptySet<String>(), state.excludedPackages)
+                }
             }
         val updatedInterface =
             editableInterface.copy(includedApplications = included, excludedApplications = excluded)
@@ -100,15 +102,32 @@ class SplitTunnelViewModel(
         postSideEffect(GlobalSideEffect.PopBackStack)
     }
 
-    fun setSplitOption(option: SplitOption) = intent { reduce { state.copy(splitOption = option) } }
+    fun setSplitTunnelingEnabled(enabled: Boolean) = intent {
+        reduce { state.copy(isSplitTunnelingEnabled = enabled) }
+    }
+
+    fun setActiveBehavior(behavior: SplitBehavior) = intent {
+        reduce { state.copy(activeBehavior = behavior) }
+    }
 
     fun togglePackage(pkg: String, enabled: Boolean) = intent {
         reduce {
-            val updated =
-                state.selectedPackages.toMutableSet().apply {
-                    if (enabled) add(pkg) else remove(pkg)
+            when (state.activeBehavior) {
+                SplitBehavior.INCLUDE -> {
+                    val updated =
+                        state.includedPackages.toMutableSet().apply {
+                            if (enabled) add(pkg) else remove(pkg)
+                        }
+                    state.copy(includedPackages = updated)
                 }
-            state.copy(selectedPackages = updated)
+                SplitBehavior.EXCLUDE -> {
+                    val updated =
+                        state.excludedPackages.toMutableSet().apply {
+                            if (enabled) add(pkg) else remove(pkg)
+                        }
+                    state.copy(excludedPackages = updated)
+                }
+            }
         }
     }
 
@@ -118,22 +137,17 @@ class SplitTunnelViewModel(
         val tunnel = tunnelRepository.getById(id) ?: return@intent
 
         val config = tunnel.getConfig()
-
-        val (option, pkgs) =
-            when {
-                config.`interface`.allExcludedApps.isNotEmpty() ->
-                    SplitOption.EXCLUDE to config.`interface`.allExcludedApps.toSet()
-
-                config.`interface`.allIncludedApps.isNotEmpty() ->
-                    SplitOption.INCLUDE to config.`interface`.allIncludedApps.toSet()
-
-                else -> SplitOption.ALL to emptySet()
-            }
+        val included = config.`interface`.allIncludedApps.toSet()
+        val excluded = config.`interface`.allExcludedApps.toSet()
+        val enabled = included.isNotEmpty() || excluded.isNotEmpty()
+        val behavior = if (excluded.isNotEmpty()) SplitBehavior.EXCLUDE else SplitBehavior.INCLUDE
 
         reduce {
             state.copy(
-                splitOption = option,
-                selectedPackages = pkgs,
+                isSplitTunnelingEnabled = enabled,
+                activeBehavior = behavior,
+                includedPackages = included,
+                excludedPackages = excluded,
                 selectedCopySourceTunnelId = null,
             )
         }

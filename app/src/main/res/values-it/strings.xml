@@ -14,8 +14,6 @@
     <string name="add_tunnels_text">Importa da file o zip</string>
     <string name="add_from_qr">Scansiona QR code</string>
     <string name="tunnel_name">Nome Tunnel</string>
-    <string name="exclude">Escludi</string>
-    <string name="include">Includi</string>
     <string name="config_changes_saved">Modifiche alla configurazione salvate.</string>
     <string name="public_key">Chiave pubblica</string>
     <string name="addresses">Indirizzi</string>
@@ -51,7 +49,6 @@
     <string name="delete_tunnel">Cancella tunnel</string>
     <string name="delete_tunnel_message">Confermi di voler rimuovere i tunnel selezionati?</string>
     <string name="yes">Si</string>
-    <string name="all">Tutto</string>
     <string name="no_email_detected">Nessuna app email rilevata</string>
     <string name="no_browser_detected">Nessun browser rilevato</string>
     <string name="open_issue">Segnala un bug o un\'anomalia</string>

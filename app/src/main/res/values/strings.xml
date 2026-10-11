@@ -30,8 +30,6 @@
     <string name="add_tunnels_text">Add from file or zip</string>
     <string name="add_from_qr">Add from QR code</string>
     <string name="tunnel_name">Tunnel Name</string>
-    <string name="exclude">Exclude</string>
-    <string name="include">Include</string>
     <string name="config_changes_saved">Configuration changes saved.</string>
     <string name="public_key">Public key</string>
     <string name="addresses">Addresses</string>
@@ -74,7 +72,6 @@
     <string name="delete_tunnel">Delete tunnel</string>
     <string name="delete_tunnel_message">Are you sure you would like to delete the selected tunnels?</string>
     <string name="yes">Yes</string>
-    <string name="all">All</string>
     <string name="no_email_detected">No email app detected</string>
     <string name="no_browser_detected">No browser detected</string>
     <string name="open_issue">Open an issue</string>
@@ -434,8 +431,16 @@
     <string name="random_trailers" translatable="false">RandomTrailers</string>
     <string name="disable_cookies" translatable="false">DisableCookies</string>
     <string name="copy_from">Copy from</string>
-    <string name="mode">Mode</string>
-    <string name="app_selection">App selection</string>
+    <string name="split_tunneling">Split Tunneling</string>
+    <string name="split_tunneling_desc">Route specific apps through or around this tunnel</string>
+    <string name="split_tunnel_include_label">Tunnel</string>
+    <string name="split_tunnel_include_desc">Selected apps will be tunneled while all other apps will bypass it</string>
+    <string name="split_tunnel_exclude_label">Bypass</string>
+    <string name="split_tunnel_exclude_desc">Selected apps will be bypassed while all other apps are tunneled</string>
+    <string name="select_apps_to_include">Select apps to include</string>
+    <string name="select_apps_to_exclude">Select apps to exclude</string>
+    <string name="split_mode">Split mode</string>
+    <string name="split_mode_desc">Whether selected apps use this tunnel or bypass it</string>
     <string name="example_import_url" translatable="false">https://123.com/tun.conf</string>
     <string name="fdroid_url" translatable="false">https://apt.izzysoft.de/fdroid/index/apk/com.zaneschepke.wireguardautotunnel</string>
     <string name="import_url_description">The URL must be secure and serve a .conf file.</string>

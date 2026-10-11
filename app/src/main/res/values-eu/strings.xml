@@ -15,8 +15,6 @@
     <string name="add_tunnels_text">Gehitu fitxategitik edo zip-etik</string>
     <string name="add_from_qr">Gehitu QR kodetik</string>
     <string name="tunnel_name">Tunelaren izena</string>
-    <string name="exclude">Baztertu</string>
-    <string name="include">Sartu</string>
     <string name="config_changes_saved">Konfigurazio-aldaketak gorde dira.</string>
     <string name="public_key">Gako publikoa</string>
     <string name="addresses">Helbideak</string>
@@ -56,7 +54,6 @@
     <string name="delete_tunnel">Ezabatu tunela</string>
     <string name="delete_tunnel_message">Ziur zaude hautatutako tunelak ezabatu nahi dituzula?</string>
     <string name="yes">Bai</string>
-    <string name="all">Guztiak</string>
     <string name="no_email_detected">Ez da mezularitza-aplikaziorik detektatu</string>
     <string name="no_browser_detected">Ez da arakatzailerik detektatu</string>
     <string name="open_issue">Ireki arazo bat</string>
@@ -320,8 +317,6 @@
     <string name="special_junk_packet">Zabor-pakete berezia</string>
     <!-- AmneziaWG 3.0 -->
     <string name="copy_from">Kopiatu hemendik</string>
-    <string name="mode">Modua</string>
-    <string name="app_selection">Aplikazioen hautaketa</string>
     <string name="import_url_description">URLak seguru izan behar du eta .conf fitxategi bat eskaini behar du.</string>
     <string name="export_unsupported">Esportazioa ez da onartzen gailu honetan</string>
     <string name="export_canceled">Esportazioa bertan behera utzi da</string>

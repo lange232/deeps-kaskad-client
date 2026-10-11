@@ -15,8 +15,6 @@
     <string name="add_tunnels_text">Añadir desde archivo o zip</string>
     <string name="add_from_qr">Añadir mediante código QR</string>
     <string name="tunnel_name">Nombre de túnel</string>
-    <string name="exclude">Excluir</string>
-    <string name="include">Incluir</string>
     <string name="config_changes_saved">Cambios de configuración guardados.</string>
     <string name="public_key">Clave pública</string>
     <string name="addresses">Direcciones</string>
@@ -56,7 +54,6 @@
     <string name="delete_tunnel">Eliminar túnel</string>
     <string name="delete_tunnel_message">¿Seguro que quieres eliminar este túnel?</string>
     <string name="yes">Sí</string>
-    <string name="all">todas</string>
     <string name="no_email_detected">Ninguna app de email detectada</string>
     <string name="no_browser_detected">Ningún navegador detectado</string>
     <string name="open_issue">Abrir una incidencia</string>
@@ -313,8 +310,6 @@
     <string name="special_junk_packet">Special junk packet </string>
     <!-- AmneziaWG 3.0 -->
     <string name="copy_from">Copiar de</string>
-    <string name="mode">Modo</string>
-    <string name="app_selection">Selección de aplicación </string>
     <string name="import_url_description">La URL debe ser segura y estar en un archivo .conf.</string>
     <string name="export_unsupported">En este dispositivo no se admite la exportación</string>
     <string name="export_canceled">Exportación cancelada</string>
