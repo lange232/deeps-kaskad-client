@@ -139,7 +139,7 @@ class ConfigEditViewModel(
                     val (shiftedGroups, shiftedTunnels) =
                         shiftRootPositionsBy(groups, tunnels, count = 1)
                     tunnelGroupRepository.saveAll(shiftedGroups)
-                    tunnelRepository.saveAll(shiftedTunnels)
+                    if (shiftedTunnels.isNotEmpty()) tunnelRepository.updateAll(shiftedTunnels)
                     TunnelConfig.fromConfig(config, state.draft.tunnelName).copy(position = 0)
                 } else {
                     state.tunnel?.copy(

@@ -325,7 +325,8 @@ class SharedAppViewModel(
     fun saveReorder() = intent {
         val draft = reorderDraft.value ?: return@intent
         tunnelGroupRepository.saveAll(draft.groups)
-        tunnelRepository.saveAll(draft.tunnels)
+        val changedTunnels = changedFrom(draft.originalTunnels, draft.tunnels)
+        if (changedTunnels.isNotEmpty()) tunnelRepository.updateAll(changedTunnels)
         reorderDraft.value = null
         postSideEffect(
             GlobalSideEffect.Snackbar(
@@ -407,10 +408,10 @@ class SharedAppViewModel(
         // New groups land at the top
         val (shiftedGroups, shiftedTunnels) = shiftRootPositionsBy(ui.groups, ui.tunnels, 1)
         tunnelGroupRepository.saveAll(shiftedGroups)
-        tunnelRepository.saveAll(shiftedTunnels)
+        if (shiftedTunnels.isNotEmpty()) tunnelRepository.updateAll(shiftedTunnels)
         val groupId =
             tunnelGroupRepository.save(TunnelGroup(name = unique, position = 0, expanded = true))
-        moveToGroup(groupId, selected, shiftedTunnels)
+        moveToGroup(groupId, selected, ui.tunnels)
     }
 
     fun renameGroup(group: TunnelGroup, name: String) = intent {
@@ -430,7 +431,8 @@ class SharedAppViewModel(
     fun ungroup(group: TunnelGroup) = intent {
         val ui = tunnelsUiState.value
         val (groups, tunnels) = ungroupKeepingOrder(ui.groups, ui.tunnels, group.id)
-        tunnelRepository.saveAll(tunnels)
+        val changedTunnels = changedFrom(ui.tunnels, tunnels)
+        if (changedTunnels.isNotEmpty()) tunnelRepository.updateAll(changedTunnels)
         tunnelGroupRepository.saveAll(groups)
         tunnelGroupRepository.delete(group)
         selectedTunnelsRepository.clear()
@@ -458,6 +460,17 @@ class SharedAppViewModel(
         moveToGroup(groupId, ui.selectedTunnels, ui.tunnels)
     }
 
+    private fun changedFrom(
+        before: List<TunnelConfig>,
+        after: List<TunnelConfig>,
+    ): List<TunnelConfig> {
+        val beforeById = before.associateBy { it.id }
+        return after.filter { tunnel ->
+            val prior = beforeById[tunnel.id]
+            prior == null || prior.position != tunnel.position || prior.groupId != tunnel.groupId
+        }
+    }
+
     private suspend fun moveToGroup(
         groupId: Int,
         selected: List<TunnelConfig>,
@@ -465,10 +478,8 @@ class SharedAppViewModel(
     ) {
         var next = nextChildPosition(all, groupId)
         val ids = selected.map { it.id }.toSet()
-        tunnelRepository.saveAll(
-            all.map { tunnel ->
-                if (tunnel.id in ids) tunnel.copy(groupId = groupId, position = next++) else tunnel
-            }
+        tunnelRepository.updateAll(
+            all.filter { it.id in ids }.map { it.copy(groupId = groupId, position = next++) }
         )
         clearSelectedTunnels()
     }
@@ -480,10 +491,8 @@ class SharedAppViewModel(
         var next = nextRootPosition(ui.groups, ui.tunnels)
         val ids = ui.selectedTunnels.map { it.id }.toSet()
         val tunnels =
-            ui.tunnels.map { tunnel ->
-                if (tunnel.id in ids) tunnel.copy(groupId = null, position = next++) else tunnel
-            }
-        tunnelRepository.saveAll(tunnels)
+            ui.tunnels.filter { it.id in ids }.map { it.copy(groupId = null, position = next++) }
+        if (tunnels.isNotEmpty()) tunnelRepository.updateAll(tunnels)
         clearSelectedTunnels()
     }
 
@@ -567,7 +576,7 @@ class SharedAppViewModel(
             val (shiftedGroups, shiftedTunnels) =
                 shiftRootPositionsBy(ui.groups, ui.tunnels, tunnelConfigs.size)
             tunnelGroupRepository.saveAll(shiftedGroups)
-            tunnelRepository.saveAll(shiftedTunnels)
+            if (shiftedTunnels.isNotEmpty()) tunnelRepository.updateAll(shiftedTunnels)
             tunnelRepository.saveTunnelsUniquely(tunnelConfigs, state.tunnelNames.map { it.value })
         } catch (e: Exception) {
             if (e is ConfigParseException) {
@@ -706,7 +715,8 @@ class SharedAppViewModel(
             )
         if (selectedTuns.isNotEmpty()) tunnelRepository.delete(selectedTuns)
         var groups = ui.groups
-        var tunnels = ui.tunnels.filter { tun -> selectedTuns.none { it.id == tun.id } }
+        val beforeUngroup = ui.tunnels.filter { tun -> selectedTuns.none { it.id == tun.id } }
+        var tunnels = beforeUngroup
         ui.selectedGroups.forEach { group ->
             val result = ungroupKeepingOrder(groups, tunnels, group.id)
             groups = result.first
@@ -714,7 +724,8 @@ class SharedAppViewModel(
             tunnelGroupRepository.delete(group)
         }
         if (ui.selectedGroups.isNotEmpty()) {
-            tunnelRepository.saveAll(tunnels)
+            val changedTunnels = changedFrom(beforeUngroup, tunnels)
+            if (changedTunnels.isNotEmpty()) tunnelRepository.updateAll(changedTunnels)
             tunnelGroupRepository.saveAll(groups)
         }
         clearSelectedTunnels()
@@ -732,7 +743,7 @@ class SharedAppViewModel(
             TunnelConfig.fromConfig(config, selected.name)
                 .copy(groupId = selected.groupId, position = selected.position + 1)
         tunnelGroupRepository.saveAll(shiftedGroups)
-        tunnelRepository.saveAll(shiftedTunnels)
+        if (shiftedTunnels.isNotEmpty()) tunnelRepository.updateAll(shiftedTunnels)
         tunnelRepository.saveTunnelsUniquely(listOf(copy), state.tunnelNames.map { it.value })
         clearSelectedTunnels()
     }
