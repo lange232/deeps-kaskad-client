@@ -422,7 +422,10 @@ class AndroidNetworkMonitor(
     private fun createWifiNetworkCallbackFlow(
         detectionMethod: WifiDetectionMethod
     ): Flow<TransportEvent> = callbackFlow {
-        val reportedClientWifi = mutableSetOf<Network>()
+        // Caps are retained so a later link property update can re-emit them. Emitting
+        // LinkPropertiesChanged on its own replaces the capabilities event, and the selector
+        // then treats the client network as gone.
+        val reportedClientWifi = mutableMapOf<Network, NetworkCapabilities>()
 
         val onAvailable: (Network) -> Unit = { network ->
             // ignore onAvailable has it doesn't contain detailed network information in
@@ -431,7 +434,7 @@ class AndroidNetworkMonitor(
         }
         val onLost: (Network) -> Unit = { network ->
             val wasClient = synchronized(reportedClientWifi) { reportedClientWifi.remove(network) }
-            if (!wasClient) {
+            if (wasClient == null) {
                 Timber.d("Ignoring lost served/local Wi-Fi %s", network)
             } else {
                 Timber.d("WiFi onLost: $network")
@@ -448,21 +451,24 @@ class AndroidNetworkMonitor(
                         "Ignoring served/local Wi-Fi %s internet=%s wasClient=%s caps=%s",
                         network,
                         caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET),
-                        wasClient,
+                        wasClient != null,
                         caps,
                     )
-                    if (wasClient) trySend(TransportEvent.Lost(network))
+                    if (wasClient != null) trySend(TransportEvent.Lost(network))
                 } else {
-                    synchronized(reportedClientWifi) { reportedClientWifi.add(network) }
-                    trySend(TransportEvent.CapabilitiesChanged(network, caps))
+                    val snapshot = NetworkCapabilities(caps)
+                    synchronized(reportedClientWifi) { reportedClientWifi[network] = snapshot }
+                    trySend(TransportEvent.CapabilitiesChanged(network, snapshot))
                 }
             }
         }
 
-        val onLinkPropertiesChanged: (Network, LinkProperties) -> Unit = { network, linkProps ->
-            val isClient = synchronized(reportedClientWifi) { network in reportedClientWifi }
-            if (isClient) {
-                trySend(TransportEvent.LinkPropertiesChanged(network, linkProps))
+        val onLinkPropertiesChanged: (Network, LinkProperties) -> Unit = { network, _ ->
+            val caps = synchronized(reportedClientWifi) { reportedClientWifi[network] }
+            if (caps != null) {
+                // VPN on and airplane mode transitions update routes and DNS on the
+                // underlay. Refresh link properties without dropping the capabilities event.
+                trySend(TransportEvent.CapabilitiesChanged(network, caps))
             }
         }
 
@@ -512,12 +518,30 @@ class AndroidNetworkMonitor(
 
         connectivityManager?.registerNetworkCallback(request, wifiCallback)
 
+        // Airplane-mode changes re-register this callback. We dp not emit Unknown first as that
+        // replaces a live client network until Android fires the new callbacks, and the
+        // selector publishes a disconnect so we seed from the current client network instead, and
+        // emit Unknown only when there is nothing to keep.
+        if (synchronized(reportedClientWifi) { reportedClientWifi.isEmpty() }) {
+            val seeded = findUnderlyingWifi()
+            if (seeded != null) {
+                val (network, caps) = seeded
+                val snapshot = NetworkCapabilities(caps)
+                synchronized(reportedClientWifi) { reportedClientWifi[network] = snapshot }
+                trySend(TransportEvent.CapabilitiesChanged(network, snapshot))
+            } else if (wifiManager?.isWifiEnabled != true || !isWifiClientAssociated()) {
+                // Radio is down. Emit immediately so a re-register cannot keep a stale client.
+                // If the client is still associated, wait for the callback instead of publishing
+                // Unknown over a network that is still there.
+                trySend(TransportEvent.Unknown)
+            }
+        }
+
         awaitClose {
             runCatching { connectivityManager?.unregisterNetworkCallback(wifiCallback) }
                 .onFailure { Timber.e(it, "Error unregistering WiFi network callback") }
         }
     }
-        .onStart { emit(TransportEvent.Unknown) }
 
     private val cellularFlow: Flow<TransportEvent> = callbackFlow {
         val onAvailable: (Network) -> Unit = { network ->
@@ -616,10 +640,24 @@ class AndroidNetworkMonitor(
         return try {
                 when (method) {
                     DEFAULT -> {
+                        // Capabilities carry no SSID without the location flag, which is
+                        // omitted when location permission is missing. A redacted pair must not
+                        // block a direct read once permission is granted.
+                        val fromCaps = networkCapabilities?.getWifiSsidAndBssid()
+                        val resolved =
+                            if (
+                                fromCaps != null &&
+                                    fromCaps.first != ANDROID_UNKNOWN_SSID &&
+                                    fromCaps.second != ANDROID_UNKNOWN_BSSID
+                            ) {
+                                fromCaps
+                            } else if (appContext.hasRequiredLocationPermissions()) {
+                                wifiManager?.getWifiSsidAndBssid()
+                            } else {
+                                null
+                            }
                         val (ssid, bssid) =
-                            networkCapabilities?.getWifiSsidAndBssid()
-                                ?: wifiManager?.getWifiSsidAndBssid()
-                                ?: (ANDROID_UNKNOWN_SSID to ANDROID_UNKNOWN_BSSID)
+                            resolved ?: (ANDROID_UNKNOWN_SSID to ANDROID_UNKNOWN_BSSID)
                         WifiDetails(ssid, bssid.uppercase())
                     }
                     LEGACY -> {
@@ -767,6 +805,11 @@ class AndroidNetworkMonitor(
             caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_SUSPENDED)
     }
 
+    private fun networkPresent(network: Network?): Boolean {
+        if (network == null) return false
+        return connectivityManager?.getNetworkCapabilities(network) != null
+    }
+
     // For multi-sim selection, prefers foreground, then validated internet, then not suspended
     private fun pickBestCellularNetworkEntry(): Map.Entry<Network, NetworkCapabilities>? {
         val networksMap = activeCellularNetworks.value
@@ -834,18 +877,13 @@ class AndroidNetworkMonitor(
                             } ?: (null to null)
                     }
 
-                if (defaultCaps == null || defaultNetwork == null) {
-                    return@combine ConnectivityState(
-                        activeNetwork = ActiveNetwork.Disconnected(),
-                        cellularNetworks = emptyMap(),
-                        locationPermissionsGranted = permissions.locationPermissionGranted,
-                        locationServicesEnabled = permissions.locationServicesEnabled,
-                        airplaneModeOn = isAirplaneOn,
-                        vpnState = VpnState.Inactive,
-                    )
-                }
-
-                val isVpnActive = defaultCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
+                // A missing default network is not itself an underlay loss. VPN startup and
+                // airplane mode toggles null it out while Wi-Fi is still associated, and
+                // publishing Disconnected there will flap auto tunnel. Real offline still
+                // resolves to Disconnected below once no client transport remains.
+                val defaultMissing = defaultCaps == null || defaultNetwork == null
+                val isVpnActive =
+                    defaultCaps?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true
 
                 val vpnState: VpnState =
                     if (!isVpnActive) {
@@ -859,14 +897,14 @@ class AndroidNetworkMonitor(
                         )
                     }
 
-                val defaultIsVpn = defaultCaps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)
-
                 val physicalNetwork: ActiveNetwork =
                     when {
                         networkData.ethernetEvent is TransportEvent.CapabilitiesChanged &&
-                            networkData.ethernetEvent.networkCapabilities?.hasTransport(
+                            networkData.ethernetEvent.networkCapabilities.hasTransport(
                                 NetworkCapabilities.TRANSPORT_ETHERNET
-                            ) == true -> {
+                            ) &&
+                            (!defaultMissing ||
+                                networkPresent(networkData.ethernetEvent.network)) -> {
                             ActiveNetwork.Ethernet(
                                 networkData.ethernetEvent.network,
                                 networkData.ethernetEvent.networkCapabilities,
@@ -874,13 +912,15 @@ class AndroidNetworkMonitor(
                         }
 
                         networkData.wifiNetworkEvent is TransportEvent.CapabilitiesChanged &&
-                            networkData.wifiNetworkEvent.networkCapabilities?.hasTransport(
+                            networkData.wifiNetworkEvent.networkCapabilities.hasTransport(
                                 NetworkCapabilities.TRANSPORT_WIFI
-                            ) == true &&
+                            ) &&
                             !isServedOrLocalWifi(
                                 networkData.wifiNetworkEvent.network,
                                 networkData.wifiNetworkEvent.networkCapabilities,
-                            ) -> {
+                            ) &&
+                            (!defaultMissing ||
+                                networkPresent(networkData.wifiNetworkEvent.network)) -> {
                             val wifiEvent = networkData.wifiNetworkEvent
                             buildWifiNetwork(
                                 network = wifiEvent.network,
@@ -891,9 +931,10 @@ class AndroidNetworkMonitor(
                         }
 
                         // Only use default as Wi‑Fi if it is not the VPN network
-                        !defaultIsVpn &&
-                            defaultCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
+                        !isVpnActive &&
+                            defaultCaps != null &&
                             defaultNetwork != null &&
+                            defaultCaps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
                             !isServedOrLocalWifi(defaultNetwork, defaultCaps) -> {
                             buildWifiNetwork(
                                 network = defaultNetwork,
@@ -903,9 +944,10 @@ class AndroidNetworkMonitor(
                             )
                         }
 
-                        !defaultIsVpn &&
-                            defaultCaps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) &&
-                            defaultNetwork != null -> {
+                        !isVpnActive &&
+                            defaultCaps != null &&
+                            defaultNetwork != null &&
+                            defaultCaps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> {
                             ActiveNetwork.Ethernet(defaultNetwork, defaultCaps)
                         }
 
@@ -918,14 +960,14 @@ class AndroidNetworkMonitor(
                             val oemFallbackWifiNetwork =
                                 if (isVpnActive && needsUnderlyingWifiFallback) {
                                     findUnderlyingWifi()?.let { (network, caps) ->
-                                        val detectionMethod =
+                                        val method =
                                             if (detectionMethod == DEFAULT) {
                                                 LEGACY
                                             } else detectionMethod
                                         buildWifiNetwork(
                                             network,
                                             caps,
-                                            detectionMethod,
+                                            method,
                                             lastKnownActiveNetwork.value,
                                         )
                                     }
@@ -934,16 +976,37 @@ class AndroidNetworkMonitor(
                                 val bestCellularEntry =
                                     if (isAirplaneOn) null
                                     else
-                                        pickBestCellularNetworkEntry()
-                                            ?: activeCellularNetworks.value.entries.firstOrNull()
+                                        (pickBestCellularNetworkEntry()
+                                                ?: activeCellularNetworks.value.entries
+                                                    .firstOrNull())
+                                            ?.takeUnless {
+                                                defaultMissing && !networkPresent(it.key)
+                                            }
                                 if (bestCellularEntry != null) {
                                     ActiveNetwork.Cellular(
                                         bestCellularEntry.key,
                                         bestCellularEntry.value,
                                     )
                                 } else {
-                                    // Keep last known physical during VPN transition
-                                    lastKnownActiveNetwork.value
+                                    val cached = lastKnownActiveNetwork.value
+                                    // Known SSID/BSSID stays cached across VPN start. Without
+                                    // location permission that cache is never filled, so a live
+                                    // client Wi-Fi still wins over Disconnected.
+                                    if (
+                                        cached !is ActiveNetwork.Disconnected &&
+                                            (!defaultMissing || networkPresent(cached.network))
+                                    ) {
+                                        cached
+                                    } else {
+                                        findUnderlyingWifi()?.let { (network, caps) ->
+                                            buildWifiNetwork(
+                                                network,
+                                                caps,
+                                                detectionMethod,
+                                                cached,
+                                            )
+                                        } ?: ActiveNetwork.Disconnected()
+                                    }
                                 }
                             } else oemFallbackWifiNetwork
                         }
