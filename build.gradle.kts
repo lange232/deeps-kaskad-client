@@ -37,13 +37,13 @@ subprojects {
 
     plugins.withId("org.jetbrains.kotlin.android") {
         extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension> {
-            jvmToolchain(21)
+            jvmToolchain(rootProject.libs.versions.jdk.get().toInt())
         }
     }
 
     plugins.withId("org.jetbrains.kotlin.jvm") {
         extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension> {
-            jvmToolchain(21)
+            jvmToolchain(rootProject.libs.versions.jdk.get().toInt())
         }
     }
 

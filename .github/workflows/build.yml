@@ -76,11 +76,16 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-      - name: Set up JDK 21
+      - name: Read JDK version
+        id: jdk
+        run: |
+          JDK_VERSION=$(sed -nE 's/^jdk[[:space:]]*=[[:space:]]*"([0-9]+)".*/\1/p' gradle/libs.versions.toml)
+          echo "version=$JDK_VERSION" >> "$GITHUB_OUTPUT"
+      - name: Set up JDK
         uses: actions/setup-java@v6
         with:
           distribution: 'temurin'
-          java-version: '21'
+          java-version: ${{ steps.jdk.outputs.version }}
           cache: gradle
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew

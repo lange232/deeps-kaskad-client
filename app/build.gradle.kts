@@ -32,7 +32,7 @@ licensee {
 
 configure<ApplicationExtension> {
     namespace = Constants.APP_ID
-    compileSdk = Constants.TARGET_SDK
+    compileSdk = libs.versions.compileSdk.get().toInt()
 
     androidResources { generateLocaleConfig = true }
 
@@ -56,10 +56,10 @@ configure<ApplicationExtension> {
 
     defaultConfig {
         applicationId = Constants.APP_ID
-        minSdk = Constants.MIN_SDK
-        targetSdk = Constants.TARGET_SDK
-        versionCode = Constants.VERSION_CODE
-        versionName = Constants.VERSION_NAME
+        minSdk = libs.versions.minSdk.get().toInt()
+        targetSdk = libs.versions.targetSdk.get().toInt()
+        versionCode = libs.versions.versionCode.get().toInt()
+        versionName = libs.versions.versionName.get()
 
         experimentalProperties["android.experimental.disableGitVersion"] = true
 
