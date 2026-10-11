@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.CheckCircleOutline
 import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -57,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -515,6 +517,18 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
 
+                    LaunchedEffect(Unit) {
+                        if (!uiState.isDesktopPromptShown) {
+                            viewModel.setDesktopPromptShown(true)
+                            toaster.show(
+                                message = context.getString(R.string.desktop_prompt_message),
+                                icon = Icons.Outlined.Celebration,
+                                type = ToastType.Normal,
+                                duration = 10_000L.milliseconds,
+                            )
+                        }
+                    }
+
                     val isPinVisible by remember { derivedStateOf { showLock } }
 
                     val currentRoute by remember {
@@ -782,19 +796,22 @@ class MainActivity : AppCompatActivity() {
                                 },
                                 iconSlot = { toast ->
                                     val (icon, color) =
-                                        when (toast.type) {
-                                            ToastType.Success ->
-                                                Icons.Outlined.CheckCircleOutline to SilverTree
-                                            ToastType.Error ->
-                                                Icons.Outlined.ErrorOutline to AlertRed
-                                            ToastType.Warning ->
-                                                Icons.Outlined.WarningAmber to Straw
-                                            ToastType.Info ->
-                                                Icons.Outlined.Info to
-                                                    MaterialTheme.colorScheme.onSurface
-                                            ToastType.Normal ->
-                                                Icons.Outlined.FavoriteBorder to Heart
+                                        (toast.icon as? ImageVector)?.let {
+                                            it to MaterialTheme.colorScheme.primary
                                         }
+                                            ?: when (toast.type) {
+                                                ToastType.Success ->
+                                                    Icons.Outlined.CheckCircleOutline to SilverTree
+                                                ToastType.Error ->
+                                                    Icons.Outlined.ErrorOutline to AlertRed
+                                                ToastType.Warning ->
+                                                    Icons.Outlined.WarningAmber to Straw
+                                                ToastType.Info ->
+                                                    Icons.Outlined.Info to
+                                                        MaterialTheme.colorScheme.onSurface
+                                                ToastType.Normal ->
+                                                    Icons.Outlined.FavoriteBorder to Heart
+                                            }
                                     Icon(
                                         imageVector = icon,
                                         contentDescription = null,

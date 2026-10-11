@@ -55,6 +55,14 @@ class DataStoreAppStateRepository(
         return dataStoreManager.getFromStore(DataStoreManager.shouldShowDonationSnackbar) ?: false
     }
 
+    override suspend fun isDesktopPromptShown(): Boolean {
+        return dataStoreManager.getFromStore(DataStoreManager.desktopPromptShown) ?: false
+    }
+
+    override suspend fun setDesktopPromptShown(shown: Boolean) {
+        dataStoreManager.saveToDataStore(DataStoreManager.desktopPromptShown, shown)
+    }
+
     override suspend fun getLastActiveTunnelIds(): List<Int> {
         val stored = dataStoreManager.getFromStore(DataStoreManager.lastActiveTunnelIds).orEmpty()
         if (stored.isBlank()) return emptyList()
@@ -90,6 +98,8 @@ class DataStoreAppStateRepository(
                                 pref[DataStoreManager.notificationPermissionRequested] ?: false,
                             shouldShowDonationSnackbar =
                                 pref[DataStoreManager.shouldShowDonationSnackbar] ?: false,
+                            isDesktopPromptShown =
+                                pref[DataStoreManager.desktopPromptShown] ?: false,
                         )
                     } catch (e: IllegalArgumentException) {
                         Timber.e(e)

@@ -180,6 +180,7 @@ class SharedAppViewModel(
                             isLocationDisclosureShown = appState.isLocationDisclosureShown,
                             isBatteryOptimizationShown = appState.isBatteryOptimizationDisableShown,
                             shouldShowDonationSnackbar = appState.shouldShowDonationSnackbar,
+                            isDesktopPromptShown = appState.isDesktopPromptShown,
                             selectedTunnelCount = chrome.selectedTunCount,
                             canMoveToGroup = chrome.canMoveToGroup,
                             isReorderMode = chrome.isReorderMode,
@@ -270,6 +271,10 @@ class SharedAppViewModel(
 
     fun setShouldShowDonationSnackbar(to: Boolean) = intent {
         appStateRepository.setShouldShowDonationSnackbar(to)
+    }
+
+    fun setDesktopPromptShown(shown: Boolean) = intent {
+        appStateRepository.setDesktopPromptShown(shown)
     }
 
     fun showSnackMessage(message: StringValue, type: ToastType) = intent {

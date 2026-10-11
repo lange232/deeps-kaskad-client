@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Launch
 import androidx.compose.material.icons.outlined.Balance
 import androidx.compose.material.icons.outlined.Book
+import androidx.compose.material.icons.outlined.Computer
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.InstallMobile
 import androidx.compose.material.icons.outlined.Mail
@@ -104,6 +105,7 @@ fun SupportScreen(
     val matrixUrl = stringResource(R.string.matrix_url)
     val docsUrl = stringResource(R.string.docs_url)
     val websiteUrl = stringResource(R.string.website_url)
+    val desktopDownloadUrl = stringResource(R.string.desktop_download_url)
     val translationUrl = stringResource(R.string.translation_url)
     val privacyPolicyUrl = stringResource(R.string.privacy_policy_url)
     val playStoreUrl = "https://play.google.com/store/apps/details?id=${context.packageName}"
@@ -188,6 +190,12 @@ fun SupportScreen(
                 stringResource(R.string.website),
                 onClick = { openWebUrl(websiteUrl) },
                 leading = { Icon(Icons.Outlined.Web, contentDescription = null) },
+                trailing = { Icon(Icons.AutoMirrored.Outlined.Launch, null) },
+            )
+            SurfaceRow(
+                stringResource(R.string.desktop_app),
+                onClick = { openWebUrl(desktopDownloadUrl) },
+                leading = { Icon(Icons.Outlined.Computer, contentDescription = null) },
                 trailing = { Icon(Icons.AutoMirrored.Outlined.Launch, null) },
             )
             SurfaceRow(

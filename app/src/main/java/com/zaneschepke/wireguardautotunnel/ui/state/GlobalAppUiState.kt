@@ -9,6 +9,7 @@ data class GlobalAppUiState(
     val pinLockEnabled: Boolean = false,
     val tunnelMode: TunnelMode = TunnelMode.VPN,
     val shouldShowDonationSnackbar: Boolean = false,
+    val isDesktopPromptShown: Boolean = false,
     val isLocationDisclosureShown: Boolean = false,
     val isBatteryOptimizationShown: Boolean = false,
     val isAutoTunnelActive: Boolean = false,

@@ -20,6 +20,10 @@ interface AppStateRepository {
 
     suspend fun shouldShowDonationSnackbar(): Boolean
 
+    suspend fun isDesktopPromptShown(): Boolean
+
+    suspend fun setDesktopPromptShown(shown: Boolean)
+
     suspend fun getLastActiveTunnelIds(): List<Int>
 
     suspend fun setLastActiveTunnelIds(ids: List<Int>)

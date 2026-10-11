@@ -9,4 +9,5 @@ fun Entity.toDomain(): Domain =
         isBatteryOptimizationDisableShown = isBatteryOptimizationDisableShown,
         isNotificationPermissionRequested = isNotificationPermissionRequested,
         shouldShowDonationSnackbar = shouldShowDonationSnackbar,
+        isDesktopPromptShown = isDesktopPromptShown,
     )
