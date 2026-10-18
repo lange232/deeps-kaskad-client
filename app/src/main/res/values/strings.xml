@@ -14,6 +14,7 @@
     <string name="translation_url" translatable="false">https://translate.wgtunnel.com/project/wgtunnel/invite?h=11b5b7bf2099293095775d4477320c772818907</string>
     <string name="privacy_policy_url" translatable="false">https://wgtunnel.com/privacy-policy/</string>
     <string name="docs_wildcards" translatable="false">https://wgtunnel.com/docs/auto-tunneling</string>
+    <string name="docs_remote_control" translatable="false">https://wgtunnel.com/docs/android/settings#remote-app-control-with-intents</string>
     <string name="matrix_url" translatable="false">https://matrix.to/#/#wg-tunnel-space:matrix.org</string>
     <string name="telegram_url" translatable="false">https://t.me/wgtunnel</string>
     <string name="desktop_download_url" translatable="false">https://wgtunnel.com/download</string>
@@ -379,6 +380,8 @@
     <string name="aovpn_description">Allows Android to start tunnels</string>
     <string name="tunnel_boot_description">Start the default tunnel on boot</string>
     <string name="remote_key">Remote key</string>
+    <string name="rotate_remote_key">Rotate key</string>
+    <string name="remote_key_rotated">Remote key rotated</string>
     <string name="tunnel_mapping_description">Map tunnels as preferred by Wi-Fi name and BSSID</string>
     <string name="monitoring">Monitoring</string>
     <string name="tunnel_running_name_message">Name unchangeable while tunnel is active.</string>
