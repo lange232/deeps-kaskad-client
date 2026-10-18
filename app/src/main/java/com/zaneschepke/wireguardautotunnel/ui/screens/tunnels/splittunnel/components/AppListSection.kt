@@ -50,18 +50,25 @@ fun AppSearchField(query: String, onQueryChange: (String) -> Unit) {
 fun filterAndSortPackages(
     installedPackages: List<InstalledPackage>,
     query: String,
+    pinnedPackages: Set<String>,
     selectedPackages: Set<String>,
+    showSystemApps: Boolean,
     locale: Locale,
 ): List<InstalledPackage> {
     val platformLocale = locale.platformLocale
     return installedPackages
         .filter { pkg ->
-            query.isBlank() ||
-                pkg.name.contains(query, ignoreCase = true) ||
-                pkg.packageName.contains(query, ignoreCase = true)
+            val matchesQuery =
+                query.isBlank() ||
+                    pkg.name.contains(query, ignoreCase = true) ||
+                    pkg.packageName.contains(query, ignoreCase = true)
+            // A selected system app stays visible.
+            val showPackage =
+                showSystemApps || !pkg.isSystem || selectedPackages.contains(pkg.packageName)
+            matchesQuery && showPackage
         }
         .sortedWith(
-            compareByDescending<InstalledPackage> { selectedPackages.contains(it.packageName) }
+            compareByDescending<InstalledPackage> { pinnedPackages.contains(it.packageName) }
                 .thenBy { it.name.lowercase(platformLocale) }
         )
 }

@@ -431,8 +431,12 @@
     <string name="random_trailers" translatable="false">RandomTrailers</string>
     <string name="disable_cookies" translatable="false">DisableCookies</string>
     <string name="copy_from">Copy from</string>
+    <string name="show_system_apps">Show system apps</string>
+    <string name="hide_system_apps">Hide system apps</string>
     <string name="split_tunneling">Split Tunneling</string>
     <string name="split_tunneling_desc">Route specific apps through or around this tunnel</string>
+    <string name="split_tunnel_all_label">Tunnel all</string>
+    <string name="split_tunnel_all_desc">Every app uses this tunnel</string>
     <string name="split_tunnel_include_label">Tunnel</string>
     <string name="split_tunnel_include_desc">Selected apps will be tunneled while all other apps will bypass it</string>
     <string name="split_tunnel_exclude_label">Bypass</string>
@@ -440,7 +444,9 @@
     <string name="select_apps_to_include">Select apps to include</string>
     <string name="select_apps_to_exclude">Select apps to exclude</string>
     <string name="split_mode">Split mode</string>
-    <string name="split_mode_desc">Whether selected apps use this tunnel or bypass it</string>
+    <string name="split_mode_desc">Tunnel every app, or choose which apps to tunnel or bypass</string>
+    <string name="global_split_off">Each tunnel uses its own app list</string>
+    <string name="global_split_applies">Applies to every tunnel</string>
     <string name="example_import_url" translatable="false">https://123.com/tun.conf</string>
     <string name="fdroid_url" translatable="false">https://apt.izzysoft.de/fdroid/index/apk/com.zaneschepke.wireguardautotunnel</string>
     <string name="import_url_description">The URL must be secure and serve a .conf file.</string>
@@ -523,6 +529,21 @@
     <string name="excluded_apps">
         %1$s apps excluded
     </string>
+
+    <plurals name="apps_tunneled">
+        <item quantity="one">%d app tunneled</item>
+        <item quantity="other">%d apps tunneled</item>
+    </plurals>
+    <plurals name="apps_bypassed">
+        <item quantity="one">%d app bypassed</item>
+        <item quantity="other">%d apps bypassed</item>
+    </plurals>
+    <string name="all_apps_tunneled">All apps tunneled</string>
+    <string name="managed_globally_detail">%1$s · Managed globally</string>
+    <string name="managed_globally">Managed globally</string>
+    <string name="split_override_notice">This list is saved and unused until global split tunneling is off.</string>
+    <string name="global_override_notice">Some values are saved here and unused until their global settings are off.</string>
+    <string name="none">None</string>
 
     <string name="error">Error</string>
     <string name="tunnel_globals">Tunnel globals</string>

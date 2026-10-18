@@ -33,6 +33,7 @@ import com.zaneschepke.wireguardautotunnel.ui.common.button.ThemedSwitch
 import com.zaneschepke.wireguardautotunnel.ui.common.label.GroupLabel
 import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
+import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.components.SplitAppsDescription
 import com.zaneschepke.wireguardautotunnel.ui.theme.Disabled
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.TunnelViewModel
@@ -140,12 +141,7 @@ fun TunnelSettingsScreen(
                             disabled = true,
                         )
                     } else {
-                        uiState.includedAppsCount?.let {
-                            DescriptionText(stringResource(R.string.included_apps, it))
-                        }
-                        uiState.excludedAppsCount?.let {
-                            DescriptionText(stringResource(R.string.excluded_apps, it))
-                        }
+                        uiState.appliedSplit?.let { SplitAppsDescription(it) }
                     }
                 },
                 onClick = { navController.push(Route.SplitTunnel(id = tunnel.id)) },

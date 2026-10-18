@@ -114,6 +114,28 @@ class SharedAppViewModel(
         _showUpdateStatusRequested.value = false
     }
 
+    private val _showSplitSystemApps = MutableStateFlow(false)
+    val showSplitSystemApps = _showSplitSystemApps.asStateFlow()
+    private var splitSystemAppsTunnelId: Int? = null
+
+    fun prepareSplitSystemApps(tunnelId: Int) {
+        if (splitSystemAppsTunnelId != tunnelId) {
+            splitSystemAppsTunnelId = tunnelId
+            _showSplitSystemApps.value = false
+        }
+    }
+
+    fun setShowSplitSystemApps(show: Boolean) {
+        _showSplitSystemApps.value = show
+    }
+
+    fun clearSplitSystemApps(tunnelId: Int) {
+        if (splitSystemAppsTunnelId == tunnelId) {
+            splitSystemAppsTunnelId = null
+            _showSplitSystemApps.value = false
+        }
+    }
+
     private val reorderDraft = MutableStateFlow<ReorderDraft?>(null)
 
     val tunnelsUiState =

@@ -1,6 +1,7 @@
 package com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.components
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Apps
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.LockOpen
 import androidx.compose.material.icons.outlined.VpnKey
@@ -11,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.zaneschepke.wireguardautotunnel.R
@@ -24,6 +26,7 @@ import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.state.
 fun SplitBehaviorOptions(
     activeBehavior: SplitBehavior,
     onBehaviorChange: (SplitBehavior) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var showSheet by rememberSaveable { mutableStateOf(false) }
     if (showSheet) {
@@ -46,6 +49,7 @@ fun SplitBehaviorOptions(
         title = stringResource(R.string.split_mode),
         description = { DescriptionText(activeBehavior.label()) },
         onClick = { showSheet = true },
+        modifier = modifier,
     )
 }
 
@@ -79,6 +83,7 @@ private fun SplitBehaviorBottomSheet(
 private fun SplitBehavior.label(): String =
     stringResource(
         when (this) {
+            SplitBehavior.ALL -> R.string.split_tunnel_all_label
             SplitBehavior.INCLUDE -> R.string.split_tunnel_include_label
             SplitBehavior.EXCLUDE -> R.string.split_tunnel_exclude_label
         }
@@ -88,6 +93,7 @@ private fun SplitBehavior.label(): String =
 private fun SplitBehavior.description(): String =
     stringResource(
         when (this) {
+            SplitBehavior.ALL -> R.string.split_tunnel_all_desc
             SplitBehavior.INCLUDE -> R.string.split_tunnel_include_desc
             SplitBehavior.EXCLUDE -> R.string.split_tunnel_exclude_desc
         }
@@ -95,6 +101,7 @@ private fun SplitBehavior.description(): String =
 
 private fun SplitBehavior.icon(): ImageVector =
     when (this) {
+        SplitBehavior.ALL -> Icons.Outlined.Apps
         SplitBehavior.INCLUDE -> Icons.Outlined.VpnKey
         SplitBehavior.EXCLUDE -> Icons.Outlined.LockOpen
     }

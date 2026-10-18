@@ -9,9 +9,13 @@ data class SplitTunnelUiState(
     val isLoading: Boolean = true,
     val tunnel: TunnelConfig? = null,
     val tunnels: List<TunnelSummary> = emptyList(),
-    val isSplitTunnelingEnabled: Boolean = false,
-    val activeBehavior: SplitBehavior = SplitBehavior.INCLUDE,
+    val activeBehavior: SplitBehavior = SplitBehavior.ALL,
     val includedPackages: Set<String> = emptySet(),
     val excludedPackages: Set<String> = emptySet(),
     val selectedCopySourceTunnelId: Int? = null,
+    // Set once. Later emissions must not replace the app sets.
+    val initialized: Boolean = false,
+    val needsRestart: Boolean = false,
+    // Null on the global editor.
+    val globalOverride: SplitAppListSummary? = null,
 )
