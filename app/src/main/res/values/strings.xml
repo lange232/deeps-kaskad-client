@@ -111,6 +111,7 @@
     <string name="language">Language</string>
     <string name="display_theme">Display theme</string>
     <string name="trusted_wifi_names">Trusted Wi-Fi</string>
+    <string name="trusted_wifi_desc">Wi-Fi networks that disable the tunnel</string>
     <string name="add_wifi_name">Add Wi-Fi name</string>
     <string name="primary_tunnel">Default tunnel</string>
     <string name="entry_tunnel">Entry tunnel</string>
@@ -640,6 +641,7 @@
     <string name="wildcard_wifi_desc">Supports *, ?, and ! for blacklisting</string>
     <string name="invalid_bssid_format">Invalid BSSID format</string>
     <string name="trusted_bssid">Trusted BSSID</string>
+    <string name="trusted_bssid_desc">Access points that disable the tunnel</string>
     <string name="wildcard_bssid_desc">Supports * and ! for blacklisting</string>
     <string name="captive_portal_desc">Keeps tunnels disabled until captive portal is completed</string>
     <string name="add_bssid">Add BSSID</string>
