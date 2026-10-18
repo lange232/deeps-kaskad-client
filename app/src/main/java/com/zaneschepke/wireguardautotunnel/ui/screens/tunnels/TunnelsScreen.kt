@@ -283,7 +283,7 @@ fun TunnelsScreen(sharedViewModel: SharedAppViewModel = koinActivityViewModel())
             listOf(
                 SheetOption(
                     Icons.Rounded.SortByAlpha,
-                    stringResource(R.string.sort),
+                    stringResource(R.string.sort_by_name),
                     onClick = {
                         showReorderActions = false
                         sharedViewModel.sortReorderByName()

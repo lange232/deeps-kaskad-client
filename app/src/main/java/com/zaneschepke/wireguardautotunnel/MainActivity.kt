@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -76,6 +77,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.dokar.sonner.TextToastAction
 import com.dokar.sonner.Toast
+import com.dokar.sonner.ToastCloseButton
 import com.dokar.sonner.ToastType
 import com.dokar.sonner.Toaster
 import com.dokar.sonner.rememberToasterState
@@ -821,7 +823,13 @@ class MainActivity : AppCompatActivity() {
                                 },
                                 contentColor = { MaterialTheme.colorScheme.onSurface },
                                 shape = { RoundedCornerShape(16.dp) },
-                                showCloseButton = true,
+                                closeButton = { toast ->
+                                    ToastCloseButton(
+                                        onClick = { toaster.dismiss(toast) },
+                                        modifier = Modifier.align(Alignment.TopEnd),
+                                        offset = DpOffset(8.dp, (-8).dp),
+                                    )
+                                },
                             )
                         }
                     }

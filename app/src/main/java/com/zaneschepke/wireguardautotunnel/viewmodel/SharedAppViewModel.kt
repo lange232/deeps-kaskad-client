@@ -66,6 +66,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -137,31 +138,41 @@ class SharedAppViewModel(
     }
 
     private val reorderDraft = MutableStateFlow<ReorderDraft?>(null)
+    private val pingLatencies = MutableStateFlow<Map<Int, Double>>(emptyMap())
+    private val pingInFlight = MutableStateFlow(false)
 
     val tunnelsUiState =
         combine(
-                tunnelRepository.userTunnelsFlow,
-                tunnelGroupRepository.flow,
-                tunnelCoordinator.backendStatus,
-                selectedTunnelsRepository.flow,
-                reorderDraft,
-            ) { tunnels, groups, backendStatus, selection, draft ->
-                val displayStates =
-                    backendStatus.activeTunnels.mapValues { (_, activeTunnel) ->
-                        DisplayTunnelState.from(activeTunnel)
-                    }
+                combine(
+                    tunnelRepository.userTunnelsFlow,
+                    tunnelGroupRepository.flow,
+                    tunnelCoordinator.backendStatus,
+                    selectedTunnelsRepository.flow,
+                    reorderDraft,
+                ) { tunnels, groups, backendStatus, selection, draft ->
+                    val displayStates =
+                        backendStatus.activeTunnels.mapValues { (_, activeTunnel) ->
+                            DisplayTunnelState.from(activeTunnel)
+                        }
 
-                TunnelsUiState(
-                    tunnels = draft?.tunnels ?: tunnels,
-                    groups = draft?.groups ?: groups,
-                    backendStatus = backendStatus,
-                    displayStates = displayStates,
-                    selectedTunnels = selection.tunnels,
-                    selectedGroups = selection.groups,
-                    isLoading = false,
-                    isReorderMode = draft != null,
-                    reorderScopeGroupId = draft?.scopeGroupId,
-                    reorderLatencies = draft?.latencies.orEmpty(),
+                    TunnelsUiState(
+                        tunnels = draft?.tunnels ?: tunnels,
+                        groups = draft?.groups ?: groups,
+                        backendStatus = backendStatus,
+                        displayStates = displayStates,
+                        selectedTunnels = selection.tunnels,
+                        selectedGroups = selection.groups,
+                        isLoading = false,
+                        isReorderMode = draft != null,
+                        reorderScopeGroupId = draft?.scopeGroupId,
+                        reorderLatencies = draft?.latencies.orEmpty(),
+                    )
+                },
+                pingLatencies,
+            ) { ui, latencies ->
+                ui.copy(
+                    pingLatencies =
+                        if (ui.backendStatus.activeTunnels.isEmpty()) latencies else emptyMap()
                 )
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000L), TunnelsUiState())
@@ -188,6 +199,7 @@ class SharedAppViewModel(
                                     reorderScopeTitle = it.reorderScopeGroup?.name,
                                     hasGroups = it.groups.isNotEmpty(),
                                     canReorder = it.tunnels.size + it.groups.size > 1,
+                                    hasActiveTunnel = it.hasActiveTunnel,
                                 )
                             }
                             .distinctUntilChanged(),
@@ -209,6 +221,7 @@ class SharedAppViewModel(
                             reorderScopeTitle = chrome.reorderScopeTitle,
                             hasGroups = chrome.hasGroups,
                             canReorder = chrome.canReorder,
+                            hasActiveTunnel = chrome.hasActiveTunnel,
                             pinLockEnabled = settings.isPinLockEnabled,
                             isScreenRecordingProtectionEnabled =
                                 settings.screenRecordingSecurityEnabled,
@@ -388,38 +401,70 @@ class SharedAppViewModel(
 
     fun sortReorderByLatency() = intent {
         val draft = reorderDraft.value ?: return@intent
+        if (pingInFlight.value) return@intent
+        pingInFlight.value = true
         postSideEffect(
             GlobalSideEffect.Snackbar(
                 StringValue.StringResource(R.string.pinging_servers),
                 ToastType.Info,
             )
         )
-        val scopeId = draft.scopeGroupId
-        val targets =
-            if (scopeId != null) draft.tunnels.filter { it.groupId == scopeId }
-            else draft.tunnels.filter { it.groupId == null }
-        // Skipped for group headers, only leaf tunnels are ever pinged
-        val results = pingSorted(targets)
-        val ordered = results.map { it.first }
-        val tunnels =
-            if (scopeId != null) {
-                val others = draft.tunnels.filter { it.groupId != scopeId }
-                others + ordered.mapIndexed { index, tunnel -> tunnel.copy(position = index) }
-            } else {
-                val grouped = draft.tunnels.filter { it.groupId != null }
-                val slots =
-                    draft.tunnels
-                        .filter { it.groupId == null }
-                        .sortedBy { it.position }
-                        .map { it.position }
-                val rewritten = ordered.mapIndexed { index, tunnel ->
-                    tunnel.copy(position = slots.getOrElse(index) { tunnel.position })
+        try {
+            val scopeId = draft.scopeGroupId
+            val targets =
+                if (scopeId != null) draft.tunnels.filter { it.groupId == scopeId }
+                else draft.tunnels.filter { it.groupId == null }
+            val results = pingSorted(targets)
+            val ordered = results.map { it.first }
+            val tunnels =
+                if (scopeId != null) {
+                    val others = draft.tunnels.filter { it.groupId != scopeId }
+                    others + ordered.mapIndexed { index, tunnel -> tunnel.copy(position = index) }
+                } else {
+                    val grouped = draft.tunnels.filter { it.groupId != null }
+                    val slots =
+                        draft.tunnels
+                            .filter { it.groupId == null }
+                            .sortedBy { it.position }
+                            .map { it.position }
+                    val rewritten = ordered.mapIndexed { index, tunnel ->
+                        tunnel.copy(position = slots.getOrElse(index) { tunnel.position })
+                    }
+                    grouped + rewritten
                 }
-                grouped + rewritten
+            val measured = results.associate { (tunnel, ms) -> tunnel.id to ms }
+            reorderDraft.value =
+                draft.copy(
+                    tunnels = tunnels,
+                    sortAscending = null,
+                    latencies = draft.latencies + measured,
+                )
+            if (tunnelCoordinator.backendStatus.first().activeTunnels.isEmpty()) {
+                pingLatencies.value = pingLatencies.value + measured
             }
-        val latencies = draft.latencies + results.associate { (tunnel, ms) -> tunnel.id to ms }
-        reorderDraft.value =
-            draft.copy(tunnels = tunnels, sortAscending = null, latencies = latencies)
+        } finally {
+            pingInFlight.value = false
+        }
+    }
+
+    fun pingTunnels() = intent {
+        if (pingInFlight.value) return@intent
+        if (tunnelCoordinator.backendStatus.first().activeTunnels.isNotEmpty()) return@intent
+        pingInFlight.value = true
+        postSideEffect(
+            GlobalSideEffect.Snackbar(
+                StringValue.StringResource(R.string.pinging_servers),
+                ToastType.Info,
+            )
+        )
+        try {
+            val results = pingSorted(tunnelRepository.userTunnelsFlow.first())
+            if (tunnelCoordinator.backendStatus.first().activeTunnels.isEmpty()) {
+                pingLatencies.value = results.associate { (tunnel, ms) -> tunnel.id to ms }
+            }
+        } finally {
+            pingInFlight.value = false
+        }
     }
 
     fun createGroupAndMoveSelected(name: String) = intent {
@@ -837,4 +882,5 @@ private data class TunnelsChrome(
     val reorderScopeTitle: String?,
     val hasGroups: Boolean,
     val canReorder: Boolean,
+    val hasActiveTunnel: Boolean,
 )

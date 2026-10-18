@@ -16,6 +16,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.Reorder
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material3.DropdownMenu
@@ -457,7 +458,9 @@ fun currentRouteAsNavbarState(
                                             )
                                         }
                                     }
-                                else ->
+                                else -> {
+                                    var showOverflowMenu by remember { mutableStateOf(false) }
+                                    val showTunnelMenu = globalState.tunnelNames.size > 1
                                     Row {
                                         IconButton(
                                             onClick = {
@@ -471,17 +474,64 @@ fun currentRouteAsNavbarState(
                                                 stringResource(R.string.add_tunnel),
                                             )
                                         }
-                                        if (globalState.canReorder) {
-                                            IconButton(
-                                                onClick = sharedViewModel::enterReorderMode
-                                            ) {
+                                        if (showTunnelMenu) {
+                                            IconButton(onClick = { showOverflowMenu = true }) {
                                                 Icon(
-                                                    Icons.Rounded.Reorder,
-                                                    stringResource(R.string.reorder),
+                                                    Icons.Outlined.MoreVert,
+                                                    contentDescription =
+                                                        stringResource(R.string.more_options),
                                                 )
+                                            }
+                                            DropdownMenu(
+                                                expanded = showOverflowMenu,
+                                                onDismissRequest = { showOverflowMenu = false },
+                                                containerColor =
+                                                    MaterialTheme.colorScheme.surface.copy(
+                                                        alpha = 0.8f
+                                                    ),
+                                                tonalElevation = 4.dp,
+                                                shadowElevation = 4.dp,
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Text(stringResource(R.string.reorder))
+                                                    },
+                                                    leadingIcon = {
+                                                        Icon(
+                                                            Icons.Rounded.Reorder,
+                                                            contentDescription = null,
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        showOverflowMenu = false
+                                                        sharedViewModel.enterReorderMode()
+                                                    },
+                                                )
+                                                if (!globalState.hasActiveTunnel) {
+                                                    DropdownMenuItem(
+                                                        text = {
+                                                            Text(
+                                                                stringResource(
+                                                                    R.string.ping_servers
+                                                                )
+                                                            )
+                                                        },
+                                                        leadingIcon = {
+                                                            Icon(
+                                                                Icons.Rounded.NetworkCheck,
+                                                                contentDescription = null,
+                                                            )
+                                                        },
+                                                        onClick = {
+                                                            showOverflowMenu = false
+                                                            sharedViewModel.pingTunnels()
+                                                        },
+                                                    )
+                                                }
                                             }
                                         }
                                     }
+                                }
                             }
                         },
                         showBottomItems = true,

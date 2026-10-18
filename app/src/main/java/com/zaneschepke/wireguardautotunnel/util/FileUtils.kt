@@ -255,7 +255,7 @@ class FileUtils(private val context: Context, private val ioDispatcher: Coroutin
     suspend fun readConfigsFromUri(uri: Uri): Result<Map<QuickConfig, TunnelName>> =
         withContext(ioDispatcher) {
             runCatching {
-                val fileName = getFileName(uri).lowercase()
+                val fileName = getFileName(uri)
                 val extension = getFileExtensionFromFileName(fileName)
                 val inputStream =
                     context.getInputStreamFromUri(uri)
