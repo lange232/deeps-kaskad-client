@@ -100,12 +100,17 @@ fun WireguardAutoTunnelTheme(theme: Theme = Theme.AUTOMATIC, content: @Composabl
             Theme.AMOLED_DYNAMIC -> {
                 isDark = true
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    dynamicDarkColorScheme(context).copy(
+                    dynamicDarkColorScheme(context)
+                        .copy(
+                            surface = Color.Black,
+                            background = Color.Black,
+                        )
+                } else {
+                    DarkColorScheme.copy(
                         surface = Color.Black,
                         background = Color.Black,
+                        primary = ElectricTeal,
                     )
-                } else {
-                    DarkColorScheme.copy(surface = Color.Black, background = Color.Black, primary = ElectricTeal)
                 }
             }
         }
