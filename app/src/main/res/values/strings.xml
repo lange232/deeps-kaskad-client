@@ -217,6 +217,7 @@
     <string name="update_check_unsupported">Update check is not supported for this build type.</string>
     <string name="darker">Darker</string>
     <string name="amoled" translatable="false">AMOLED</string>
+    <string name="amoled_dynamic" translatable="false">AMOLED Dynamic</string>
     <string name="show_qr">Show QR</string>
     <string name="done">Done</string>
     <string name="wifi_detection_method">Wi-Fi detection method</string>
