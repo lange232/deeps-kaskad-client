@@ -93,6 +93,7 @@
     <string name="language">Język</string>
     <string name="display_theme">Motyw wyświetlania</string>
     <string name="trusted_wifi_names">Zaufane nazwy sieci Wi-Fi</string>
+    <string name="trusted_wifi_desc">Sieci Wi-Fi, które wyłączają tunel</string>
     <string name="add_wifi_name">Dodaj nazwę sieci Wi-Fi</string>
     <string name="primary_tunnel">Tunel domyślny</string>
     <string name="entry_tunnel">Tunel wejściowy</string>
@@ -206,7 +207,9 @@
     <string name="release_notes">Informacje o wydaniu</string>
     <string name="shizuku_not_detected">Nie wykryto Shizuku</string>
     <string name="sort">Sortuj</string>
+    <string name="sort_by_name">Sortuj według nazwy</string>
     <string name="sort_by_latency">Sortuj według opóźnienia</string>
+    <string name="ping_servers">Pingowanie serwerów</string>
     <string name="pinging_servers">Pingowanie serwerów…</string>
     <string name="ping_unreachable">nieosiągalny</string>
     <string name="drag_handle">Uchwyt do przeciągania</string>
@@ -312,6 +315,8 @@
     <string name="aovpn_description">Umożliwia systemowi Android uruchamianie tuneli</string>
     <string name="tunnel_boot_description">Uruchom domyślny tunel przy rozruchu</string>
     <string name="remote_key">Klucz zdalny</string>
+    <string name="rotate_remote_key">Rotuj klucz</string>
+    <string name="remote_key_rotated">Zdalny klucz zrotowany</string>
     <string name="tunnel_mapping_description">Mapuj tunele zgodnie preferencjami wg nazwy sieci Wi-Fi</string>
     <string name="monitoring">Monitorowanie</string>
     <string name="tunnel_running_name_message">Nazwy nie można zmienić, gdy tunel jest aktywny.</string>
@@ -335,11 +340,29 @@
     <string name="donation_prompt_prefix">Dziękujemy za korzystanie z WG Tunnel! Jeśli możesz, rozważ</string>
     <string name="donation_prompt_link">wspieranie projektu,</string>
     <string name="donation_prompt_suffix">aby utrzymać ją wolną i stale udoskonalaną.</string>
+    <string name="desktop_prompt_message">Tunel WG jest teraz dostępny na komputerze!</string>
+    <string name="desktop_app">Aplikacja komputerowa</string>
     <string name="cookie_packet_junk_size">Rozmiar śmieciowego pakietu ciasteczka</string>
     <string name="transport_packet_junk_size">Rozmiar śmieciowego pakietu transportu</string>
     <string name="special_junk_packet">Specjalny pakiet śmieciowy</string>
     <!-- AmneziaWG 3.0 -->
     <string name="copy_from">Skopiuj z</string>
+    <string name="show_system_apps">Pokaż aplikacje systemowe</string>
+    <string name="hide_system_apps">Ukryj aplikacje systemowe</string>
+    <string name="split_tunneling">Dzielone tunelowanie</string>
+    <string name="split_tunneling_desc">Przekieruj określone aplikacje przez ten tunel lub wokół niego</string>
+    <string name="split_tunnel_all_label">Tuneluj wszystko</string>
+    <string name="split_tunnel_all_desc">Każda aplikacja używa tego tunelu</string>
+    <string name="split_tunnel_include_label">Tunel</string>
+    <string name="split_tunnel_include_desc">Wybrane aplikacje będą tunelowane, podczas gdy wszystkie inne aplikacje będą go pomijać</string>
+    <string name="split_tunnel_exclude_label">Pomijaj</string>
+    <string name="split_tunnel_exclude_desc">Wybrane aplikacje będą pomijane, podczas gdy wszystkie inne aplikacje są tunelowane</string>
+    <string name="select_apps_to_include">Wybierz aplikacje do dołączenia</string>
+    <string name="select_apps_to_exclude">Wybierz aplikacje do wykluczenia</string>
+    <string name="split_mode">Tryb dzielony</string>
+    <string name="split_mode_desc">Tuneluj każdą aplikację lub wybierz aplikacje do tunelu lub obejścia</string>
+    <string name="global_split_off">Każdy tunel używa własnej listy aplikacji</string>
+    <string name="global_split_applies">Dotyczy każdego tunelu</string>
     <string name="import_url_description">Adres URL musi być bezpieczny i obsługiwać plik .conf.</string>
     <string name="export_unsupported">Eksport nie jest obsługiwany na tym urządzeniu</string>
     <string name="export_canceled">Eksport anulowano</string>
@@ -398,6 +421,24 @@
     <string name="vpn_permission_required">Wymagane zezwolenie VPN</string>
     <string name="included_apps">Uwzględnione aplikacje: %1$s</string>
     <string name="excluded_apps">Wykluczone aplikacje: %1$s</string>
+    <plurals name="apps_tunneled">
+        <item quantity="one">%d aplikacja tunelowana</item>
+        <item quantity="few">%d aplikacje tunelowane</item>
+        <item quantity="many">%d aplikacji tunelowanych</item>
+        <item quantity="other">%d aplikacji tunelowanych</item>
+    </plurals>
+    <plurals name="apps_bypassed">
+        <item quantity="one">%d aplikacja pominięta</item>
+        <item quantity="few">%d aplikacje pominięte</item>
+        <item quantity="many">%d aplikacji pominiętych</item>
+        <item quantity="other">%d aplikacji pominiętych</item>
+    </plurals>
+    <string name="all_apps_tunneled">Wszystkie aplikacje tunelowane</string>
+    <string name="managed_globally_detail">%1$s · Zarządzanie globalnie</string>
+    <string name="managed_globally">Zarządzane globalnie</string>
+    <string name="split_override_notice">Ta lista jest zapisywana i nieużywana, dopóki globalne dzielone tunele nie będą wyłączone.</string>
+    <string name="global_override_notice">Niektóre wartości są zapisywane tutaj i nieużywane dopóki ich ustawienia globalne nie zostaną wyłączone.</string>
+    <string name="none">Brak</string>
     <string name="error">Błąd</string>
     <string name="tunnel_globals">Globalne zmienne tunelu</string>
     <string name="screen_recording_protection">Ochrona przed nagrywaniem ekranu</string>
@@ -460,7 +501,9 @@
     <string name="restore">Przywróć</string>
     <string name="hide_password">Ukryj hasło</string>
     <string name="restore_failed_wrong_password">Przywracanie nie powiodło się. Błędne hasło</string>
-    <string name="restore_failed_invalid_file">Przywracanie nie powiodło się. Wybierz prawidłowy plik kopii zapasowej (.sqlite3 lub .sqlite3.aes)</string>
+    <string name="restore_failed_invalid_file">Przywracanie nie powiodło się. Wybierz prawidłowy plik kopii zapasowej (.zip, .sqlite3 lub .sqlite3.aes)</string>
+    <string name="restore_failed_newer_version">Przywracanie nie powiodło się. Ta kopia zapasowa pochodzi z nowszej wersji aplikacji</string>
+    <string name="backup_saved_downloads">Kopia zapasowa zapisana w folderze Pobrane jako %1$s</string>
     <string name="error_invalid_config_url">Ten link zwrócił nieprawidłowy plik konfiguracyjny. Upewnij się, że używasz bezpośredniego linku do pobrania</string>
     <string name="local_network_permission_title">Wymagany dostęp do sieci lokalnej</string>
     <string name="local_network_permission_intro">WG Tunnel potrzebuje dostępu do sieci lokalnej, aby kilka funkcji działało prawidłowo.</string>
@@ -479,6 +522,7 @@
     <string name="wildcard_wifi_desc">Obsługuje *, ? i ! w celu umieszczenia na czarnej liście</string>
     <string name="invalid_bssid_format">Nieprawidłowy format BSSID</string>
     <string name="trusted_bssid">Zaufany BSSID</string>
+    <string name="trusted_bssid_desc">Punkty dostępu, które wyłączają tunel</string>
     <string name="wildcard_bssid_desc">Obsługuje * i ! w celu umieszczania na czarnej liście</string>
     <string name="captive_portal_desc">Utrzymuje tunele wyłączone do czasu ukończenia wewnętrznego portalu</string>
     <string name="add_bssid">Dodaj BSSID</string>
