@@ -21,6 +21,7 @@ import timber.log.Timber
 fun rememberFileImportLauncherForResult(
     onNoFileExplorer: () -> Unit,
     onData: (data: Uri) -> Unit,
+    onCancel: () -> Unit = {},
 ): () -> Unit {
     val context = LocalContext.current
     val isTv = LocalIsAndroidTV.current
@@ -28,7 +29,7 @@ fun rememberFileImportLauncherForResult(
         rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result
             ->
             val uri = result.data?.data
-            if (result.resultCode == Activity.RESULT_OK && uri != null) onData(uri)
+            if (result.resultCode == Activity.RESULT_OK && uri != null) onData(uri) else onCancel()
         }
     return {
         val intent = if (isTv) context.createTvImportIntent() else context.phoneImportIntent()

@@ -620,7 +620,9 @@
     <string name="restore">Restore</string>
     <string name="hide_password">Hide password</string>
     <string name="restore_failed_wrong_password">Restore failed. Wrong password</string>
-    <string name="restore_failed_invalid_file">Restore failed. Select a valid backup file (.sqlite3 or .sqlite3.aes)</string>
+    <string name="restore_failed_invalid_file">Restore failed. Select a valid backup file (.zip, .sqlite3, or .sqlite3.aes)</string>
+    <string name="restore_failed_newer_version">Restore failed. This backup is from a newer version of the app</string>
+    <string name="backup_saved_downloads">Backup saved to Downloads as %1$s</string>
     <string name="error_invalid_config_url">This link returned an invalid config file. Make sure you are using a direct download link</string>
 
     <string name="local_network_permission_title">Local Network Access Needed</string>
