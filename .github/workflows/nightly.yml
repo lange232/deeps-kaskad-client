@@ -141,3 +141,11 @@ jobs:
           token: ${{ secrets.PAT }}
           repository: wgtunnel/fdroid
           event-type: fdroid-update
+
+  publish-zapstore-nightly:
+    needs:
+      - publish
+    uses: ./.github/workflows/publish-zapstore.yml
+    secrets: inherit
+    with:
+      config: zapstore-nightly.yaml

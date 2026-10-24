@@ -173,9 +173,9 @@ jobs:
   publish-fdroid-public:
     runs-on: ubuntu-latest
     if: >-
-      ${{ 
-        github.event_name == 'push' || 
-        inputs.release_type != 'none' 
+      ${{
+        github.event_name == 'push' ||
+        inputs.release_type != 'none'
       }}
     needs:
       - publish-github
@@ -186,6 +186,17 @@ jobs:
           token: ${{ secrets.PAT }}
           repository: wgtunnel/fdroid
           event-type: fdroid-update
+
+  publish-zapstore:
+    if: >-
+      ${{
+        github.event_name == 'push' ||
+        inputs.release_type != 'none'
+      }}
+    needs:
+      - publish-github
+    uses: ./.github/workflows/publish-zapstore.yml
+    secrets: inherit
 
   build-google-aab:
     if: >-
