@@ -31,41 +31,8 @@ jobs:
       - name: Install zsp
         run: go install github.com/zapstore/zsp/cmd/zsp@latest
 
-      - name: Restore zsp bunker client
-        env:
-          BUNKER_URL: ${{ secrets.ZAPSTORE_PUBLISH_BUNKER }}
-          BUNKER_CLIENT_KEY: ${{ secrets.ZAPSTORE_CLIENT_KEY }}
-        run: |
-          set -euo pipefail
-          if [[ "$BUNKER_URL" != bunker://* ]]; then
-            echo "ZAPSTORE_PUBLISH_BUNKER must be a bunker:// URL" >&2
-            exit 1
-          fi
-          pubkey="${BUNKER_URL#bunker://}"
-          pubkey="${pubkey%%\?*}"
-          pubkey="${pubkey%%/*}"
-          if [[ ! "$pubkey" =~ ^[0-9a-fA-F]{64}$ ]]; then
-            echo "ZAPSTORE_PUBLISH_BUNKER is missing a 64-character pubkey host" >&2
-            exit 1
-          fi
-          client_key="${BUNKER_CLIENT_KEY//[$' \t\r\n']/}"
-          if [[ ! "$client_key" =~ ^[0-9a-fA-F]{64}$ ]]; then
-            echo "ZAPSTORE_CLIENT_KEY must be 64 hex characters" >&2
-            exit 1
-          fi
-          if [[ -n "${XDG_CONFIG_HOME:-}" ]]; then
-            config_dir="$XDG_CONFIG_HOME"
-          else
-            config_dir="$HOME/.config"
-          fi
-          key_dir="$config_dir/zsp/bunker-keys"
-          umask 077
-          mkdir -p "$key_dir"
-          printf '%s\n' "$client_key" > "$key_dir/$pubkey.key"
-          chmod 600 "$key_dir/$pubkey.key"
-
       - name: Publish to Zapstore
         env:
-          SIGN_WITH: ${{ secrets.ZAPSTORE_PUBLISH_BUNKER }}
+          SIGN_WITH: ${{ secrets.ZAPSTORE_SIGN_WITH }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: zsp publish -q "${{ inputs.config }}"
