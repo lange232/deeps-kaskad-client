@@ -33,6 +33,6 @@ jobs:
 
       - name: Publish to Zapstore
         env:
-          SIGN_WITH: ${{ secrets.NOSTR_BUNKER_URL }}
+          SIGN_WITH: ${{ secrets.ZAPSTORE_PUBLISH_BUNKER }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: zsp publish -q "${{ inputs.config }}"
