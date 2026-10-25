@@ -37,6 +37,7 @@ import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.TunnelI
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.TunnelList
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.UrlImportDialog
 import com.zaneschepke.wireguardautotunnel.ui.sideeffect.LocalSideEffect
+import com.zaneschepke.wireguardautotunnel.util.FileUtils
 import com.zaneschepke.wireguardautotunnel.util.StringValue
 import com.zaneschepke.wireguardautotunnel.util.extensions.asExportFileName
 import com.zaneschepke.wireguardautotunnel.util.extensions.asFileExportName
@@ -61,6 +62,7 @@ fun TunnelsScreen(sharedViewModel: SharedAppViewModel = koinActivityViewModel())
 
     val selectedTunnelsExportLauncher =
         rememberFileExportLauncherForResult(
+            mimeType = FileUtils.ALL_FILE_TYPES,
             onSuccess = { uri -> sharedViewModel.exportSelectedTunnels(uri) },
             onCanceled = {
                 sharedViewModel.showSnackMessage(
