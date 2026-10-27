@@ -14,7 +14,8 @@ data class ConnectivityState(
     val vpnState: VpnState,
     val effectiveDnsInfo: DnsInfo = DnsInfo(),
     val underlyingDnsInfo: DnsInfo = DnsInfo(),
-    val hasIpv6: Boolean = false,
+    // Null when the underlying network's link properties could not be read
+    val hasIpv6: Boolean? = null,
     val airplaneModeOn: Boolean = false,
 ) {
 

@@ -15,6 +15,7 @@ import android.net.wifi.SupplicantState
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
+import android.system.OsConstants
 import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.DEFAULT
 import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.LEGACY
 import com.zaneschepke.networkmonitor.AndroidNetworkMonitor.WifiDetectionMethod.ROOT
@@ -75,6 +76,12 @@ class AndroidNetworkMonitor(
         const val ANDROID_UNKNOWN_BSSID: String = "02:00:00:00:00:00"
         const val WIFI_INFO_SHELL_COMMAND = "cmd wifi status"
         const val SHELL_COMMAND_TIMEOUT_MS = 2_000L
+
+        // Addresses the kernel will not use as a source
+        private val UNUSABLE_ADDRESS_FLAGS =
+            OsConstants.IFA_F_DEPRECATED or
+                OsConstants.IFA_F_TENTATIVE or
+                OsConstants.IFA_F_DADFAILED
     }
 
     enum class WifiDetectionMethod(val value: Int) {
@@ -313,32 +320,36 @@ class AndroidNetworkMonitor(
         return linkProperties.dnsServers.map { it.hostAddress }
     }
 
-    fun hasIpv6Support(network: Network?, activeNetwork: ActiveNetwork): Boolean {
-        if (network == null || activeNetwork is ActiveNetwork.Disconnected) return false
+    // Null when there is nothing to read, which is not the same as a network without IPv6
+    fun hasIpv6Support(network: Network?, activeNetwork: ActiveNetwork): Boolean? {
+        if (network == null || activeNetwork is ActiveNetwork.Disconnected) return null
 
-        val lp = connectivityManager?.getLinkProperties(network) ?: return false
+        val lp = connectivityManager?.getLinkProperties(network) ?: return null
 
+        // A usable global address, ULA only networks cannot reach a public AAAA
         val hasGlobalIpv6 =
             lp.linkAddresses.any {
                 val addr = it.address
                 addr is Inet6Address &&
                     !addr.isLinkLocalAddress &&
                     !addr.isLoopbackAddress &&
-                    !addr.isMulticastAddress
+                    !addr.isMulticastAddress &&
+                    !addr.isSiteLocalAddress &&
+                    !addr.isUniqueLocal() &&
+                    it.flags and UNUSABLE_ADDRESS_FLAGS == 0
             }
 
+        // A missing gateway is stored as "::", so check the destination family instead
         val hasIpv6DefaultRoute =
-            lp.routes.any { route -> route.isDefaultRoute && (route.gateway is Inet6Address) }
+            lp.routes.any { route ->
+                route.isDefaultRoute && route.destination.address is Inet6Address
+            }
 
-        val hasNat64Prefix =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                lp.nat64Prefix != null
-            } else false
-
-        val hasSupport = (hasGlobalIpv6 && hasIpv6DefaultRoute) || hasNat64Prefix
-
-        return hasSupport
+        // NAT64 networks always have both, the prefix alone adds nothing
+        return hasGlobalIpv6 && hasIpv6DefaultRoute
     }
+
+    private fun Inet6Address.isUniqueLocal(): Boolean = (address[0].toInt() and 0xfe) == 0xfc
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val defaultNetworkFlow: Flow<TransportEvent> =
@@ -566,6 +577,14 @@ class AndroidNetworkMonitor(
             }
         }
 
+        // IPv6 address and route usually land after the network is up (RA, NAT64 discovery), so
+        // refresh link properties without a capabilities change.
+        val onLinkPropertiesChanged: (Network) -> Unit = { network ->
+            activeCellularNetworks.value[network]?.let { caps ->
+                trySend(TransportEvent.CapabilitiesChanged(network, caps))
+            }
+        }
+
         val cellularCallback =
             object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) = onAvailable(network)
@@ -576,6 +595,11 @@ class AndroidNetworkMonitor(
                     network: Network,
                     caps: NetworkCapabilities,
                 ) = onCapabilitiesChanged(network, caps)
+
+                override fun onLinkPropertiesChanged(
+                    network: Network,
+                    linkProperties: LinkProperties,
+                ) = onLinkPropertiesChanged(network)
             }
 
         val request =
@@ -605,6 +629,14 @@ class AndroidNetworkMonitor(
             trySend(TransportEvent.CapabilitiesChanged(network, caps))
         }
 
+        // Refresh link properties (IPv6 address and route) without a capabilities change
+        val onLinkPropertiesChanged: (Network) -> Unit = { network ->
+            connectivityManager
+                ?.getNetworkCapabilities(network)
+                ?.takeIf { it.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) }
+                ?.let { caps -> trySend(TransportEvent.CapabilitiesChanged(network, caps)) }
+        }
+
         val ethernetCallback =
             object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) = onAvailable(network)
@@ -615,6 +647,11 @@ class AndroidNetworkMonitor(
                     network: Network,
                     caps: NetworkCapabilities,
                 ) = onCapabilitiesChanged(network, caps)
+
+                override fun onLinkPropertiesChanged(
+                    network: Network,
+                    linkProperties: LinkProperties,
+                ) = onLinkPropertiesChanged(network)
             }
 
         val request =
