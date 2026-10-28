@@ -363,7 +363,6 @@
     <string name="tunnel_globals">Globální nastavení tunelu </string>
     <string name="screen_recording_protection">Ochrana proti nahrávání obrazovky</string>
     <string name="security">Bezpečnost </string>
-    <string name="ready">Připraveno </string>
     <string name="statistics">Statistiky </string>
     <string name="tunnel_statistics">Statistiky tunelu v reálném čase</string>
     <string name="refresh_rate">Frekvence aktualizace statistik</string>

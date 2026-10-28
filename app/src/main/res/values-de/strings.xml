@@ -354,7 +354,6 @@
     <string name="tunnel_globals">Globale Tunnel-Einstellungen</string>
     <string name="screen_recording_protection">Bildschirmaufnahmeschutz </string>
     <string name="security">Sicherheit</string>
-    <string name="ready">Fertig</string>
     <string name="statistics">Statistiken</string>
     <string name="tunnel_statistics">Live Tunnelstatistik</string>
     <string name="refresh_rate">Statistik Aktualisierungsrate</string>

@@ -443,7 +443,6 @@
     <string name="tunnel_globals">Globalne zmienne tunelu</string>
     <string name="screen_recording_protection">Ochrona przed nagrywaniem ekranu</string>
     <string name="security">Bezpieczeństwo</string>
-    <string name="ready">Gotowy</string>
     <string name="statistics">Statystyka</string>
     <string name="tunnel_statistics">Statystyka aktywnego tunelu</string>
     <string name="refresh_rate">Częstotliwość odświeżania statystyki</string>

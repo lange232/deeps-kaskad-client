@@ -414,7 +414,6 @@
     <string name="tunnel_globals">Общие настройки туннелей</string>
     <string name="screen_recording_protection">Защита от записи</string>
     <string name="security">Безопасность</string>
-    <string name="ready">Готово</string>
     <string name="statistics">Статистика</string>
     <string name="tunnel_statistics">Показывать статистику</string>
     <string name="refresh_rate">Обновление</string>

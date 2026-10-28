@@ -377,7 +377,6 @@
     <string name="tunnel_globals">Globales de túnel</string>
     <string name="screen_recording_protection">Protección de grabación de pantalla</string>
     <string name="security">Seguridad</string>
-    <string name="ready">Listo</string>
     <string name="statistics">Estadísticas</string>
     <string name="tunnel_statistics">Estadísticas de túneles en vivo</string>
     <string name="refresh_rate">Tasa de actualización de estadísticas</string>

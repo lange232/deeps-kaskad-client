@@ -556,7 +556,6 @@
     <string name="tunnel_globals">Tunnel globals</string>
     <string name="screen_recording_protection">Screen recording protection</string>
     <string name="security">Security</string>
-    <string name="ready">Ready</string>
     <string name="statistics">Statistics</string>
     <string name="tunnel_statistics">Live tunnel statistics</string>
     <string name="refresh_rate">Statistics refresh rate</string>
