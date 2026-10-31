@@ -230,6 +230,15 @@ class SharedAppViewModel(
                     }
                     .collect { newState -> reduce { newState } }
             }
+            intent {
+                // Clear ping results when tunnel is active
+                tunnelCoordinator.backendStatus
+                    .map { it.activeTunnels.isNotEmpty() }
+                    .distinctUntilChanged()
+                    .collect { hasActiveTunnel ->
+                        if (hasActiveTunnel) pingLatencies.value = emptyMap()
+                    }
+            }
         }
 
     fun startTunnel(tunnelConfig: TunnelConfig) = intent {
