@@ -33,11 +33,19 @@ cat /etc/kaskad/tls/panel.crt   # on S1, path may differ per deploy
 
 ```bash
 echo "sdk.dir=$HOME/Android/Sdk" > local.properties
-./gradlew :app:assembleStandaloneRelease
+scripts/build-release.sh
 ```
 
 The APK lands in `app/build/outputs/apk/standalone/release/` and is uploaded
 to the download site manually; there is no Play Store publishing.
+
+Release builds are signed with `app/keystore/android_keystore.jks` (gitignored),
+passwords live in `local.properties` (`SIGNING_STORE_PASSWORD`,
+`SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`). The keystore is created once
+with `keytool -genkeypair`; **back it up** — an APK signed with a new key
+cannot update an installed app, users would have to reinstall. The debug
+build uses the debug suffix `ru.deffhost.kaskad.debug`, so it installs next
+to a release without conflicts, but not as an update for it.
 
 ## Updating from upstream
 
