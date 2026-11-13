@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ViewQuilt
 import androidx.compose.material.icons.outlined.Android
 import androidx.compose.material.icons.outlined.Autorenew
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.MonitorHeart
@@ -300,6 +301,11 @@ fun SettingsScreen(
                 },
                 description = { DescriptionText(stringResource(R.string.local_logging_desc)) },
                 onClick = { navController.push(Route.Logs) },
+            )
+            SurfaceRow(
+                leading = { Icon(Icons.Outlined.Description, contentDescription = null) },
+                title = stringResource(R.string.licenses),
+                onClick = { navController.push(Route.License) },
             )
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.SettingsBackupRestore, contentDescription = null) },
