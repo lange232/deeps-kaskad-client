@@ -50,8 +50,10 @@ The main channel is GitHub Releases of this repository
 
 1. Bump `versionName` **and** `versionCode` in `gradle/libs.versions.toml`.
    The APK file name follows `versionName`; `versionCode` follows the
-   `major*10000 + minor*100 + patch` scheme (`5.8.2` → `50802`) and must grow
-   with every release, otherwise Android refuses the update. Add a
+   `major*10000 + minor*100 + patch` scheme (`5.8.2` → `50802`), with an
+   extra segment added as a patch counter for four-segment names
+   (`5.8.2.2` → `50803`). `versionCode` must grow with every release,
+   otherwise Android refuses the update. Add a
    `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` entry, it
    becomes the release notes.
 2. Actions → `release-apk` → Run workflow on `master`. Secrets required:

@@ -1,0 +1,4 @@
+What's new:
+- Renamed the "Sign in to panel" option to "Sign in to deeps kaskad"
+- Fixed the in-app update check not finding this repository's releases
+- Stable download link for the newest arm64 APK: deepskaskad.apk
