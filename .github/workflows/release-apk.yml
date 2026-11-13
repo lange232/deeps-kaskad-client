@@ -133,7 +133,10 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq apksigner >/dev/null
-          apksigner verify --print-certs dist/*.apk > certs.txt
+          # apksigner takes a single APK; dist/deepskaskad.apk is a byte copy
+          # of the versioned asset (checked with cmp in the previous step).
+          apk=$(find dist -maxdepth 1 -type f -name '*-arm64.apk' | head -n 1)
+          apksigner verify --print-certs "$apk" > certs.txt
           cat certs.txt
           grep -oP '(?<=SHA-256 digest: ).*' certs.txt | head -n 1 > fingerprint.txt
 
