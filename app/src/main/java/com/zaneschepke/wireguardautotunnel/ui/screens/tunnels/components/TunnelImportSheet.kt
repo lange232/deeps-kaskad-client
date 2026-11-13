@@ -6,6 +6,7 @@ import androidx.compose.material.icons.outlined.Create
 import androidx.compose.material.icons.outlined.FileOpen
 import androidx.compose.material.icons.outlined.Link
 import androidx.compose.material.icons.outlined.QrCode
+import androidx.compose.material.icons.outlined.VpnKey
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
@@ -23,11 +24,22 @@ fun TunnelImportSheet(
     onManualImportClick: () -> Unit,
     onClipboardClick: () -> Unit,
     onUrlClick: () -> Unit,
+    onPanelClick: () -> Unit,
 ) {
     val isTv = LocalIsAndroidTV.current
 
     CustomBottomSheet(
         buildList {
+            add(
+                SheetOption(
+                    Icons.Outlined.VpnKey,
+                    stringResource(R.string.add_from_panel),
+                    onClick = {
+                        onDismiss()
+                        onPanelClick()
+                    },
+                ),
+            )
             add(
                 SheetOption(
                     Icons.Outlined.FileOpen,

@@ -28,7 +28,8 @@ licensee {
 }
 
 configure<ApplicationExtension> {
-    namespace = Constants.APP_ID
+    // Keep the upstream package for R/BuildConfig; only applicationId changes.
+    namespace = "com.zaneschepke.wireguardautotunnel"
     compileSdk = libs.versions.compileSdk.get().toInt()
 
     androidResources { generateLocaleConfig = true }
@@ -107,7 +108,7 @@ configure<ApplicationExtension> {
 
         debug {
             applicationIdSuffix = ".debug"
-            resValue("string", "app_name", "WG Tunnel Debug")
+            resValue("string", "app_name", "deeps kaskad Debug")
             isDebuggable = true
             manifestPlaceholders["providerAuthority"] = "${Constants.APP_NAME}.provider.debug"
             buildConfigField(
@@ -120,7 +121,7 @@ configure<ApplicationExtension> {
         create(Constants.NIGHTLY) {
             initWith(buildTypes.getByName(Constants.RELEASE))
             applicationIdSuffix = ".nightly"
-            resValue("string", "app_name", "WG Tunnel Nightly")
+            resValue("string", "app_name", "deeps kaskad Nightly")
             manifestPlaceholders["providerAuthority"] = "${Constants.APP_NAME}.provider.nightly"
             buildConfigField(
                 "String",

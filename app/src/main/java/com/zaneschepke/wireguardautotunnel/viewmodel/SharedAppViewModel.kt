@@ -11,6 +11,8 @@ import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.orchestration.AutoTunnelCoordinator
 import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelBackendCoordinator
 import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelCoordinator
+import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelApi
+import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelApiException
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelGroup
@@ -90,6 +92,7 @@ class SharedAppViewModel(
     private val selectedTunnelsRepository: SelectedTunnelsRepository,
     private val tunnelBackendCoordinator: TunnelBackendCoordinator,
     private val httpClient: HttpClient,
+    private val panelApi: PanelApi,
     private val fileUtils: FileUtils,
     private val networkUtils: NetworkUtils,
 ) : OrbitContainerHost<GlobalAppUiState, GlobalAppUiState, LocalSideEffect>, ViewModel() {
@@ -713,6 +716,28 @@ class SharedAppViewModel(
             postSideEffect(
                 GlobalSideEffect.Snackbar(
                     StringValue.StringResource(R.string.error_download_failed),
+                    ToastType.Error,
+                ),
+            )
+        }
+    }
+
+    /**
+     * Signs in to the deeps kaskad panel, downloads the client's config and imports it as a new
+     * tunnel through the regular clipboard path.
+     */
+    fun provisionFromPanel(server: String, email: String, password: String) = intent {
+        try {
+            val token = panelApi.login(server, email, password)
+            val conf = panelApi.fetchConfig(server, token)
+            importFromClipboard(conf)
+        } catch (e: PanelApiException) {
+            postSideEffect(GlobalSideEffect.Snackbar(e.stringValue, ToastType.Error))
+        } catch (e: Exception) {
+            Timber.e(e)
+            postSideEffect(
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.error_panel_connect),
                     ToastType.Error,
                 ),
             )
