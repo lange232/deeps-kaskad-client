@@ -3,10 +3,10 @@ permissions:
   contents: write
   packages: write
 
+# Upstream release pipeline: it also dispatches the fdroid repo, zapstore and
+# Google Play, which need upstream-only secrets. This fork releases through
+# .github/workflows/release-apk.yml, so there is no tag trigger here.
 on:
-  push:
-    tags:
-      - '[0-9]*.[0-9]*.[0-9]*'
   workflow_dispatch:
     inputs:
       track:
