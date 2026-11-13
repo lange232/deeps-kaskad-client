@@ -228,8 +228,8 @@
     <string name="install_updated_permission">This app needs permission to install updates.</string>
     <string name="allow">Allow</string>
     <string name="licenses">Licenses</string>
-    <string name="kaskad">Kaskad</string>
-    <string name="kaskad_light">Kaskad light</string>
+    <string name="kaskad">deeps kaskad</string>
+    <string name="kaskad_light">kaskad light</string>
     <string name="update_check_unsupported">Update check is not supported for this build type.</string>
     <string name="darker">Darker</string>
     <string name="amoled" translatable="false">AMOLED</string>
