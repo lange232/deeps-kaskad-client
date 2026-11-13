@@ -136,7 +136,7 @@
     <string name="tunnel_control">Управление туннелями</string>
     <string name="auto_tunnel">Автотуннелирование</string>
     <string name="add_from_url">Добавить из URL</string>
-    <string name="add_from_panel">Войти в панель</string>
+    <string name="add_from_panel">Войти в deeps kaskad</string>
     <string name="add_from_panel_description">Скачать конфигурацию с панели deeps kaskad по вашему аккаунту.</string>
     <string name="panel_server">Сервер</string>
     <string name="panel_email">Email</string>
