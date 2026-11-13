@@ -1,0 +1,51 @@
+# deeps-kaskad-client
+
+Android client for [deeps kaskad](https://github.com/.../deeps-kaskad), forked
+from [WG Tunnel](https://github.com/zaneschepke/wgtunnel) (MIT license,
+copyright Zane Schepke — see `LICENSE`).
+
+## What differs from upstream
+
+- Rebranded: `applicationId` is `ru.deffhost.kaskad`, the app name is
+  "deeps kaskad" (`buildSrc/.../Constants.kt`, `res/values/strings.xml`).
+- "Sign in to panel" option in the tunnel-import sheet: server, email and
+  password → `POST /api/login` → `GET /api/me/conf` on the kaskad panel, the
+  returned awg0 config is imported through the regular config parser. Code:
+  `data/network/panel/PanelApi.kt`,
+  `ui/screens/tunnels/components/PanelLoginDialog.kt`,
+  `SharedAppViewModel.provisionFromPanel`.
+- Launcher icons are the panel favicon (dark `#141413` tile, orange `#fab283`
+  D), regenerated from the SVG with a small cairosvg script; the adaptive
+  background color is `values/ic_launcher_background.xml`.
+- `app/src/main/res/raw/panel.crt` — the panel's TLS certificate. The panel
+  serves a self-signed certificate by default; drop its PEM here before
+  building and `PanelApi` will trust only that certificate. With an empty
+  file the system trust store is used (works when the panel is behind a real
+  CA).
+
+Get the panel certificate from the server:
+
+```bash
+cat /etc/kaskad/tls/panel.crt   # on S1, path may differ per deploy
+```
+
+## Building
+
+```bash
+echo "sdk.dir=$HOME/Android/Sdk" > local.properties
+./gradlew :app:assembleStandaloneRelease
+```
+
+The APK lands in `app/build/outputs/apk/standalone/release/` and is uploaded
+to the download site manually; there is no Play Store publishing.
+
+## Updating from upstream
+
+```bash
+git fetch upstream
+git merge upstream/master   # conflicts are expected mainly in resources
+```
+
+Keep the fork-specific surface small: Constants.kt, app_name strings,
+`data/network/panel/`, `PanelLoginDialog.kt`, the extra sheet option in
+`TunnelImportSheet.kt`, and `provisionFromPanel` in `SharedAppViewModel.kt`.

@@ -31,6 +31,7 @@ import com.zaneschepke.wireguardautotunnel.ui.common.sheet.CustomBottomSheet
 import com.zaneschepke.wireguardautotunnel.ui.common.sheet.SheetOption
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.GroupNameDialog
+import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.PanelLoginDialog
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.GroupSelectionSheet
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.SelectionActionsSheet
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.TunnelImportSheet
@@ -76,6 +77,7 @@ fun TunnelsScreen(sharedViewModel: SharedAppViewModel = koinActivityViewModel())
     var showImportSheet by rememberSaveable { mutableStateOf(false) }
     var showDeleteModal by rememberSaveable { mutableStateOf(false) }
     var showUrlDialog by rememberSaveable { mutableStateOf(false) }
+    var showPanelDialog by rememberSaveable { mutableStateOf(false) }
     var showMoveToGroup by rememberSaveable { mutableStateOf(false) }
     var showSelectionActions by rememberSaveable { mutableStateOf(false) }
     var showReorderActions by rememberSaveable { mutableStateOf(false) }
@@ -222,6 +224,17 @@ fun TunnelsScreen(sharedViewModel: SharedAppViewModel = koinActivityViewModel())
             },
             onManualImportClick = { navController.push(Route.ConfigEdit(null)) },
             onUrlClick = { showUrlDialog = true },
+            onPanelClick = { showPanelDialog = true },
+        )
+    }
+
+    if (showPanelDialog) {
+        PanelLoginDialog(
+            onDismiss = { showPanelDialog = false },
+            onConfirm = { server, email, password ->
+                sharedViewModel.provisionFromPanel(server, email, password)
+                showPanelDialog = false
+            },
         )
     }
 

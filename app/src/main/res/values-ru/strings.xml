@@ -136,6 +136,14 @@
     <string name="tunnel_control">Управление туннелями</string>
     <string name="auto_tunnel">Автотуннелирование</string>
     <string name="add_from_url">Добавить из URL</string>
+    <string name="add_from_panel">Войти в панель</string>
+    <string name="add_from_panel_description">Скачать конфигурацию с панели deeps kaskad по вашему аккаунту.</string>
+    <string name="panel_server">Сервер</string>
+    <string name="panel_email">Email</string>
+    <string name="panel_password">Пароль</string>
+    <string name="error_panel_auth">Неверный email или пароль</string>
+    <string name="error_panel_rate_limited">Слишком много попыток, подождите 5 минут</string>
+    <string name="error_panel_connect">Не удаётся связаться с панелью. Проверьте адрес сервера.</string>
     <string name="enter_config_url">Введите URL конфигурации</string>
     <string name="error_download_failed">Невозможно скачать конфигурацию</string>
     <string name="wg_url_confirm_message">Добавить туннели из %1$s? Никогда не подключайтесь к неизвестному VPN!</string>
