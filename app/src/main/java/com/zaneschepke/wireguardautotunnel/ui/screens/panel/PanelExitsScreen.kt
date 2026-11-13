@@ -86,11 +86,18 @@ fun PanelExitsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) {
                                     modifier = Modifier.size(12.dp),
                                 )
                             },
-                            title = exit.name,
-                            description =
-                                exit.rttMs?.let {
-                                    { DescriptionText("${it.toInt()} ms") }
-                                },
+                            title = exit.comment.ifBlank { exit.name },
+                            description = {
+                                val name = exit.name
+                                val rtt = exit.rttMs?.let { "${it.toInt()} ms" }
+                                DescriptionText(
+                                    listOfNotNull(
+                                            if (!exit.comment.isBlank()) name else null,
+                                            rtt,
+                                        )
+                                        .joinToString(" · "),
+                                )
+                            },
                             trailing = { modifier ->
                                 Row {
                                     IconButton(

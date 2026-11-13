@@ -88,7 +88,7 @@ fun WireguardAutoTunnelTheme(theme: Theme = Theme.AUTOMATIC, content: @Composabl
     val context = LocalContext.current
     val isTv = LocalIsAndroidTV.current
     var isDark = isSystemInDarkTheme()
-    val autoTheme = if (isDark) DarkColorScheme else LightColorScheme
+    val autoTheme = if (isDark) KaskadColorScheme else KaskadLightColorScheme
     val colorScheme =
         when (theme) {
             Theme.AUTOMATIC -> autoTheme
