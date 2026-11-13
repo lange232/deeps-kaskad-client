@@ -25,6 +25,16 @@ val ConfigHeaderColor = Color(0xFFBB86FC)
 val ConfigKeyColor = Color(0xFF03DAC5)
 val Heart = Color(0xFFDB61A2)
 
+// deeps kaskad site palette (panel/static/theme.css)
+val KaskadBg = Color(0xFF161616)
+val KaskadDeep = Color(0xFF080808)
+val KaskadLayer = Color(0xFF242424)
+val KaskadPeach = Color(0xFFFAB283)
+val KaskadOrange = Color(0xFFD16427)
+val KaskadOrangeSoft = Color(0xFFFFD8C6)
+val KaskadText = Color(0xFFF2F2F2)
+val KaskadTextDark = Color(0xFF161616)
+
 sealed class ThemeColors(
     val background: Color,
     val surface: Color,
@@ -55,5 +65,27 @@ sealed class ThemeColors(
             onSurface = OffWhite,
             outline = CoolGray,
             onBackground = OffWhite,
+        )
+
+    data object Kaskad :
+        ThemeColors(
+            background = KaskadBg,
+            surface = KaskadLayer,
+            primary = KaskadPeach,
+            secondary = KaskadDeep,
+            onSurface = KaskadText,
+            outline = CoolGray.copy(alpha = 0.7f),
+            onBackground = KaskadText,
+        )
+
+    data object KaskadLight :
+        ThemeColors(
+            background = Color(0xFFFAFAFA),
+            surface = LightGrey,
+            primary = KaskadOrange,
+            secondary = KaskadOrangeSoft,
+            onSurface = KaskadTextDark,
+            outline = Plantation.copy(alpha = 0.6f),
+            onBackground = KaskadTextDark,
         )
 }

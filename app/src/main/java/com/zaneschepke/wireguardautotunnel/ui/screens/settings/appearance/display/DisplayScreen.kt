@@ -40,6 +40,8 @@ fun DisplayScreen(sharedViewModel: SharedAppViewModel = koinActivityViewModel())
                     Theme.DARKER -> stringResource(R.string.darker)
                     Theme.AMOLED -> stringResource(R.string.amoled)
                     Theme.AMOLED_DYNAMIC -> stringResource(R.string.amoled_dynamic)
+                    Theme.KASKAD -> stringResource(R.string.kaskad)
+                    Theme.KASKAD_LIGHT -> stringResource(R.string.kaskad_light)
                 }
             SurfaceRow(
                 title = title,
