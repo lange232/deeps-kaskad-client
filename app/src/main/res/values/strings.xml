@@ -157,7 +157,7 @@
     <string name="tunnel_control">Tunnel control</string>
     <string name="auto_tunnel">Auto-tunnel</string>
     <string name="add_from_url">Add from URL</string>
-    <string name="add_from_panel">Sign in to panel</string>
+    <string name="add_from_panel">Sign in to deeps kaskad</string>
     <string name="add_from_panel_description">Download your config from the deeps kaskad panel with your account.</string>
     <string name="panel_server">Server</string>
     <string name="panel_email">Email</string>
