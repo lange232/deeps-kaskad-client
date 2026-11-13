@@ -176,12 +176,6 @@ fun SupportScreen(
         Column {
             GroupLabel(stringResource(R.string.resources), Modifier.padding(horizontal = 16.dp))
             SurfaceRow(
-                leading = { Icon(Icons.Outlined.Favorite, contentDescription = null) },
-                title = stringResource(R.string.donate),
-                onClick = { navController.push(Route.Donate) },
-                modifier = Modifier.focusRequester(focusRequester),
-            )
-            SurfaceRow(
                 stringResource(R.string.docs_description),
                 onClick = { openWebUrl(docsUrl) },
                 leading = { Icon(Icons.Outlined.Book, contentDescription = null) },

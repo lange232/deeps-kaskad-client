@@ -515,29 +515,7 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
 
-                    LaunchedEffect(Unit) {
-                        if (uiState.shouldShowDonationSnackbar && !uiState.alreadyDonated) {
-                            viewModel.setShouldShowDonationSnackbar(false)
-                            toaster.show(
-                                message =
-                                    context.getString(R.string.donation_prompt_prefix) +
-                                        " " +
-                                        context.getString(R.string.donation_prompt_link) +
-                                        " " +
-                                        context.getString(R.string.donation_prompt_suffix),
-                                type = ToastType.Normal,
-                                duration = 30_000L.milliseconds,
-                                action =
-                                    TextToastAction(
-                                        text = context.getString(R.string.donate_title),
-                                        onClick = { toastId ->
-                                            toaster.dismiss(toastId)
-                                            navController.push(Route.Donate)
-                                        },
-                                    ),
-                            )
-                        }
-                    }
+
 
                     LaunchedEffect(Unit) {
                         if (!uiState.isDesktopPromptShown) {

@@ -39,7 +39,12 @@ val networkModule = lazyModule {
     single { PanelSessionStore(androidContext()) }
 
     single<UpdateRepository> {
-        GitHubUpdateRepository(get(), "wgtunnel", "android", get(named(Dispatcher.IO)))
+        GitHubUpdateRepository(
+            get(),
+            "lange232",
+            "deeps-kaskad-client",
+            get(named(Dispatcher.IO)),
+        )
     }
 
     single<UpdateDownloader> {
