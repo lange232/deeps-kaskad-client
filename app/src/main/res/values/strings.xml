@@ -165,6 +165,12 @@
     <string name="error_panel_auth">Wrong email or password</string>
     <string name="error_panel_rate_limited">Too many attempts, wait 5 minutes</string>
     <string name="error_panel_connect">Cannot reach the panel. Check the server address.</string>
+    <string name="error_panel_session_expired">Panel session expired, sign in again</string>
+    <string name="panel_exits">Exit order</string>
+    <string name="panel_exits_description">Traffic uses the first available exit.</string>
+    <string name="panel_exits_auto">No exits assigned; routing is automatic.</string>
+    <string name="panel_exit_order_saved">Exit order updated</string>
+    <string name="panel_sign_out">Sign out of the panel</string>
     <string name="enter_config_url">Enter config URL</string>
     <string name="error_download_failed">Failed to download config</string>
     <string name="wg_url_confirm_message">Are you sure you want to add tunnels from %1$s? Never connect to an untrusted VPN!</string>

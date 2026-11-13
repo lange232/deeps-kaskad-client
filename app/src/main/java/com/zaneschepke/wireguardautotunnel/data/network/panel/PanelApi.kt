@@ -9,6 +9,7 @@ import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.post
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
@@ -19,6 +20,11 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import timber.log.Timber
@@ -125,4 +131,56 @@ class PanelApi(context: Context) {
             )
         return response.bodyAsText()
     }
+
+    /** The client's granted internet exits, in the user's order. */
+    suspend fun fetchExits(server: String, token: String): List<PanelExit> {
+        val response =
+            requireOk(
+                client.get(apiUrl(server, "/api/me/exits")) {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            )
+        return Json.parseToJsonElement(response.bodyAsText()).jsonArray.map { element ->
+            val exit = element.jsonObject
+            PanelExit(
+                id = exit.getValue("id").jsonPrimitive.int,
+                name = exit.getValue("name").jsonPrimitive.content,
+                comment = exit["comment"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                alive = exit["alive"]?.jsonPrimitive?.booleanOrNull == true,
+                rttMs = exit["rtt_ms"]?.jsonPrimitive?.doubleOrNull,
+            )
+        }
+    }
+
+    /** Replaces the client's exit order; the panel rejects partial lists. */
+    suspend fun setExitOrder(server: String, token: String, exitIds: List<Int>) {
+        requireOk(
+            client.submitForm(
+                url = apiUrl(server, "/api/me/exits/order"),
+                formParameters =
+                    Parameters.build { exitIds.forEach { append("exit_id", it.toString()) } },
+            ) {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+        )
+    }
+
+    /** Best-effort token revocation; the network result does not matter. */
+    suspend fun logout(server: String, token: String) {
+        try {
+            client.post(apiUrl(server, "/api/logout")) {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "Panel logout failed, clearing the session locally anyway")
+        }
+    }
 }
+
+data class PanelExit(
+    val id: Int,
+    val name: String,
+    val comment: String,
+    val alive: Boolean,
+    val rttMs: Double?,
+)
