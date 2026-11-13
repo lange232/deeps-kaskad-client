@@ -31,6 +31,7 @@ import com.zaneschepke.wireguardautotunnel.ui.common.sheet.CustomBottomSheet
 import com.zaneschepke.wireguardautotunnel.ui.common.sheet.SheetOption
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.GroupNameDialog
+import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.PanelExitsDialog
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.PanelLoginDialog
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.GroupSelectionSheet
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.SelectionActionsSheet
@@ -78,6 +79,8 @@ fun TunnelsScreen(sharedViewModel: SharedAppViewModel = koinActivityViewModel())
     var showDeleteModal by rememberSaveable { mutableStateOf(false) }
     var showUrlDialog by rememberSaveable { mutableStateOf(false) }
     var showPanelDialog by rememberSaveable { mutableStateOf(false) }
+    var showExitsDialog by rememberSaveable { mutableStateOf(false) }
+    val panelSession by sharedViewModel.panelSession.collectAsStateWithLifecycle()
     var showMoveToGroup by rememberSaveable { mutableStateOf(false) }
     var showSelectionActions by rememberSaveable { mutableStateOf(false) }
     var showReorderActions by rememberSaveable { mutableStateOf(false) }
@@ -354,5 +357,18 @@ fun TunnelsScreen(sharedViewModel: SharedAppViewModel = koinActivityViewModel())
         )
     }
 
-    TunnelList(uiState, Modifier.fillMaxSize(), sharedViewModel)
+    TunnelList(
+        uiState,
+        Modifier.fillMaxSize(),
+        sharedViewModel,
+        showPanelExits = panelSession != null,
+        onPanelExitsClick = { showExitsDialog = true },
+    )
+
+    if (showExitsDialog) {
+        PanelExitsDialog(
+            viewModel = sharedViewModel,
+            onDismiss = { showExitsDialog = false },
+        )
+    }
 }

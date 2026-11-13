@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.FolderOpen
+import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.rounded.Circle
 import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
@@ -81,6 +82,8 @@ fun TunnelList(
     uiState: TunnelsUiState,
     modifier: Modifier = Modifier,
     viewModel: SharedAppViewModel,
+    showPanelExits: Boolean = false,
+    onPanelExitsClick: () -> Unit = {},
 ) {
     val navController = LocalNavController.current
     val context = LocalContext.current
@@ -300,6 +303,8 @@ fun TunnelList(
                     isDragging = false,
                     focusRequester = if (index == 0) focusRequester else null,
                     onNavigateTunnel = { navController.push(Route.TunnelSettings(it)) },
+                    showPanelExits = showPanelExits,
+                    onPanelExitsClick = onPanelExitsClick,
                     modifier = Modifier.animateItem(),
                 )
             }
@@ -318,6 +323,8 @@ private fun ListRow(
     isDragging: Boolean,
     focusRequester: FocusRequester?,
     onNavigateTunnel: (Int) -> Unit,
+    showPanelExits: Boolean = false,
+    onPanelExitsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     when (row) {
@@ -448,21 +455,32 @@ private fun ListRow(
                     },
                 trailingOutsideClickTarget = isTv,
                 trailing = { rowModifier ->
-                    SwitchWithDivider(
-                        checked = isRunning,
-                        onClick = { checked ->
-                            if (checked) {
-                                viewModel.startTunnel(tunnel)
-                            } else {
-                                viewModel.stopTunnel(tunnel)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (showPanelExits && !uiState.isSelectionMode && !uiState.isReorderMode) {
+                            IconButton(onClick = onPanelExitsClick) {
+                                Icon(
+                                    Icons.Outlined.Public,
+                                    contentDescription = stringResource(R.string.panel_exits),
+                                )
                             }
-                        },
-                        modifier =
-                            rowModifier.then(
-                                if (focusRequester != null) Modifier.focusRequester(focusRequester)
-                                else Modifier,
-                            ),
-                    )
+                        }
+                        SwitchWithDivider(
+                            checked = isRunning,
+                            onClick = { checked ->
+                                if (checked) {
+                                    viewModel.startTunnel(tunnel)
+                                } else {
+                                    viewModel.stopTunnel(tunnel)
+                                }
+                            },
+                            modifier =
+                                rowModifier.then(
+                                    if (focusRequester != null)
+                                        Modifier.focusRequester(focusRequester)
+                                    else Modifier,
+                                ),
+                        )
+                    }
                 },
             )
         }

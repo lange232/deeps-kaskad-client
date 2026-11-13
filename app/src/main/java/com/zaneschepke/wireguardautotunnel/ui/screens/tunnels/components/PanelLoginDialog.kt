@@ -19,11 +19,11 @@ import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.ui.common.dialog.InfoDialog
 import com.zaneschepke.wireguardautotunnel.ui.common.textbox.ConfigurationTextBox
 
-private const val DEFAULT_PANEL_URL = "https://omega.deffhost.ru:8080"
+private const val PANEL_URL_HINT = "https://vpn.example.com:8080"
 
 @Composable
 fun PanelLoginDialog(onDismiss: () -> Unit, onConfirm: (server: String, email: String, password: String) -> Unit) {
-    var server by rememberSaveable { mutableStateOf(DEFAULT_PANEL_URL) }
+    var server by rememberSaveable { mutableStateOf("") }
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var isError by rememberSaveable { mutableStateOf(false) }
@@ -43,7 +43,7 @@ fun PanelLoginDialog(onDismiss: () -> Unit, onConfirm: (server: String, email: S
                 ConfigurationTextBox(
                     value = server,
                     label = stringResource(R.string.panel_server),
-                    hint = DEFAULT_PANEL_URL,
+                    hint = PANEL_URL_HINT,
                     onValueChange = { server = it },
                     isError = isError,
                 )

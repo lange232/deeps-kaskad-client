@@ -14,6 +14,13 @@ copyright Zane Schepke — see `LICENSE`).
   `data/network/panel/PanelApi.kt`,
   `ui/screens/tunnels/components/PanelLoginDialog.kt`,
   `SharedAppViewModel.provisionFromPanel`.
+- Exit switching: with a saved panel session every tunnel row gets a globe
+  icon opening the exit-order dialog (up/down arrows, alive/rtt from the
+  panel). It calls `GET /api/me/exits` and `POST /api/me/exits/order`; the
+  order applies server-side immediately, the tunnel does not reconnect. The
+  30-day session token is kept in app-private SharedPreferences
+  (`PanelSessionStore`); an expired session asks to sign in again, and the
+  dialog has a sign-out button.
 - Launcher icons are the panel favicon (dark `#141413` tile, orange `#fab283`
   D), regenerated from the SVG with a small cairosvg script; the adaptive
   background color is `values/ic_launcher_background.xml`.

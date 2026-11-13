@@ -13,6 +13,9 @@ import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelBackendCoord
 import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelCoordinator
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelApi
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelApiException
+import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelExit
+import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelSession
+import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelSessionStore
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelGroup
@@ -63,6 +66,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -93,6 +97,7 @@ class SharedAppViewModel(
     private val tunnelBackendCoordinator: TunnelBackendCoordinator,
     private val httpClient: HttpClient,
     private val panelApi: PanelApi,
+    private val panelSessionStore: PanelSessionStore,
     private val fileUtils: FileUtils,
     private val networkUtils: NetworkUtils,
 ) : OrbitContainerHost<GlobalAppUiState, GlobalAppUiState, LocalSideEffect>, ViewModel() {
@@ -729,6 +734,7 @@ class SharedAppViewModel(
     fun provisionFromPanel(server: String, email: String, password: String) = intent {
         try {
             val token = panelApi.login(server, email, password)
+            panelSessionStore.save(PanelSession(server, email, token))
             val conf = panelApi.fetchConfig(server, token)
             importFromClipboard(conf)
         } catch (e: PanelApiException) {
@@ -742,6 +748,96 @@ class SharedAppViewModel(
                 ),
             )
         }
+    }
+
+    // ------------------------------------------------------------- panel exits
+
+    val panelSession: StateFlow<PanelSession?> = panelSessionStore.session
+
+    /** Null while loading; empty when the account has no granted exits (automatic routing). */
+    private val _panelExits = MutableStateFlow<List<PanelExit>?>(null)
+    val panelExits: StateFlow<List<PanelExit>?> = _panelExits.asStateFlow()
+
+    private fun clearPanelSession() {
+        panelSessionStore.clear()
+        _panelExits.value = null
+    }
+
+    private fun authExpiredSnackbar() =
+        GlobalSideEffect.Snackbar(
+            StringValue.StringResource(R.string.error_panel_session_expired),
+            ToastType.Error,
+        )
+
+    fun loadPanelExits() = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        _panelExits.value = null
+        try {
+            _panelExits.value = panelApi.fetchExits(session.server, session.token)
+        } catch (e: PanelApiException) {
+            if (e.stringValue is StringValue.StringResource &&
+                (e.stringValue as StringValue.StringResource).resId == R.string.error_panel_auth
+            ) {
+                clearPanelSession()
+                postSideEffect(authExpiredSnackbar())
+            } else {
+                postSideEffect(GlobalSideEffect.Snackbar(e.stringValue, ToastType.Error))
+            }
+        } catch (e: Exception) {
+            Timber.e(e)
+            postSideEffect(
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.error_panel_connect),
+                    ToastType.Error,
+                ),
+            )
+        }
+    }
+
+    fun movePanelExit(exitId: Int, up: Boolean) {
+        val exits = _panelExits.value?.toMutableList() ?: return
+        val index = exits.indexOfFirst { it.id == exitId }
+        val target = if (up) index - 1 else index + 1
+        if (index < 0 || target !in exits.indices) return
+        exits.add(target, exits.removeAt(index))
+        _panelExits.value = exits
+    }
+
+    fun savePanelExitOrder() = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        val exits = _panelExits.value ?: return@intent
+        try {
+            panelApi.setExitOrder(session.server, session.token, exits.map { it.id })
+            postSideEffect(
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.panel_exit_order_saved),
+                    ToastType.Success,
+                ),
+            )
+        } catch (e: PanelApiException) {
+            if (e.stringValue is StringValue.StringResource &&
+                (e.stringValue as StringValue.StringResource).resId == R.string.error_panel_auth
+            ) {
+                clearPanelSession()
+                postSideEffect(authExpiredSnackbar())
+            } else {
+                postSideEffect(GlobalSideEffect.Snackbar(e.stringValue, ToastType.Error))
+            }
+        } catch (e: Exception) {
+            Timber.e(e)
+            postSideEffect(
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.error_panel_connect),
+                    ToastType.Error,
+                ),
+            )
+        }
+    }
+
+    fun panelSignOut() = intent {
+        panelSessionStore.session.value?.let { panelApi.logout(it.server, it.token) }
+        panelSessionStore.clear()
+        _panelExits.value = null
     }
 
     fun importFromUri(uri: Uri) = intent {
