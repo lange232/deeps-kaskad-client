@@ -14,7 +14,11 @@ internal object ApkAssetSelector {
         )
 
     fun select(assets: List<Asset>, flavor: String, supportedAbis: List<String>): ApkChoice? {
-        val prefix = "wgtunnel-$flavor-v"
+        // Must match the asset name built in app/build.gradle.kts:
+        // "<APP_NAME>-<flavor>-v<version>[-<abi>].apk". The stable asset
+        // "deepskaskad.apk" has no version prefix and is ignored on purpose,
+        // so the version can be parsed from the file name.
+        val prefix = "deepskaskad-$flavor-v"
         val apks = assets.filter { it.name.startsWith(prefix) && it.name.endsWith(".apk") }
 
         fun suffixOf(asset: Asset): String? =
