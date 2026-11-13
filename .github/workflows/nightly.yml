@@ -3,10 +3,11 @@ permissions:
   contents: write
   packages: write
 
+# This fork releases from .github/workflows/release-apk.yml; the upstream
+# nightly published to zapstore/fdroid with a PAT, so the daily schedule is
+# disabled here.
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "4 3 * * *"
 
 jobs:
   check_commits:

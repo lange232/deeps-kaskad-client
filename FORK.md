@@ -51,8 +51,31 @@ echo "sdk.dir=$HOME/Android/Sdk" > local.properties
 scripts/build-release.sh
 ```
 
-The APK lands in `app/build/outputs/apk/standalone/release/` and is uploaded
-to the download site manually; there is no Play Store publishing.
+The APK lands in `app/build/outputs/apk/standalone/release/`; there is no
+Play Store publishing.
+
+## Releases
+
+The main distribution channel is GitHub Releases of this repository:
+
+1. Bump `versionName` and `versionCode` in `gradle/libs.versions.toml` and add
+   `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`.
+2. Run the `release-apk` workflow (Actions → release-apk → Run workflow, tag
+   can be left empty).
+3. The release gets `deepskaskad-standalone-v<version>-arm64.apk` and
+   `SHA256SUMS.txt`; the arm64 APK is the only split published.
+
+Repository secrets used by CI: `KEYSTORE` (base64 of
+`app/keystore/android_keystore.jks`),
+`SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`, `SIGNING_STORE_PASSWORD`:
+
+```bash
+base64 -w0 app/keystore/android_keystore.jks | gh secret set KEYSTORE
+```
+
+The panel download stays as a mirror; `scripts/build-release.sh` builds the
+same APK locally with the same key. Upstream `publish.yml` (fdroid, zapstore,
+Play) has no tag trigger here, and the upstream nightly schedule is off.
 
 Release builds are signed with `app/keystore/android_keystore.jks` (gitignored),
 passwords live in `local.properties` (`SIGNING_STORE_PASSWORD`,

@@ -44,19 +44,38 @@ reads them and exports `KEY_STORE_PATH` itself.
 
 ## Release and deploy
 
-1. Bump `versionName` in `gradle/libs.versions.toml` when the change is
-   worth a new number; the APK file name follows it.
-2. `scripts/build-release.sh`.
-3. Copy the arm64 APK to the server repo:
-   `cp app/build/outputs/apk/standalone/release/deepskaskad-standalone-v<version>-arm64.apk ../deeps-kaskad/files/app/app.apk`
-4. In `../deeps-kaskad`:
+The main channel is GitHub Releases of this repository
+(`/releases/latest`), built by `.github/workflows/release-apk.yml`
+(`workflow_dispatch`). The panel download is the secondary, mirror copy.
+
+1. Bump `versionName` **and** `versionCode` in `gradle/libs.versions.toml`.
+   The APK file name follows `versionName`; `versionCode` follows the
+   `major*10000 + minor*100 + patch` scheme (`5.8.2` → `50802`) and must grow
+   with every release, otherwise Android refuses the update. Add a
+   `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` entry, it
+   becomes the release notes.
+2. Actions → `release-apk` → Run workflow on `master`. Secrets required:
+   `KEYSTORE` (base64 of `app/keystore/android_keystore.jks`),
+   `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`, `SIGNING_STORE_PASSWORD`.
+   The workflow fails if the tag input does not equal `v<versionName>`.
+3. It publishes `deepskaskad-standalone-v<version>-arm64.apk` plus
+   `SHA256SUMS.txt` to the GitHub release. Only the arm64 split is uploaded.
+4. Optionally mirror the same arm64 APK to the panel:
+
+   ```bash
+   cp app/build/outputs/apk/standalone/release/deepskaskad-standalone-v<version>-arm64.apk ../deeps-kaskad/files/app/app.apk
+   ```
+
+   Then in `../deeps-kaskad`:
    `ansible-playbook -i inventory.yml playbooks/site.yml --tags panel`.
    The panel copies the APK to `/var/lib/kaskad/app.apk` and serves it at
    `https://omega.deffhost.ru:8080/download/android`.
 5. Verify: `curl -s .../download/android -o /dev/null -w '%{size_download}\n'`
    matches the local file size.
 
-Never run the deploy or the Ansible playbook without the user asking for it
+`scripts/build-release.sh` is the local equivalent of the CI build (same
+signing key, all ABI splits) for testing an APK before tagging. Never run
+the deploy or the Ansible playbook without the user asking for it
 explicitly. Production host, stands and their state are described in the
 server repository, not here.
 
