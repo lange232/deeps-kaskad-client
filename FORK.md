@@ -1,6 +1,6 @@
 # deeps-kaskad-client
 
-Android client for [deeps kaskad](https://github.com/.../deeps-kaskad), forked
+Android client for [deeps kaskad](https://github.com/lange232/deeps-kaskad), forked
 from [WG Tunnel](https://github.com/zaneschepke/wgtunnel) (MIT license,
 copyright Zane Schepke — see `LICENSE`).
 
@@ -14,16 +14,24 @@ copyright Zane Schepke — see `LICENSE`).
   `data/network/panel/PanelApi.kt`,
   `ui/screens/tunnels/components/PanelLoginDialog.kt`,
   `SharedAppViewModel.provisionFromPanel`.
-- Exit switching: with a saved panel session every tunnel row gets a globe
-  icon opening the exit-order dialog (up/down arrows, alive/rtt from the
-  panel). It calls `GET /api/me/exits` and `POST /api/me/exits/order`; the
-  order applies server-side immediately, the tunnel does not reconnect. The
-  30-day session token is kept in app-private SharedPreferences
-  (`PanelSessionStore`); an expired session asks to sign in again, and the
-  dialog has a sign-out button.
+- Exit switching: with a saved panel session the tunnel settings gain an
+  "Exit order" row that opens a full-screen page
+  (`ui/screens/panel/PanelExitsScreen.kt`, `Route.PanelExits`). Exits are
+  titled by their operator comment ("Amsterdam") with the provider config
+  name underneath, up/down arrows reorder them, and the page has save and
+  sign-out rows. It calls `GET /api/me/exits` and `POST /api/me/exits/order`;
+  the order applies server-side immediately, the tunnel does not reconnect.
+  The 30-day session token is kept in app-private SharedPreferences
+  (`PanelSessionStore`); an expired session asks to sign in again.
+- Two extra themes, "deeps kaskad" (dark `#161616`/`#242424`, accent
+  `#fab283`) and "kaskad light" (accent `#d16427`), taken from the panel's
+  `theme.css`. The automatic theme follows the system between these two.
 - Launcher icons are the panel favicon (dark `#141413` tile, orange `#fab283`
   D), regenerated from the SVG with a small cairosvg script; the adaptive
-  background color is `values/ic_launcher_background.xml`.
+  background color is `values/ic_launcher_background.xml`. The quick settings
+  tiles and the notification icon use the same D (`res/drawable/qs_logo.xml`).
+- Donation prompts and the Support bottom-nav tab are gone; licenses moved to
+  Settings, and update checks look at this repository.
 - `app/src/main/res/raw/panel.crt` — the panel's TLS certificate. The panel
   serves a self-signed certificate by default; drop its PEM here before
   building and `PanelApi` will trust only that certificate. With an empty
