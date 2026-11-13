@@ -4,6 +4,15 @@ name: release-apk
 # The tag must match versionName in gradle/libs.versions.toml, so bump
 # versionName (and versionCode) before running this.
 #
+# Each release carries two copies of the same APK:
+#   deepskaskad-standalone-v<version>-arm64.apk  versioned, for pinning
+#   deepskaskad.apk                             fixed name, for a stable URL
+# Stable URL of the newest arm64 build:
+#   https://github.com/lange232/deeps-kaskad-client/releases/latest/download/deepskaskad.apk
+# The panel's scripts/fetch-apk.sh selects the asset by the *-arm64.apk
+# suffix and fails when more than one matches, so exactly one such asset
+# may be attached per release.
+#
 # Required repository secrets:
 #   KEYSTORE               base64 of app/keystore/android_keystore.jks
 #   SIGNING_KEY_ALIAS
@@ -103,8 +112,22 @@ jobs:
           fi
           mkdir -p dist
           cp "$apk" dist/
+          # Fixed-name copy for releases/latest/download/deepskaskad.apk.
+          # It has no -arm64 suffix on purpose: the panel pins the versioned
+          # asset by that suffix and must find exactly one.
+          cp "$apk" dist/deepskaskad.apk
+          cmp -s "dist/$(basename "$apk")" dist/deepskaskad.apk
           (cd dist && sha256sum ./*.apk > SHA256SUMS.txt)
           echo "file=$(basename "$apk")" >> "$GITHUB_OUTPUT"
+
+      - name: Assert a single arm64 asset
+        run: |
+          count=$(find dist -maxdepth 1 -type f -name '*-arm64.apk' | wc -l)
+          if [ "$count" -ne 1 ]; then
+            echo "Expected exactly one *-arm64.apk asset, found $count" >&2
+            ls -la dist
+            exit 1
+          fi
 
       - name: Verify signature
         run: |
@@ -121,6 +144,12 @@ jobs:
           changelog="fastlane/metadata/android/en-US/changelogs/${version_code}.txt"
           {
             echo "arm64 APK of deeps kaskad v${version_name} (versionCode ${version_code}), Android 8.0+."
+            echo
+            echo "Stable link to the newest arm64 build:"
+            echo
+            echo "https://github.com/lange232/deeps-kaskad-client/releases/latest/download/deepskaskad.apk"
+            echo
+            echo "The same file is attached as \`deepskaskad-standalone-v${version_name}-arm64.apk\` for pinning."
             echo
             if [ -f "$changelog" ]; then
               cat "$changelog"
@@ -164,3 +193,5 @@ jobs:
             args+=(--prerelease)
           fi
           gh release create "$tag" dist/*.apk dist/SHA256SUMS.txt "${args[@]}"
+          # dist/*.apk attaches both the versioned arm64 APK and
+          # deepskaskad.apk (stable URL); SHA256SUMS.txt lists both.

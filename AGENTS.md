@@ -58,8 +58,19 @@ The main channel is GitHub Releases of this repository
    `KEYSTORE` (base64 of `app/keystore/android_keystore.jks`),
    `SIGNING_KEY_ALIAS`, `SIGNING_KEY_PASSWORD`, `SIGNING_STORE_PASSWORD`.
    The workflow fails if the tag input does not equal `v<versionName>`.
-3. It publishes `deepskaskad-standalone-v<version>-arm64.apk` plus
-   `SHA256SUMS.txt` to the GitHub release. Only the arm64 split is uploaded.
+3. It publishes `deepskaskad-standalone-v<version>-arm64.apk`,
+   `deepskaskad.apk` (a byte-identical copy) and `SHA256SUMS.txt` to the
+   GitHub release. Only the arm64 split is uploaded. Stable link to the
+   newest arm64 build:
+
+   ```
+   https://github.com/lange232/deeps-kaskad-client/releases/latest/download/deepskaskad.apk
+   ```
+
+   The versioned name is kept for pinning and for the panel's
+   `scripts/fetch-apk.sh`, which selects the asset by the `-arm64.apk`
+   suffix and therefore must find exactly one such asset; that is why the
+   fixed-name copy has no `-arm64` suffix and the workflow asserts the count.
 4. Optionally mirror the same arm64 APK to the panel:
 
    ```bash
