@@ -62,8 +62,17 @@ The main distribution channel is GitHub Releases of this repository:
    `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`.
 2. Run the `release-apk` workflow (Actions → release-apk → Run workflow, tag
    can be left empty).
-3. The release gets `deepskaskad-standalone-v<version>-arm64.apk` and
-   `SHA256SUMS.txt`; the arm64 APK is the only split published.
+3. The release gets `deepskaskad-standalone-v<version>-arm64.apk`,
+   `deepskaskad.apk` and `SHA256SUMS.txt`; the arm64 APK is the only split
+   published. The fixed-name copy gives a stable link to the newest build:
+
+   ```
+   https://github.com/lange232/deeps-kaskad-client/releases/latest/download/deepskaskad.apk
+   ```
+
+   The versioned asset stays for pinning and for the panel's
+   `scripts/fetch-apk.sh` (`*-arm64.apk` suffix). Never attach a second
+   `-arm64.apk` asset to a release: the panel script fails on ambiguity.
 
 Repository secrets used by CI: `KEYSTORE` (base64 of
 `app/keystore/android_keystore.jks`),
