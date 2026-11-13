@@ -46,8 +46,34 @@ private val LightColorScheme =
         onBackground = ThemeColors.Light.onBackground,
     )
 
+private val KaskadColorScheme =
+    darkColorScheme(
+        primary = ThemeColors.Kaskad.primary,
+        surface = ThemeColors.Kaskad.surface,
+        background = ThemeColors.Kaskad.background,
+        secondary = ThemeColors.Kaskad.secondary,
+        onSurface = ThemeColors.Kaskad.onSurface,
+        onSecondaryContainer = ThemeColors.Kaskad.primary,
+        outline = ThemeColors.Kaskad.outline,
+        onBackground = ThemeColors.Kaskad.onBackground,
+    )
+
+private val KaskadLightColorScheme =
+    lightColorScheme(
+        primary = ThemeColors.KaskadLight.primary,
+        surface = ThemeColors.KaskadLight.surface,
+        background = ThemeColors.KaskadLight.background,
+        secondary = ThemeColors.KaskadLight.secondary,
+        onSurface = ThemeColors.KaskadLight.onSurface,
+        onSecondaryContainer = ThemeColors.KaskadLight.primary,
+        outline = ThemeColors.KaskadLight.outline,
+        onBackground = ThemeColors.KaskadLight.onBackground,
+    )
+
 enum class Theme {
     AUTOMATIC,
+    KASKAD,
+    KASKAD_LIGHT,
     LIGHT,
     DARK,
     DARKER,
@@ -85,6 +111,14 @@ fun WireguardAutoTunnelTheme(theme: Theme = Theme.AUTOMATIC, content: @Composabl
             Theme.LIGHT -> {
                 isDark = false
                 LightColorScheme
+            }
+            Theme.KASKAD -> {
+                isDark = true
+                KaskadColorScheme
+            }
+            Theme.KASKAD_LIGHT -> {
+                isDark = false
+                KaskadLightColorScheme
             }
             Theme.DYNAMIC -> {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

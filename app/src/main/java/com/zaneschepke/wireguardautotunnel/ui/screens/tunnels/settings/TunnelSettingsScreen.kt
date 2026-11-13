@@ -21,9 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -37,7 +34,6 @@ import com.zaneschepke.wireguardautotunnel.ui.common.button.ThemedSwitch
 import com.zaneschepke.wireguardautotunnel.ui.common.label.GroupLabel
 import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
-import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.PanelExitsDialog
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.components.SplitAppsDescription
 import com.zaneschepke.wireguardautotunnel.ui.theme.Disabled
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
@@ -82,16 +78,12 @@ fun TunnelSettingsScreen(
                 )
             }
             val panelSession by sharedViewModel.panelSession.collectAsStateWithLifecycle()
-            var showExitsDialog by remember { mutableStateOf(false) }
             if (panelSession != null) {
                 SurfaceRow(
                     leading = { Icon(Icons.Outlined.Public, contentDescription = null) },
                     title = stringResource(R.string.panel_exits),
-                    onClick = { showExitsDialog = true },
+                    onClick = { navController.push(Route.PanelExits) },
                 )
-            }
-            if (showExitsDialog) {
-                PanelExitsDialog(viewModel = sharedViewModel) { showExitsDialog = false }
             }
         }
         Column {

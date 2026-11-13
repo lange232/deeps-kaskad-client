@@ -206,6 +206,8 @@
     <string name="install_updated_permission">Этому приложению нужно разрешение на установку обновлений.</string>
     <string name="allow">Разрешить</string>
     <string name="licenses">Лицензии</string>
+    <string name="kaskad">Каскад</string>
+    <string name="kaskad_light">Каскад светлая</string>
     <string name="update_check_unsupported">Проверка обновлений не поддерживается для этого типа сборок.</string>
     <string name="darker">Ночная</string>
     <string name="show_qr">Показать QR-код</string>
