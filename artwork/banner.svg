@@ -4,7 +4,7 @@
   <g transform="translate(-23 0)">
   <!-- Mark, same geometry as the launcher icon, scaled and centred left. -->
   <g transform="translate(28 30) scale(0.97)">
-    <path d="M42 30V78 M42 30A24 24 0 0 1 42 78" fill="none" stroke="#ffffff"
+    <path d="M45 30V78 M45 30A24 24 0 0 1 45 78" fill="none" stroke="#ffffff"
           stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
   <text x="130" y="90" dominant-baseline="middle" fill="#ffffff" font-family="DejaVu Sans, Verdana, sans-serif"
