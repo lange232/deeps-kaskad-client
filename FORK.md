@@ -26,10 +26,16 @@ copyright Zane Schepke — see `LICENSE`).
 - Two extra themes, "deeps kaskad" (dark `#161616`/`#242424`, accent
   `#fab283`) and "kaskad light" (accent `#d16427`), taken from the panel's
   `theme.css`. The automatic theme follows the system between these two.
-- Launcher icons are the panel favicon (dark `#141413` tile, orange `#fab283`
-  D), regenerated from the SVG with a small cairosvg script; the adaptive
-  background color is `values/ic_launcher_background.xml`. The quick settings
-  tiles and the notification icon use the same D (`res/drawable/qs_logo.xml`).
+- Iconography follows the upstream wg-tunnel language: a white "D" monogram
+  made of thick rounded strokes on a graphite `#21272A` tile. Sources are
+  `artwork/icon.svg` (tile + mark), `artwork/icon-foreground.svg` (adaptive
+  foreground), `artwork/banner.svg` (Android TV banner) and
+  `artwork/qs-logo.svg` (status bar/notification/QS). `scripts/render-icons.sh`
+  regenerates every `mipmap-*` resource from them (cairosvg, rsvg-convert or
+  headless chromium); `qs_logo.xml` is the vector twin of `qs-logo.svg` and is
+  edited by hand. The adaptive background color is
+  `values/ic_launcher_background.xml`, the banner color
+  `values/ic_banner_background.xml`.
 - Donation prompts and the Support bottom-nav tab are gone; licenses moved to
   Settings, and update checks look at this repository.
 - `app/src/main/res/raw/panel.crt` — the panel's TLS certificate. The panel

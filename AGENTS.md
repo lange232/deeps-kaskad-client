@@ -19,8 +19,9 @@ passwords stay in gitignored files.
 - `app/keystore/android_keystore.jks`, `local.properties` and `*.apk` are
   gitignored. Do not commit them, do not move the keystore.
 - Do not add Play Store publishing. The APK is distributed from the panel.
-- `qs_logo.xml` is our "D" mark (tiles and notifications), the launcher
-  icons are the panel favicon. Do not restore the upstream artwork.
+- `qs_logo.xml` is our "D" mark (status bar, notifications and QS tiles), the
+  launcher icons and the TV banner come from `artwork/` through
+  `scripts/render-icons.sh`. Do not restore the upstream artwork.
 - Donation UI and the Support bottom-nav tab were removed on purpose. The
   Support screen itself stays because the update flow lives there.
 - Update checks point at `lange232/deeps-kaskad-client`

@@ -1,16 +1,22 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="16"
-    android:viewportHeight="16">
+    android:viewportWidth="66"
+    android:viewportHeight="66">
+    <!-- "D" mark, same geometry as artwork/qs-logo.svg, single white
+         silhouette: the system tints it for the status bar, notifications and
+         the quick settings tile. 0.9 scale keeps the 2dp padding that the
+         notification icon spec expects. -->
     <group
-        android:scaleX="1.45"
-        android:scaleY="1.45"
-        android:translateX="-3.89"
-        android:translateY="-3.62">
+        android:pivotX="33"
+        android:pivotY="33"
+        android:scaleX="0.9"
+        android:scaleY="0.9">
         <path
-            android:fillColor="@android:color/white"
-            android:fillType="evenOdd"
-            android:pathData="M5.2 3.6H6.8A4.4 4.4 0 0 1 6.8 12.4H5.2Z M6.8 5.6A2.4 2.4 0 0 1 6.8 10.4Z" />
+            android:pathData="M21 9V57 M21 9A24 24 0 0 1 21 57"
+            android:strokeColor="@android:color/white"
+            android:strokeWidth="14"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
     </group>
 </vector>
