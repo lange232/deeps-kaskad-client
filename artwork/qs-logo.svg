@@ -3,7 +3,7 @@
        app/src/main/res/drawable/qs_logo.xml: one white silhouette, the system
        tints it. Keep the two files in sync. -->
   <g transform="translate(33 33) scale(0.9) translate(-33 -33)">
-    <path d="M21 9V57 M21 9A24 24 0 0 1 21 57" fill="none" stroke="#ffffff"
+    <path d="M24 9V57 M24 9A24 24 0 0 1 24 57" fill="none" stroke="#ffffff"
           stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>

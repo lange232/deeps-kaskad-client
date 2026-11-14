@@ -13,7 +13,7 @@
         android:scaleX="0.9"
         android:scaleY="0.9">
         <path
-            android:pathData="M21 9V57 M21 9A24 24 0 0 1 21 57"
+            android:pathData="M24 9V57 M24 9A24 24 0 0 1 24 57"
             android:strokeColor="@android:color/white"
             android:strokeWidth="14"
             android:strokeLineCap="round"

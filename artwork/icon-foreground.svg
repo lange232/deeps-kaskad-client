@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108" width="108" height="108">
   <!-- The "D" mark: stem plus bowl, thick rounded strokes, monochrome. -->
-  <path d="M42 30V78 M42 30A24 24 0 0 1 42 78" fill="none" stroke="#ffffff"
+  <path d="M45 30V78 M45 30A24 24 0 0 1 45 78" fill="none" stroke="#ffffff"
         stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
