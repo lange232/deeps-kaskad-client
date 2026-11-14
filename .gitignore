@@ -73,3 +73,6 @@ app/release/output.json
 /.kotlin/
 /app/keystore/
 /.env
+
+# rendered icon previews
+/artwork/preview/
