@@ -965,6 +965,52 @@ class SharedAppViewModel(
         }
     }
 
+    /**
+     * Makes a configuration the running one: imports it when needed, then switches the tunnel —
+     * stops the other active tunnels, starts the one bound to this configuration. This is what a
+     * row tap does, because one device should use one configuration at a time.
+     */
+    fun switchToPanelConfig(configId: Int) = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        val config = _panelConfigs.value?.firstOrNull { it.id == configId } ?: return@intent
+        try {
+            importPanelConfigLocked(config, session)
+        } catch (e: PanelApiException) {
+            return@intent handlePanelError(e)
+        } catch (e: Exception) {
+            Timber.e(e)
+            return@intent panelUnreachable()
+        }
+
+        val link = panelConfigLinkRepository.getByConfigId(configId) ?: return@intent
+        val tunnel = tunnelRepository.findByTunnelName(link.tunnelName) ?: return@intent
+        val active = tunnelCoordinator.backendStatus.firstOrNull()?.activeTunnels?.keys.orEmpty()
+        active
+            .filter { it != tunnel.id }
+            .forEach { id ->
+                tunnelRepository.getById(id)?.let { tunnelCoordinator.stopTunnel(it.id) }
+            }
+        if (active.contains(tunnel.id)) return@intent
+
+        if (state.tunnelMode == TunnelMode.VPN && !serviceManager.hasVpnPermission()) {
+            return@intent postSideEffect(
+                GlobalSideEffect.RequestVpnPermission(TunnelMode.VPN, tunnel),
+            )
+        }
+        if (
+            !serviceManager.hasNotificationPermission() &&
+                !appStateRepository.isNotificationPermissionRequested()
+        ) {
+            appStateRepository.setNotificationPermissionRequested(true)
+            return@intent postSideEffect(
+                GlobalSideEffect.RequestNotificationPermission(
+                    NotificationPendingAction.StartTunnel(tunnel),
+                ),
+            )
+        }
+        tunnelCoordinator.startTunnel(tunnel)
+    }
+
     // ------------------------------------------------------------- panel exits
 
     fun loadPanelExits() = intent {

@@ -119,7 +119,7 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                                 )
                             },
                             selected = config.id == selectedId,
-                            onClick = { viewModel.importPanelConfig(config.id) },
+                            onClick = { viewModel.switchToPanelConfig(config.id) },
                             trailing = { modifier ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     ThemedSwitch(
@@ -213,18 +213,4 @@ private fun CreateConfigDialog(onDismiss: () -> Unit, onConfirm: (String?) -> Un
         confirmText = stringResource(R.string.okay),
         onAttest = { onConfirm(name.trim().ifBlank { null }) },
     )
-}
-
-@Composable
-private fun handshakeLabel(handshake: Long): String {
-    if (handshake <= 0L) return stringResource(R.string.panel_config_no_handshake)
-    val seconds = (System.currentTimeMillis() / 1000 - handshake).coerceAtLeast(0)
-    val age =
-        when {
-            seconds < 60 -> "1 min"
-            seconds < 3600 -> "${seconds / 60} min"
-            seconds < 86_400 -> "${seconds / 3600} h"
-            else -> "${seconds / 86_400} d"
-        }
-    return stringResource(R.string.panel_config_handshake, age)
 }

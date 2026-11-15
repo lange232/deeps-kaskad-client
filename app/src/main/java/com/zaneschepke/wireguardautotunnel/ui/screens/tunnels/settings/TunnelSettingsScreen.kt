@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +36,8 @@ import com.zaneschepke.wireguardautotunnel.ui.common.button.ThemedSwitch
 import com.zaneschepke.wireguardautotunnel.ui.common.label.GroupLabel
 import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
+import com.zaneschepke.wireguardautotunnel.ui.screens.panel.formatBytes
+import com.zaneschepke.wireguardautotunnel.ui.screens.panel.handshakeLabel
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.splittunnel.components.SplitAppsDescription
 import com.zaneschepke.wireguardautotunnel.ui.theme.Disabled
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
@@ -80,9 +83,29 @@ fun TunnelSettingsScreen(
             }
             val panelSession by sharedViewModel.panelSession.collectAsStateWithLifecycle()
             if (panelSession != null) {
+                val panelConfigs by sharedViewModel.panelConfigs.collectAsStateWithLifecycle()
+                val panelLinks by sharedViewModel.panelLinks.collectAsStateWithLifecycle()
+                LaunchedEffect(tunnel.id) { sharedViewModel.refreshPanelConfigs() }
+                val panelConfig =
+                    panelLinks
+                        .firstOrNull { it.tunnelName == tunnel.name }
+                        ?.let { link -> panelConfigs?.firstOrNull { it.id == link.configId } }
                 SurfaceRow(
                     leading = { Icon(Icons.Outlined.Router, contentDescription = null) },
                     title = stringResource(R.string.panel_configs),
+                    description =
+                        panelConfig?.let {
+                            {
+                                DescriptionText(
+                                    listOf(
+                                            it.name,
+                                            handshakeLabel(it.handshake),
+                                            "↓ ${formatBytes(it.rx)} · ↑ ${formatBytes(it.tx)}",
+                                        )
+                                        .joinToString(" · "),
+                                )
+                            }
+                        },
                     onClick = { navController.push(Route.PanelConfigs) },
                 )
                 SurfaceRow(
