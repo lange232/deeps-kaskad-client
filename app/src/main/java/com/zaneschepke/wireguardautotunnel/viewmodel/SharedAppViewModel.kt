@@ -11,8 +11,10 @@ import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.core.orchestration.AutoTunnelCoordinator
 import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelBackendCoordinator
 import com.zaneschepke.wireguardautotunnel.core.orchestration.TunnelCoordinator
+import com.zaneschepke.wireguardautotunnel.data.entity.PanelConfigLink
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelApi
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelApiException
+import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelConfig
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelExit
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelSession
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelSessionStore
@@ -22,6 +24,7 @@ import com.zaneschepke.wireguardautotunnel.domain.model.TunnelGroup
 import com.zaneschepke.wireguardautotunnel.domain.repository.AppStateRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.GeneralSettingRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.GlobalEffectRepository
+import com.zaneschepke.wireguardautotunnel.domain.repository.PanelConfigLinkRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.SelectedTunnelsRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelGroupRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
@@ -66,8 +69,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -98,6 +101,7 @@ class SharedAppViewModel(
     private val httpClient: HttpClient,
     private val panelApi: PanelApi,
     private val panelSessionStore: PanelSessionStore,
+    private val panelConfigLinkRepository: PanelConfigLinkRepository,
     private val fileUtils: FileUtils,
     private val networkUtils: NetworkUtils,
 ) : OrbitContainerHost<GlobalAppUiState, GlobalAppUiState, LocalSideEffect>, ViewModel() {
@@ -727,32 +731,52 @@ class SharedAppViewModel(
         }
     }
 
+    // ------------------------------------------------------------- panel account
+
     /**
-     * Signs in to the deeps kaskad panel, downloads the client's config and imports it as a new
-     * tunnel through the regular clipboard path.
+     * Signs in to the deeps kaskad panel. An account owns several configurations, one per device;
+     * after signing in the first one is imported as a tunnel and selected. An account without
+     * configurations is a normal empty state, not an error.
      */
     fun provisionFromPanel(server: String, email: String, password: String) = intent {
         try {
-            val token = panelApi.login(server, email, password)
-            panelSessionStore.save(PanelSession(server, email, token))
-            val conf = panelApi.fetchConfig(server, token)
-            importFromClipboard(conf)
+            val result = panelApi.login(server, email, password)
+            val session = PanelSession(server, email, result.token)
+            panelSessionStore.save(session)
+            _panelConfigs.value = result.configs
+            val first = result.configs.firstOrNull()
+            if (first == null) {
+                postSideEffect(
+                    GlobalSideEffect.Snackbar(
+                        StringValue.StringResource(R.string.panel_config_none),
+                        ToastType.Info,
+                    ),
+                )
+            } else {
+                importPanelConfigLocked(first, session)
+            }
         } catch (e: PanelApiException) {
-            postSideEffect(GlobalSideEffect.Snackbar(e.stringValue, ToastType.Error))
+            handlePanelError(e)
         } catch (e: Exception) {
             Timber.e(e)
-            postSideEffect(
-                GlobalSideEffect.Snackbar(
-                    StringValue.StringResource(R.string.error_panel_connect),
-                    ToastType.Error,
-                ),
-            )
+            panelUnreachable()
         }
     }
 
-    // ------------------------------------------------------------- panel exits
-
     val panelSession: StateFlow<PanelSession?> = panelSessionStore.session
+
+    val selectedPanelConfigId: StateFlow<Int?> = panelSessionStore.selectedConfigId
+
+    val panelLinks: StateFlow<List<PanelConfigLink>> =
+        panelConfigLinkRepository.flow.stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            emptyList(),
+        )
+
+    /** Null while loading; empty when the account has no configuration yet. */
+    private val _panelConfigs = MutableStateFlow<List<PanelConfig>?>(null)
+    val panelConfigs: StateFlow<List<PanelConfig>?> = _panelConfigs.asStateFlow()
 
     /** Null while loading; empty when the account has no granted exits (automatic routing). */
     private val _panelExits = MutableStateFlow<List<PanelExit>?>(null)
@@ -761,36 +785,199 @@ class SharedAppViewModel(
     private fun clearPanelSession() {
         panelSessionStore.clear()
         _panelExits.value = null
+        _panelConfigs.value = null
     }
 
-    private fun authExpiredSnackbar() =
-        GlobalSideEffect.Snackbar(
-            StringValue.StringResource(R.string.error_panel_session_expired),
-            ToastType.Error,
+    private suspend fun panelUnreachable() =
+        postSideEffect(
+            GlobalSideEffect.Snackbar(
+                StringValue.StringResource(R.string.error_panel_connect),
+                ToastType.Error,
+            ),
         )
 
-    fun loadPanelExits() = intent {
-        val session = panelSessionStore.session.value ?: return@intent
-        _panelExits.value = null
-        try {
-            _panelExits.value = panelApi.fetchExits(session.server, session.token)
-        } catch (e: PanelApiException) {
-            if (e.stringValue is StringValue.StringResource &&
-                (e.stringValue as StringValue.StringResource).resId == R.string.error_panel_auth
-            ) {
-                clearPanelSession()
-                postSideEffect(authExpiredSnackbar())
-            } else {
-                postSideEffect(GlobalSideEffect.Snackbar(e.stringValue, ToastType.Error))
+    private suspend fun handlePanelError(e: PanelApiException) {
+        val stringValue = e.stringValue
+        if (
+            stringValue is StringValue.StringResource &&
+                stringValue.resId == R.string.error_panel_session_expired
+        ) {
+            clearPanelSession()
+        }
+        postSideEffect(GlobalSideEffect.Snackbar(stringValue, ToastType.Error))
+    }
+
+    /**
+     * Imports the `.conf` of a configuration and remembers which tunnel it became. Importing an
+     * already linked configuration only selects it: the keys on the panel never change.
+     */
+    private suspend fun importPanelConfigLocked(config: PanelConfig, session: PanelSession) {
+        val existingLink = panelConfigLinkRepository.getByConfigId(config.id)
+        if (
+            existingLink != null &&
+                tunnelRepository.findByTunnelName(existingLink.tunnelName) != null
+        ) {
+            panelSessionStore.selectConfig(config.id)
+            return
+        }
+        val conf = panelApi.fetchConfig(session.server, session.token, config.id)
+        val parsed =
+            try {
+                Config.parseQuickString(conf).also { it.validate() }
+            } catch (e: ConfigParseException) {
+                postSideEffect(
+                    GlobalSideEffect.Snackbar(e.asStringValue(), ToastType.Error),
+                )
+                return
             }
+        val occupied = tunnelRepository.getAll().map { it.name }
+        val fallback = "panel-${config.id}"
+        val name = uniqueDisplayName(config.name.ifBlank { fallback }, occupied, fallback)
+        val tunnel = TunnelConfig.fromConfig(parsed, name).copy(position = 0)
+        val ui = tunnelsUiState.value
+        val (shiftedGroups, shiftedTunnels) = shiftRootPositionsBy(ui.groups, ui.tunnels, 1)
+        tunnelGroupRepository.saveAll(shiftedGroups)
+        if (shiftedTunnels.isNotEmpty()) tunnelRepository.updateAll(shiftedTunnels)
+        tunnelRepository.save(tunnel)
+        panelConfigLinkRepository.save(
+            PanelConfigLink(
+                configId = config.id,
+                tunnelName = name,
+                server = session.server,
+                updatedAt = System.currentTimeMillis(),
+            ),
+        )
+        panelSessionStore.selectConfig(config.id)
+        postSideEffect(
+            GlobalSideEffect.Snackbar(
+                StringValue.StringResource(R.string.panel_config_imported, name),
+                ToastType.Success,
+            ),
+        )
+    }
+
+    fun refreshPanelConfigs() = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        try {
+            val configs = panelApi.fetchConfigs(session.server, session.token)
+            _panelConfigs.value = configs
+            val selected = panelSessionStore.selectedConfigId.value
+            if (selected == null || configs.none { it.id == selected }) {
+                panelSessionStore.selectConfig(configs.firstOrNull()?.id)
+            }
+        } catch (e: PanelApiException) {
+            handlePanelError(e)
         } catch (e: Exception) {
             Timber.e(e)
+            panelUnreachable()
+        }
+    }
+
+    fun createPanelConfig(name: String? = null) = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        try {
+            val config = panelApi.createConfig(session.server, session.token, name)
+            _panelConfigs.value = panelApi.fetchConfigs(session.server, session.token)
+            importPanelConfigLocked(config, session)
+        } catch (e: PanelApiException) {
+            handlePanelError(e)
+        } catch (e: Exception) {
+            Timber.e(e)
+            panelUnreachable()
+        }
+    }
+
+    fun togglePanelConfig(configId: Int) = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        try {
+            val enabled = panelApi.toggleConfig(session.server, session.token, configId)
+            _panelConfigs.value =
+                _panelConfigs.value?.map {
+                    if (it.id == configId) it.copy(enabled = enabled) else it
+                }
             postSideEffect(
                 GlobalSideEffect.Snackbar(
-                    StringValue.StringResource(R.string.error_panel_connect),
+                    StringValue.StringResource(
+                        if (enabled) R.string.panel_config_enabled
+                        else R.string.panel_config_disabled,
+                    ),
+                    ToastType.Success,
+                ),
+            )
+        } catch (e: PanelApiException) {
+            handlePanelError(e)
+        } catch (e: Exception) {
+            Timber.e(e)
+            panelUnreachable()
+        }
+    }
+
+    /** Removes the configuration on the panel and its local tunnel; there is no undo. */
+    fun deletePanelConfig(configId: Int) = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        val link = panelConfigLinkRepository.getByConfigId(configId)
+        val linkedTunnel = link?.let { tunnelRepository.findByTunnelName(it.tunnelName) }
+        val activeIds = tunnelCoordinator.backendStatus.firstOrNull()?.activeTunnels?.keys.orEmpty()
+        if (linkedTunnel != null && activeIds.contains(linkedTunnel.id)) {
+            return@intent postSideEffect(
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.delete_active_message),
                     ToastType.Error,
                 ),
             )
+        }
+        try {
+            panelApi.deleteConfig(session.server, session.token, configId)
+            if (link != null) {
+                linkedTunnel?.let { tunnelRepository.delete(it) }
+                panelConfigLinkRepository.delete(configId)
+                if (panelSessionStore.selectedConfigId.value == configId) {
+                    panelSessionStore.selectConfig(null)
+                }
+            }
+            _panelConfigs.value = panelApi.fetchConfigs(session.server, session.token)
+            postSideEffect(
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.panel_config_deleted),
+                    ToastType.Success,
+                ),
+            )
+        } catch (e: PanelApiException) {
+            handlePanelError(e)
+        } catch (e: Exception) {
+            Timber.e(e)
+            panelUnreachable()
+        }
+    }
+
+    fun selectPanelConfig(configId: Int) = intent { panelSessionStore.selectConfig(configId) }
+
+    fun importPanelConfig(configId: Int) = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        val config = _panelConfigs.value?.firstOrNull { it.id == configId } ?: return@intent
+        try {
+            importPanelConfigLocked(config, session)
+        } catch (e: PanelApiException) {
+            handlePanelError(e)
+        } catch (e: Exception) {
+            Timber.e(e)
+            panelUnreachable()
+        }
+    }
+
+    // ------------------------------------------------------------- panel exits
+
+    fun loadPanelExits() = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        val configId = panelSessionStore.selectedConfigId.value
+        _panelExits.value = null
+        try {
+            _panelExits.value = panelApi.fetchExits(session.server, session.token, configId)
+        } catch (e: PanelApiException) {
+            handlePanelError(e)
+        } catch (e: Exception) {
+            Timber.e(e)
+            panelUnreachable()
         }
     }
 
@@ -807,7 +994,12 @@ class SharedAppViewModel(
         val session = panelSessionStore.session.value ?: return@intent
         val exits = _panelExits.value ?: return@intent
         try {
-            panelApi.setExitOrder(session.server, session.token, exits.map { it.id })
+            panelApi.setExitOrder(
+                server = session.server,
+                token = session.token,
+                configId = panelSessionStore.selectedConfigId.value,
+                exitIds = exits.map { it.id },
+            )
             postSideEffect(
                 GlobalSideEffect.Snackbar(
                     StringValue.StringResource(R.string.panel_exit_order_saved),
@@ -815,29 +1007,19 @@ class SharedAppViewModel(
                 ),
             )
         } catch (e: PanelApiException) {
-            if (e.stringValue is StringValue.StringResource &&
-                (e.stringValue as StringValue.StringResource).resId == R.string.error_panel_auth
-            ) {
-                clearPanelSession()
-                postSideEffect(authExpiredSnackbar())
-            } else {
-                postSideEffect(GlobalSideEffect.Snackbar(e.stringValue, ToastType.Error))
-            }
+            handlePanelError(e)
         } catch (e: Exception) {
             Timber.e(e)
-            postSideEffect(
-                GlobalSideEffect.Snackbar(
-                    StringValue.StringResource(R.string.error_panel_connect),
-                    ToastType.Error,
-                ),
-            )
+            panelUnreachable()
         }
     }
 
     fun panelSignOut() = intent {
         panelSessionStore.session.value?.let { panelApi.logout(it.server, it.token) }
-        panelSessionStore.clear()
-        _panelExits.value = null
+        // Tunnels imported from the account stay, the links do not: their ids
+        // belong to the account that is being signed out.
+        panelConfigLinkRepository.clear()
+        clearPanelSession()
     }
 
     fun importFromUri(uri: Uri) = intent {

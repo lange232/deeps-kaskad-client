@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.DataUsage
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Dns
 import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -79,6 +80,11 @@ fun TunnelSettingsScreen(
             }
             val panelSession by sharedViewModel.panelSession.collectAsStateWithLifecycle()
             if (panelSession != null) {
+                SurfaceRow(
+                    leading = { Icon(Icons.Outlined.Router, contentDescription = null) },
+                    title = stringResource(R.string.panel_configs),
+                    onClick = { navController.push(Route.PanelConfigs) },
+                )
                 SurfaceRow(
                     leading = { Icon(Icons.Outlined.Public, contentDescription = null) },
                     title = stringResource(R.string.panel_exits),

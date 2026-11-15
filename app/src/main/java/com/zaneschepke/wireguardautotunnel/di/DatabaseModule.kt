@@ -17,6 +17,7 @@ import com.zaneschepke.wireguardautotunnel.data.repository.RoomAutoTunnelSetting
 import com.zaneschepke.wireguardautotunnel.data.repository.RoomDnsSettingsRepository
 import com.zaneschepke.wireguardautotunnel.data.repository.RoomLockdownSettingsRepository
 import com.zaneschepke.wireguardautotunnel.data.repository.RoomMonitoringSettingsRepository
+import com.zaneschepke.wireguardautotunnel.data.repository.RoomPanelConfigLinkRepository
 import com.zaneschepke.wireguardautotunnel.data.repository.RoomProxySettingsRepository
 import com.zaneschepke.wireguardautotunnel.data.repository.RoomSettingsRepository
 import com.zaneschepke.wireguardautotunnel.data.repository.RoomTunnelGroupRepository
@@ -28,6 +29,7 @@ import com.zaneschepke.wireguardautotunnel.domain.repository.GeneralSettingRepos
 import com.zaneschepke.wireguardautotunnel.domain.repository.InstalledPackageRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.LockdownSettingsRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.MonitoringSettingsRepository
+import com.zaneschepke.wireguardautotunnel.domain.repository.PanelConfigLinkRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.ProxySettingsRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelGroupRepository
 import com.zaneschepke.wireguardautotunnel.domain.repository.TunnelRepository
@@ -83,6 +85,7 @@ val databaseModule = module {
     singleOf(::RoomSettingsRepository) bind GeneralSettingRepository::class
     singleOf(::RoomTunnelRepository) bind TunnelRepository::class
     singleOf(::RoomTunnelGroupRepository) bind TunnelGroupRepository::class
+    singleOf(::RoomPanelConfigLinkRepository) bind PanelConfigLinkRepository::class
     single {
         DatabaseBackup(
             androidContext(),
