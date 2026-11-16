@@ -13,6 +13,7 @@ import com.zaneschepke.wireguardautotunnel.data.dao.DnsSettingsDao
 import com.zaneschepke.wireguardautotunnel.data.dao.GeneralSettingsDao
 import com.zaneschepke.wireguardautotunnel.data.dao.LockdownSettingsDao
 import com.zaneschepke.wireguardautotunnel.data.dao.MonitoringSettingsDao
+import com.zaneschepke.wireguardautotunnel.data.dao.PanelConfigLinkDao
 import com.zaneschepke.wireguardautotunnel.data.dao.ProxySettingsDao
 import com.zaneschepke.wireguardautotunnel.data.dao.TunnelConfigDao
 import com.zaneschepke.wireguardautotunnel.data.dao.TunnelGroupDao
@@ -21,6 +22,7 @@ import com.zaneschepke.wireguardautotunnel.data.entity.DnsSettings
 import com.zaneschepke.wireguardautotunnel.data.entity.GeneralSettings
 import com.zaneschepke.wireguardautotunnel.data.entity.LockdownSettings
 import com.zaneschepke.wireguardautotunnel.data.entity.MonitoringSettings
+import com.zaneschepke.wireguardautotunnel.data.entity.PanelConfigLink
 import com.zaneschepke.wireguardautotunnel.data.entity.ProxySettings
 import com.zaneschepke.wireguardautotunnel.data.entity.TunnelConfig
 import com.zaneschepke.wireguardautotunnel.data.entity.TunnelGroup
@@ -36,8 +38,9 @@ import com.zaneschepke.wireguardautotunnel.data.entity.TunnelGroup
             MonitoringSettings::class,
             DnsSettings::class,
             LockdownSettings::class,
+            PanelConfigLink::class,
         ],
-    version = 41,
+    version = 42,
     autoMigrations =
         [
             AutoMigration(from = 1, to = 2),
@@ -77,6 +80,7 @@ import com.zaneschepke.wireguardautotunnel.data.entity.TunnelGroup
             AutoMigration(from = 38, to = 39),
             AutoMigration(from = 39, to = 40),
             AutoMigration(from = 40, to = 41),
+            AutoMigration(from = 41, to = 42),
         ],
     exportSchema = true,
 )
@@ -97,6 +101,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun lockdownSettingsDao(): LockdownSettingsDao
 
     abstract fun dnsSettingsDao(): DnsSettingsDao
+
+    abstract fun panelConfigLinkDao(): PanelConfigLinkDao
 }
 
 @DeleteColumn(tableName = "Settings", columnName = "default_tunnel")

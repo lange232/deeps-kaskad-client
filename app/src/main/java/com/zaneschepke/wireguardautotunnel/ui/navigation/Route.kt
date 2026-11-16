@@ -4,11 +4,9 @@ import androidx.annotation.Keep
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.QuestionMark
 import androidx.compose.material.icons.outlined.Settings
 import androidx.navigation3.runtime.NavKey
 import com.zaneschepke.wireguardautotunnel.R
@@ -30,6 +28,8 @@ sealed class Route : NavKey {
     @Keep @Serializable data object License : Route()
 
     @Keep @Serializable data object PanelExits : Route()
+
+    @Keep @Serializable data object PanelConfigs : Route()
 
     @Keep
     @Serializable
@@ -191,7 +191,8 @@ enum class Tab(
                 is Route.IPv6,
                 is Route.EntryTunnel,
                 is Route.SplitTunnel,
-                Route.PanelExits -> TUNNELS
+                Route.PanelExits,
+                Route.PanelConfigs -> TUNNELS
                 is Route.AutoTunnel,
                 Route.WifiDetectionMethod,
                 Route.WifiPreferences,

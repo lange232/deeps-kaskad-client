@@ -6,6 +6,7 @@ import com.zaneschepke.wireguardautotunnel.util.StringValue
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.request.delete
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
 import io.ktor.client.request.header
@@ -20,6 +21,7 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManagerFactory
 import javax.net.ssl.X509TrustManager
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
@@ -27,18 +29,22 @@ import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.long
 import timber.log.Timber
 
-class PanelApiException(val stringValue: StringValue) : Exception()
+class PanelApiException(val stringValue: StringValue, val status: Int = 0) : Exception()
 
 /**
- * Client for the deeps kaskad panel API (`/api/login`, `/api/me/conf`).
+ * Client for the deeps kaskad panel API.
  *
- * The panel usually serves a self-signed certificate, so the build can pin
- * one: drop the panel's PEM certificate into `app/src/main/res/raw/panel.crt`
- * and only that certificate is trusted for API calls. Without a bundled
- * certificate the default system trust store is used (a panel behind a real
- * CA, e.g. Let's Encrypt, works out of the box).
+ * An account owns several WireGuard configurations, one per device, and every configuration has its
+ * own internet exit order. Error texts returned by the panel are meant for the user and are shown
+ * as they are; only 401/429 are mapped to fixed local strings.
+ *
+ * The panel usually serves a self-signed certificate, so the build can pin one: drop the panel's
+ * PEM certificate into `app/src/main/res/raw/panel.crt` and only that certificate is trusted for
+ * API calls. Without a bundled certificate the default system trust store is used (a panel behind a
+ * real CA, e.g. Let's Encrypt, works out of the box).
  */
 class PanelApi(context: Context) {
 
@@ -61,6 +67,7 @@ class PanelApi(context: Context) {
                 connectTimeoutMillis = 15_000L
                 socketTimeoutMillis = 30_000L
             }
+            expectSuccess = false
         }
 
     private fun pinnedTrustManager(context: Context): X509TrustManager? {
@@ -74,8 +81,7 @@ class PanelApi(context: Context) {
                     load(null, null)
                     setCertificateEntry("panel", certificate)
                 }
-            val factory =
-                TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+            val factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
             factory.init(keyStore)
             factory.trustManagers.filterIsInstance<X509TrustManager>().first()
         } catch (e: Exception) {
@@ -87,27 +93,98 @@ class PanelApi(context: Context) {
     private fun apiUrl(server: String, path: String): String {
         val base = server.trim().trimEnd('/')
         require(base.startsWith("https://")) { "panel URL must start with https://" }
-        return base + path
+        val url = base + path
+        // The only panel endpoint the app ever talks to; logged so a wrong
+        // server address is visible in logcat instead of guessed at.
+        Timber.i("panel request: %s", url)
+        return url
     }
 
+    private suspend fun errorDetail(response: HttpResponse): String? = runCatching {
+        Json.parseToJsonElement(response.bodyAsText())
+            .jsonObject["detail"]
+            ?.jsonPrimitive
+            ?.contentOrNull
+    }
+        .getOrNull()
+        ?.takeIf { it.isNotBlank() }
+
     private suspend fun requireOk(response: HttpResponse): HttpResponse {
-        when (response.status.value) {
-            in 200..299 -> return response
+        if (response.status.value in 200..299) return response
+        val status = response.status.value
+        val detail = errorDetail(response)
+        throw when (status) {
             401 ->
-                throw PanelApiException(StringValue.StringResource(R.string.error_panel_auth))
-            429 ->
-                throw PanelApiException(
-                    StringValue.StringResource(R.string.error_panel_rate_limited)
+                PanelApiException(
+                    StringValue.StringResource(R.string.error_panel_session_expired),
+                    status,
                 )
+            429 ->
+                PanelApiException(
+                    StringValue.StringResource(R.string.error_panel_rate_limited),
+                    status,
+                )
+            // 400/404/409/500 carry a user-facing explanation; 409 is also the
+            // configuration limit, its text names the numbers.
+            400,
+            404,
+            409,
+            500 ->
+                detail?.let { PanelApiException(StringValue.DynamicString(it), status) }
+                    ?: PanelApiException(
+                        StringValue.StringResource(R.string.error_panel_connect),
+                        status,
+                    )
             else ->
-                throw PanelApiException(StringValue.StringResource(R.string.error_panel_connect))
+                PanelApiException(StringValue.StringResource(R.string.error_panel_connect), status)
         }
     }
 
-    /** Signs in and returns the bearer token. */
-    suspend fun login(server: String, email: String, password: String): String {
+    private fun parseConfig(element: JsonObject): PanelConfig =
+        PanelConfig(
+            id = element.getValue("id").jsonPrimitive.int,
+            name = element.getValue("name").jsonPrimitive.content,
+            ip = element["ip"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            enabled = element["enabled"]?.jsonPrimitive?.booleanOrNull == true,
+            internet = element["internet"]?.jsonPrimitive?.booleanOrNull == true,
+            exits = element["exits"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList(),
+            handshake = element["handshake"]?.jsonPrimitive?.long ?: 0L,
+            rx = element["rx"]?.jsonPrimitive?.long ?: 0L,
+            tx = element["tx"]?.jsonPrimitive?.long ?: 0L,
+        )
+
+    private fun parseConfigs(body: String): List<PanelConfig> =
+        Json.parseToJsonElement(body)
+            .jsonObject["configs"]
+            ?.jsonArray
+            ?.map { parseConfig(it.jsonObject) }
+            .orEmpty()
+
+    private suspend fun requireLoginOk(response: HttpResponse): HttpResponse {
+        if (response.status.value in 200..299) return response
+        val status = response.status.value
+        val detail = errorDetail(response)
+        throw when (status) {
+            429 ->
+                PanelApiException(
+                    StringValue.StringResource(R.string.error_panel_rate_limited),
+                    status,
+                )
+            401 ->
+                PanelApiException(
+                    detail?.let { StringValue.DynamicString(it) }
+                        ?: StringValue.StringResource(R.string.error_panel_auth),
+                    status,
+                )
+            else ->
+                PanelApiException(StringValue.StringResource(R.string.error_panel_connect), status)
+        }
+    }
+
+    /** Signs in and returns the token together with the account configurations. */
+    suspend fun login(server: String, email: String, password: String): PanelLoginResult {
         val response =
-            requireOk(
+            requireLoginOk(
                 client.submitForm(
                     url = apiUrl(server, "/api/login"),
                     formParameters =
@@ -115,30 +192,88 @@ class PanelApi(context: Context) {
                             append("email", email.trim())
                             append("password", password)
                         },
-                )
+                ),
             )
         val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
-        return body.getValue("token").jsonPrimitive.content
+        val configs = body["configs"]
+        return PanelLoginResult(
+            token = body.getValue("token").jsonPrimitive.content,
+            email = body["email"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            configs = configs?.jsonArray?.map { parseConfig(it.jsonObject) }.orEmpty(),
+            // A panel older than 0.4.0 has no accounts with several configurations and
+            // returns no `configs` at all; that is a server problem, not an empty account.
+            supportsConfigs = configs != null,
+        )
     }
 
-    /** Downloads the client's awg0 config as text. */
-    suspend fun fetchConfig(server: String, token: String): String {
+    /** The account configurations with traffic and handshake counters. */
+    suspend fun fetchConfigs(server: String, token: String): List<PanelConfig> {
         val response =
             requireOk(
-                client.get(apiUrl(server, "/api/me/conf")) {
+                client.get(apiUrl(server, "/api/me")) {
                     header(HttpHeaders.Authorization, "Bearer $token")
-                }
+                },
+            )
+        return parseConfigs(response.bodyAsText())
+    }
+
+    /** Creates a configuration; an empty name is generated by the panel. */
+    suspend fun createConfig(server: String, token: String, name: String? = null): PanelConfig {
+        val response =
+            requireOk(
+                client.submitForm(
+                    url = apiUrl(server, "/api/me/configs"),
+                    formParameters =
+                        Parameters.build { if (!name.isNullOrBlank()) append("name", name.trim()) },
+                ) {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                },
+            )
+        val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+        return parseConfig(body.getValue("config").jsonObject)
+    }
+
+    /** Downloads one configuration as a WireGuard config; the first one by default. */
+    suspend fun fetchConfig(server: String, token: String, configId: Int? = null): String {
+        val path = if (configId == null) "/api/me/conf" else "/api/me/configs/$configId/conf"
+        val response =
+            requireOk(
+                client.get(apiUrl(server, path)) {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                },
             )
         return response.bodyAsText()
     }
 
-    /** The client's granted internet exits, in the user's order. */
-    suspend fun fetchExits(server: String, token: String): List<PanelExit> {
+    /** Turns a configuration on or off; returns the new state. */
+    suspend fun toggleConfig(server: String, token: String, configId: Int): Boolean {
         val response =
             requireOk(
-                client.get(apiUrl(server, "/api/me/exits")) {
+                client.post(apiUrl(server, "/api/me/configs/$configId/toggle")) {
                     header(HttpHeaders.Authorization, "Bearer $token")
-                }
+                },
+            )
+        val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+        return body["enabled"]?.jsonPrimitive?.booleanOrNull == true
+    }
+
+    /** Removes a configuration and its keys; there is no undo. */
+    suspend fun deleteConfig(server: String, token: String, configId: Int) {
+        requireOk(
+            client.delete(apiUrl(server, "/api/me/configs/$configId")) {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            },
+        )
+    }
+
+    /** Internet exits granted to the account, in the order of the given configuration. */
+    suspend fun fetchExits(server: String, token: String, configId: Int? = null): List<PanelExit> {
+        val path = if (configId == null) "/api/me/exits" else "/api/me/exits?config_id=$configId"
+        val response =
+            requireOk(
+                client.get(apiUrl(server, path)) {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                },
             )
         return Json.parseToJsonElement(response.bodyAsText()).jsonArray.map { element ->
             val exit = element.jsonObject
@@ -152,16 +287,24 @@ class PanelApi(context: Context) {
         }
     }
 
-    /** Replaces the client's exit order; the panel rejects partial lists. */
-    suspend fun setExitOrder(server: String, token: String, exitIds: List<Int>) {
+    /** Replaces the configuration's exit order; the panel rejects partial lists. */
+    suspend fun setExitOrder(
+        server: String,
+        token: String,
+        configId: Int?,
+        exitIds: List<Int>,
+    ) {
         requireOk(
             client.submitForm(
                 url = apiUrl(server, "/api/me/exits/order"),
                 formParameters =
-                    Parameters.build { exitIds.forEach { append("exit_id", it.toString()) } },
+                    Parameters.build {
+                        if (configId != null) append("config_id", configId.toString())
+                        exitIds.forEach { append("exit_id", it.toString()) }
+                    },
             ) {
                 header(HttpHeaders.Authorization, "Bearer $token")
-            }
+            },
         )
     }
 
@@ -176,6 +319,26 @@ class PanelApi(context: Context) {
         }
     }
 }
+
+/** One WireGuard configuration of the account: one device. */
+data class PanelConfig(
+    val id: Int,
+    val name: String,
+    val ip: String,
+    val enabled: Boolean,
+    val internet: Boolean,
+    val exits: List<String>,
+    val handshake: Long,
+    val rx: Long,
+    val tx: Long,
+)
+
+data class PanelLoginResult(
+    val token: String,
+    val email: String,
+    val configs: List<PanelConfig>,
+    val supportsConfigs: Boolean,
+)
 
 data class PanelExit(
     val id: Int,

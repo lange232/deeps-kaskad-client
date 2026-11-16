@@ -116,6 +116,8 @@ import com.zaneschepke.wireguardautotunnel.ui.screens.autotunnel.detection.WifiD
 import com.zaneschepke.wireguardautotunnel.ui.screens.autotunnel.disclosure.LocationDisclosureScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.autotunnel.preferred.PreferredTunnelScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.autotunnel.wifi.WifiSettingsScreen
+import com.zaneschepke.wireguardautotunnel.ui.screens.panel.PanelConfigsScreen
+import com.zaneschepke.wireguardautotunnel.ui.screens.panel.PanelExitsScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.pin.PinLockScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.SettingsScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.appearance.AppearanceScreen
@@ -131,7 +133,6 @@ import com.zaneschepke.wireguardautotunnel.ui.screens.settings.monitoring.Monito
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.proxy.ProxySettingsScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.recovery.TunnelRecoveryScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.security.SecurityScreen
-import com.zaneschepke.wireguardautotunnel.ui.screens.panel.PanelExitsScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.support.SupportScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.support.donate.DonateScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.support.donate.crypto.AddressesScreen
@@ -516,8 +517,6 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
 
-
-
                     LaunchedEffect(Unit) {
                         if (!uiState.isDesktopPromptShown) {
                             viewModel.setDesktopPromptShown(true)
@@ -736,6 +735,7 @@ class MainActivity : AppCompatActivity() {
                                                 entry<Route.Support> { SupportScreen() }
                                                 entry<Route.License> { LicenseScreen() }
                                                 entry<Route.PanelExits> { PanelExitsScreen() }
+                                                entry<Route.PanelConfigs> { PanelConfigsScreen() }
                                                 entry<Route.Donate> { DonateScreen() }
                                                 entry<Route.Addresses> { AddressesScreen() }
                                                 entry<Route.PreferredTunnel> { key ->

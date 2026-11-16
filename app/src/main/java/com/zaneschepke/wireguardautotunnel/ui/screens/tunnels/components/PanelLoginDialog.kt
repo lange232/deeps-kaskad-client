@@ -2,6 +2,7 @@ package com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -13,7 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.ui.common.dialog.InfoDialog
@@ -22,9 +22,14 @@ import com.zaneschepke.wireguardautotunnel.ui.common.textbox.ConfigurationTextBo
 private const val PANEL_URL_HINT = "https://vpn.example.com:8080"
 
 @Composable
-fun PanelLoginDialog(onDismiss: () -> Unit, onConfirm: (server: String, email: String, password: String) -> Unit) {
-    var server by rememberSaveable { mutableStateOf("") }
-    var email by rememberSaveable { mutableStateOf("") }
+fun PanelLoginDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (server: String, email: String, password: String) -> Unit,
+    initialServer: String = "",
+    initialEmail: String = "",
+) {
+    var server by rememberSaveable { mutableStateOf(initialServer) }
+    var email by rememberSaveable { mutableStateOf(initialEmail) }
     var password by rememberSaveable { mutableStateOf("") }
     var isError by rememberSaveable { mutableStateOf(false) }
 
