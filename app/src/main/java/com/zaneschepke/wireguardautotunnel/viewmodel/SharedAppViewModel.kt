@@ -15,6 +15,7 @@ import com.zaneschepke.wireguardautotunnel.data.entity.PanelConfigLink
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelApi
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelApiException
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelConfig
+import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelDevice
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelExit
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelSession
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelSessionStore
@@ -101,6 +102,7 @@ class SharedAppViewModel(
     private val httpClient: HttpClient,
     private val panelApi: PanelApi,
     private val panelSessionStore: PanelSessionStore,
+    private val panelDevice: PanelDevice,
     private val panelConfigLinkRepository: PanelConfigLinkRepository,
     private val fileUtils: FileUtils,
     private val networkUtils: NetworkUtils,
@@ -753,17 +755,9 @@ class SharedAppViewModel(
                     ),
                 )
             }
-            _panelConfigs.value = result.configs
-            val existing = result.configs.firstOrNull()
-            if (existing != null) {
-                importPanelConfigLocked(existing, session)
-            } else {
-                // Fresh account: the panel creates the configuration, its name and
-                // keys, so there is nothing to ask the user for.
-                val created = panelApi.createConfig(server, result.token, null)
-                _panelConfigs.value = listOf(created)
-                importPanelConfigLocked(created, session)
-            }
+            val config = resolvePanelConfig(result.configs, server, result.token)
+            _panelConfigs.value = panelApi.fetchConfigs(server, result.token)
+            importPanelConfigLocked(config, session)
         } catch (e: PanelApiException) {
             handlePanelError(e)
         } catch (e: Exception) {
@@ -814,6 +808,36 @@ class SharedAppViewModel(
             clearPanelSession()
         }
         postSideEffect(GlobalSideEffect.Snackbar(stringValue, ToastType.Error))
+    }
+
+    /**
+     * Picks the configuration that belongs to this device, following "one configuration per
+     * device": the locally linked one first, then the one named after this device (survives
+     * reinstalls), and only then a fresh one. Importing a configuration that already belongs to
+     * another device would make the two take the session from each other.
+     */
+    private suspend fun resolvePanelConfig(
+        configs: List<PanelConfig>,
+        server: String,
+        token: String,
+    ): PanelConfig {
+        val linked =
+            panelConfigLinkRepository
+                .getAll()
+                .firstOrNull { it.server == server }
+                ?.let { link -> configs.firstOrNull { it.id == link.configId } }
+        if (linked != null) return linked
+
+        val named = configs.firstOrNull { it.name.equals(panelDevice.name, ignoreCase = true) }
+        if (named != null) return named
+
+        return try {
+            panelApi.createConfig(server, token, panelDevice.name)
+        } catch (e: PanelApiException) {
+            // The name is unique per account and may already be taken (a second device with the
+            // same model, or a leftover configuration): let the panel generate one instead.
+            panelApi.createConfig(server, token, null)
+        }
     }
 
     /**

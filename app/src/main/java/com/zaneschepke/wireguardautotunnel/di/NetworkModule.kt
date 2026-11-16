@@ -7,6 +7,7 @@ import com.zaneschepke.wireguardautotunnel.data.network.KtorClient
 import com.zaneschepke.wireguardautotunnel.data.network.KtorGitHubApi
 import com.zaneschepke.wireguardautotunnel.data.network.StreamingFileDownloader
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelApi
+import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelDevice
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelSessionStore
 import com.zaneschepke.wireguardautotunnel.data.repository.DownloadManagerUpdateDownloader
 import com.zaneschepke.wireguardautotunnel.data.repository.GitHubUpdateRepository
@@ -37,6 +38,7 @@ val networkModule = lazyModule {
 
     single { PanelApi(androidContext()) }
     single { PanelSessionStore(androidContext()) }
+    single { PanelDevice(androidContext()) }
 
     single<UpdateRepository> {
         GitHubUpdateRepository(
