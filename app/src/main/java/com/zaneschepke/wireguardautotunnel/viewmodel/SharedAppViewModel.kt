@@ -754,16 +754,15 @@ class SharedAppViewModel(
                 )
             }
             _panelConfigs.value = result.configs
-            val first = result.configs.firstOrNull()
-            if (first == null) {
-                postSideEffect(
-                    GlobalSideEffect.Snackbar(
-                        StringValue.StringResource(R.string.panel_config_none),
-                        ToastType.Info,
-                    ),
-                )
+            val existing = result.configs.firstOrNull()
+            if (existing != null) {
+                importPanelConfigLocked(existing, session)
             } else {
-                importPanelConfigLocked(first, session)
+                // Fresh account: the panel creates the configuration, its name and
+                // keys, so there is nothing to ask the user for.
+                val created = panelApi.createConfig(server, result.token, null)
+                _panelConfigs.value = listOf(created)
+                importPanelConfigLocked(created, session)
             }
         } catch (e: PanelApiException) {
             handlePanelError(e)
