@@ -743,6 +743,16 @@ class SharedAppViewModel(
             val result = panelApi.login(server, email, password)
             val session = PanelSession(server, email, result.token)
             panelSessionStore.save(session)
+            if (!result.supportsConfigs) {
+                // Do not keep a session against a panel the app cannot work with.
+                clearPanelSession()
+                return@intent postSideEffect(
+                    GlobalSideEffect.Snackbar(
+                        StringValue.StringResource(R.string.error_panel_outdated),
+                        ToastType.Error,
+                    ),
+                )
+            }
             _panelConfigs.value = result.configs
             val first = result.configs.firstOrNull()
             if (first == null) {

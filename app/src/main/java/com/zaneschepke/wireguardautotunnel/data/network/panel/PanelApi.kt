@@ -172,10 +172,14 @@ class PanelApi(context: Context) {
                 ),
             )
         val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+        val configs = body["configs"]
         return PanelLoginResult(
             token = body.getValue("token").jsonPrimitive.content,
             email = body["email"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            configs = body["configs"]?.jsonArray?.map { parseConfig(it.jsonObject) }.orEmpty(),
+            configs = configs?.jsonArray?.map { parseConfig(it.jsonObject) }.orEmpty(),
+            // A panel older than 0.4.0 has no accounts with several configurations and
+            // returns no `configs` at all; that is a server problem, not an empty account.
+            supportsConfigs = configs != null,
         )
     }
 
@@ -306,7 +310,12 @@ data class PanelConfig(
     val tx: Long,
 )
 
-data class PanelLoginResult(val token: String, val email: String, val configs: List<PanelConfig>)
+data class PanelLoginResult(
+    val token: String,
+    val email: String,
+    val configs: List<PanelConfig>,
+    val supportsConfigs: Boolean,
+)
 
 data class PanelExit(
     val id: Int,

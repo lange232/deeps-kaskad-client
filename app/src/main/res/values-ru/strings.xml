@@ -149,6 +149,7 @@
     <string name="panel_exits_description">Трафик идёт через первый доступный выход.</string>
     <string name="panel_exits_auto">Выходы не назначены, маршрутизация автоматическая.</string>
     <string name="panel_exit_order_saved">Порядок выходов обновлён</string>
+    <string name="error_panel_outdated">Панель устарела: обновите сервер, чтобы работать с аккаунтами и конфигурациями</string>
     <string name="panel_configs">Конфигурации</string>
     <string name="panel_configs_description">Одна конфигурация — одно устройство. Два устройства с одной конфигурацией будут отбирать сессию друг у друга.</string>
     <string name="panel_config_create">Создать конфигурацию</string>
