@@ -32,7 +32,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import timber.log.Timber
 
-class PanelApiException(val stringValue: StringValue) : Exception()
+class PanelApiException(val stringValue: StringValue, val status: Int = 0) : Exception()
 
 /**
  * Client for the deeps kaskad panel API.
@@ -111,20 +111,32 @@ class PanelApi(context: Context) {
 
     private suspend fun requireOk(response: HttpResponse): HttpResponse {
         if (response.status.value in 200..299) return response
+        val status = response.status.value
         val detail = errorDetail(response)
-        throw when (response.status.value) {
+        throw when (status) {
             401 ->
-                PanelApiException(StringValue.StringResource(R.string.error_panel_session_expired))
-            429 -> PanelApiException(StringValue.StringResource(R.string.error_panel_rate_limited))
+                PanelApiException(
+                    StringValue.StringResource(R.string.error_panel_session_expired),
+                    status,
+                )
+            429 ->
+                PanelApiException(
+                    StringValue.StringResource(R.string.error_panel_rate_limited),
+                    status,
+                )
             // 400/404/409/500 carry a user-facing explanation; 409 is also the
             // configuration limit, its text names the numbers.
             400,
             404,
             409,
             500 ->
-                detail?.let { PanelApiException(StringValue.DynamicString(it)) }
-                    ?: PanelApiException(StringValue.StringResource(R.string.error_panel_connect))
-            else -> PanelApiException(StringValue.StringResource(R.string.error_panel_connect))
+                detail?.let { PanelApiException(StringValue.DynamicString(it), status) }
+                    ?: PanelApiException(
+                        StringValue.StringResource(R.string.error_panel_connect),
+                        status,
+                    )
+            else ->
+                PanelApiException(StringValue.StringResource(R.string.error_panel_connect), status)
         }
     }
 
@@ -150,15 +162,22 @@ class PanelApi(context: Context) {
 
     private suspend fun requireLoginOk(response: HttpResponse): HttpResponse {
         if (response.status.value in 200..299) return response
+        val status = response.status.value
         val detail = errorDetail(response)
-        throw when (response.status.value) {
-            429 -> PanelApiException(StringValue.StringResource(R.string.error_panel_rate_limited))
+        throw when (status) {
+            429 ->
+                PanelApiException(
+                    StringValue.StringResource(R.string.error_panel_rate_limited),
+                    status,
+                )
             401 ->
                 PanelApiException(
                     detail?.let { StringValue.DynamicString(it) }
                         ?: StringValue.StringResource(R.string.error_panel_auth),
+                    status,
                 )
-            else -> PanelApiException(StringValue.StringResource(R.string.error_panel_connect))
+            else ->
+                PanelApiException(StringValue.StringResource(R.string.error_panel_connect), status)
         }
     }
 

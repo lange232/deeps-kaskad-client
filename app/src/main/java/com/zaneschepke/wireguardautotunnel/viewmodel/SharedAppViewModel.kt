@@ -759,7 +759,17 @@ class SharedAppViewModel(
             _panelConfigs.value = panelApi.fetchConfigs(server, result.token)
             importPanelConfigLocked(config, session)
         } catch (e: PanelApiException) {
-            handlePanelError(e)
+            if (e.status == 409) {
+                // No free slot for a new device: show the list so an old configuration can be
+                // deleted, the user decides which one.
+                runCatching {
+                        panelApi.fetchConfigs(server, panelSessionStore.session.value!!.token)
+                    }
+                    .onSuccess { _panelConfigs.value = it }
+                postSideEffect(GlobalSideEffect.Snackbar(e.stringValue, ToastType.Error))
+            } else {
+                handlePanelError(e)
+            }
         } catch (e: Exception) {
             Timber.e(e)
             panelUnreachable()
@@ -834,8 +844,10 @@ class SharedAppViewModel(
         return try {
             panelApi.createConfig(server, token, panelDevice.name)
         } catch (e: PanelApiException) {
-            // The name is unique per account and may already be taken (a second device with the
-            // same model, or a leftover configuration): let the panel generate one instead.
+            // 400: the name is unique per account and may already be taken (a second device with
+            // the same model, or a leftover configuration) — let the panel generate one instead.
+            // 409 is the configuration limit and must reach the caller unchanged.
+            if (e.status != 400) throw e
             panelApi.createConfig(server, token, null)
         }
     }
