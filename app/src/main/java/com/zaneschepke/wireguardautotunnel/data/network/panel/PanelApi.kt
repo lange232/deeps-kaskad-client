@@ -93,7 +93,11 @@ class PanelApi(context: Context) {
     private fun apiUrl(server: String, path: String): String {
         val base = server.trim().trimEnd('/')
         require(base.startsWith("https://")) { "panel URL must start with https://" }
-        return base + path
+        val url = base + path
+        // The only panel endpoint the app ever talks to; logged so a wrong
+        // server address is visible in logcat instead of guessed at.
+        Timber.i("panel request: %s", url)
+        return url
     }
 
     private suspend fun errorDetail(response: HttpResponse): String? = runCatching {

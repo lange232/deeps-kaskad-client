@@ -56,6 +56,7 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
     val configs by viewModel.panelConfigs.collectAsStateWithLifecycle()
     val links by viewModel.panelLinks.collectAsStateWithLifecycle()
     val selectedId by viewModel.selectedPanelConfigId.collectAsStateWithLifecycle()
+    val session by viewModel.panelSession.collectAsStateWithLifecycle()
 
     var createDialog by rememberSaveable { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<PanelConfig?>(null) }
@@ -76,6 +77,12 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                 stringResource(R.string.panel_configs_description),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
+            session?.let {
+                DescriptionText(
+                    "${it.server} · ${it.email}",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
             val current = configs
             when {
                 current == null ->
