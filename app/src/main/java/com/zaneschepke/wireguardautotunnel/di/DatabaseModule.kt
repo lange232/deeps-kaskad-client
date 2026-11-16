@@ -71,6 +71,7 @@ val databaseModule = module {
     single { get<AppDatabase>().proxySettingsDoa() }
     single { get<AppDatabase>().tunnelConfigDoa() }
     single { get<AppDatabase>().tunnelGroupDao() }
+    single { get<AppDatabase>().panelConfigLinkDao() }
 
     single { DataStoreManager(androidContext(), get(named(Dispatcher.IO))) }
 
