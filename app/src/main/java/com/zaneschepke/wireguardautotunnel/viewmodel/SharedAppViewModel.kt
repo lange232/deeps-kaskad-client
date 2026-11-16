@@ -17,6 +17,7 @@ import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelApiException
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelConfig
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelDevice
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelExit
+import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelLoginDraft
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelSession
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelSessionStore
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
@@ -741,6 +742,9 @@ class SharedAppViewModel(
      * configurations is a normal empty state, not an error.
      */
     fun provisionFromPanel(server: String, email: String, password: String) = intent {
+        // Kept before the request: a wrong password or an unreachable panel should not make the
+        // user retype the address and email.
+        panelSessionStore.rememberLogin(server, email)
         try {
             val result = panelApi.login(server, email, password)
             val session = PanelSession(server, email, result.token)
@@ -763,8 +767,8 @@ class SharedAppViewModel(
                 // No free slot for a new device: show the list so an old configuration can be
                 // deleted, the user decides which one.
                 runCatching {
-                        panelApi.fetchConfigs(server, panelSessionStore.session.value!!.token)
-                    }
+                    panelApi.fetchConfigs(server, panelSessionStore.session.value!!.token)
+                }
                     .onSuccess { _panelConfigs.value = it }
                 postSideEffect(GlobalSideEffect.Snackbar(e.stringValue, ToastType.Error))
             } else {
@@ -779,6 +783,9 @@ class SharedAppViewModel(
     val panelSession: StateFlow<PanelSession?> = panelSessionStore.session
 
     val selectedPanelConfigId: StateFlow<Int?> = panelSessionStore.selectedConfigId
+
+    /** Address and email last typed at sign-in, refilled into the dialog. */
+    val panelLoginDraft: StateFlow<PanelLoginDraft?> = panelSessionStore.loginDraft
 
     val panelLinks: StateFlow<List<PanelConfigLink>> =
         panelConfigLinkRepository.flow.stateIn(

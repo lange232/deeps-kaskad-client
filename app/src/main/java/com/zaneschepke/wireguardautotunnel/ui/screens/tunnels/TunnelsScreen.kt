@@ -31,8 +31,8 @@ import com.zaneschepke.wireguardautotunnel.ui.common.sheet.CustomBottomSheet
 import com.zaneschepke.wireguardautotunnel.ui.common.sheet.SheetOption
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.GroupNameDialog
-import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.PanelLoginDialog
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.GroupSelectionSheet
+import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.PanelLoginDialog
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.SelectionActionsSheet
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.TunnelImportSheet
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.TunnelList
@@ -230,7 +230,10 @@ fun TunnelsScreen(sharedViewModel: SharedAppViewModel = koinActivityViewModel())
     }
 
     if (showPanelDialog) {
+        val panelDraft by sharedViewModel.panelLoginDraft.collectAsStateWithLifecycle()
         PanelLoginDialog(
+            initialServer = panelDraft?.server.orEmpty(),
+            initialEmail = panelDraft?.email.orEmpty(),
             onDismiss = { showPanelDialog = false },
             onConfirm = { server, email, password ->
                 sharedViewModel.provisionFromPanel(server, email, password)

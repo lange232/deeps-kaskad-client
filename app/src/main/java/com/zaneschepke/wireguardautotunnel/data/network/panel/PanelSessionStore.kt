@@ -7,6 +7,9 @@ import kotlinx.coroutines.flow.asStateFlow
 
 data class PanelSession(val server: String, val email: String, val token: String)
 
+/** What the user typed into the sign-in dialog, kept to refill it after a failure. */
+data class PanelLoginDraft(val server: String, val email: String)
+
 /**
  * Keeps the panel session between app starts. Stored in app-private SharedPreferences; the token is
  * a 30-day bearer credential, so root can read it — acceptable for a VPN client config token, but
@@ -25,6 +28,9 @@ class PanelSessionStore(context: Context) {
     private val _selectedConfigId = MutableStateFlow(loadSelectedConfigId())
     val selectedConfigId: StateFlow<Int?> = _selectedConfigId.asStateFlow()
 
+    private val _loginDraft = MutableStateFlow(loadLoginDraft())
+    val loginDraft: StateFlow<PanelLoginDraft?> = _loginDraft.asStateFlow()
+
     private fun load(): PanelSession? {
         val server = prefs.getString(KEY_SERVER, null) ?: return null
         val email = prefs.getString(KEY_EMAIL, null) ?: return null
@@ -34,6 +40,21 @@ class PanelSessionStore(context: Context) {
 
     private fun loadSelectedConfigId(): Int? =
         prefs.getInt(KEY_SELECTED_CONFIG, -1).takeIf { it > 0 }
+
+    private fun loadLoginDraft(): PanelLoginDraft? {
+        val server = prefs.getString(KEY_LAST_SERVER, null) ?: return null
+        val email = prefs.getString(KEY_LAST_EMAIL, null) ?: return null
+        return PanelLoginDraft(server, email)
+    }
+
+    /**
+     * Remembers the address and email typed at sign-in so a typo or a failed attempt does not make
+     * the user retype them. The password is never stored.
+     */
+    fun rememberLogin(server: String, email: String) {
+        prefs.edit().putString(KEY_LAST_SERVER, server).putString(KEY_LAST_EMAIL, email).apply()
+        _loginDraft.value = PanelLoginDraft(server, email)
+    }
 
     fun save(session: PanelSession) {
         prefs
@@ -51,9 +72,12 @@ class PanelSessionStore(context: Context) {
     }
 
     fun clear() {
+        val draft = _loginDraft.value
         prefs.edit().clear().apply()
         _session.value = null
         _selectedConfigId.value = null
+        // The address and email are not a secret and stay for the next sign-in.
+        draft?.let { rememberLogin(it.server, it.email) }
     }
 
     private companion object {
@@ -61,5 +85,7 @@ class PanelSessionStore(context: Context) {
         const val KEY_EMAIL = "email"
         const val KEY_TOKEN = "token"
         const val KEY_SELECTED_CONFIG = "selected_config_id"
+        const val KEY_LAST_SERVER = "last_server"
+        const val KEY_LAST_EMAIL = "last_email"
     }
 }
