@@ -163,6 +163,8 @@
     <string name="panel_config_not_imported">Ещё не импортирована</string>
     <string name="panel_config_no_handshake">Нет рукопожатия</string>
     <string name="panel_config_handshake">Рукопожатие %1$s назад</string>
+    <string name="panel_config_reimport">Обновить конфигурацию с панели</string>
+    <string name="panel_config_reimported">Конфигурация обновлена</string>
     <string name="panel_config_delete">Удалить конфигурацию</string>
     <string name="panel_config_delete_message">Ключи стираются на панели, локальный туннель удаляется. Отменить это нельзя.</string>
     <string name="panel_config_state_enabled">Включена</string>

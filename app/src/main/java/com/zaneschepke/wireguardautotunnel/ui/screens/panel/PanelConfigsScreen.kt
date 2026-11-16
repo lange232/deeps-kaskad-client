@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Public
+import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -133,6 +134,14 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                                         checked = config.enabled,
                                         onClick = { viewModel.togglePanelConfig(config.id) },
                                     )
+                                    IconButton(
+                                        onClick = { viewModel.reimportPanelConfig(config.id) },
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.Refresh,
+                                            stringResource(R.string.panel_config_reimport),
+                                        )
+                                    }
                                     IconButton(
                                         onClick = { deleteTarget = config },
                                         modifier = modifier,

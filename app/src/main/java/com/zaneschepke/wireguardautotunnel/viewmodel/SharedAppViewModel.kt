@@ -975,6 +975,42 @@ class SharedAppViewModel(
     }
 
     /**
+     * Re-fetches the `.conf` of a configuration and refreshes the tunnel imported from it, keeping
+     * the tunnel's own settings (split tunnel, position, group, auto-tunnel rules). The panel
+     * renders the config on every request, so this is how a server-side change such as the
+     * keepalive interval reaches an already imported tunnel.
+     */
+    fun reimportPanelConfig(configId: Int) = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        val link = panelConfigLinkRepository.getByConfigId(configId) ?: return@intent
+        val tunnel = tunnelRepository.findByTunnelName(link.tunnelName) ?: return@intent
+        try {
+            val conf = panelApi.fetchConfig(session.server, session.token, configId)
+            Config.parseQuickString(conf).validate()
+            val activeIds =
+                tunnelCoordinator.backendStatus.firstOrNull()?.activeTunnels?.keys.orEmpty()
+            val wasActive = activeIds.contains(tunnel.id)
+            if (wasActive) tunnelCoordinator.stopTunnel(tunnel.id)
+            val updated = tunnel.copy(quickConfig = conf)
+            tunnelRepository.save(updated)
+            if (wasActive) tunnelCoordinator.startTunnel(updated)
+            postSideEffect(
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.panel_config_reimported),
+                    ToastType.Success,
+                ),
+            )
+        } catch (e: ConfigParseException) {
+            postSideEffect(GlobalSideEffect.Snackbar(e.asStringValue(), ToastType.Error))
+        } catch (e: PanelApiException) {
+            handlePanelError(e)
+        } catch (e: Exception) {
+            Timber.e(e)
+            panelUnreachable()
+        }
+    }
+
+    /**
      * Makes a configuration the running one: imports it when needed, then switches the tunnel —
      * stops the other active tunnels, starts the one bound to this configuration. This is what a
      * row tap does, because one device should use one configuration at a time.

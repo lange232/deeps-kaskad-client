@@ -184,6 +184,8 @@
     <string name="panel_config_not_imported">Not imported yet</string>
     <string name="panel_config_no_handshake">No handshake</string>
     <string name="panel_config_handshake">Handshake %1$s ago</string>
+    <string name="panel_config_reimport">Reload configuration from the panel</string>
+    <string name="panel_config_reimported">Configuration reloaded</string>
     <string name="panel_config_delete">Delete configuration</string>
     <string name="panel_config_delete_message">The keys are erased on the panel and the local tunnel is removed. This cannot be undone.</string>
     <string name="panel_config_state_enabled">Enabled</string>
