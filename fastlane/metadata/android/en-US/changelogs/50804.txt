@@ -1,0 +1,7 @@
+What's new:
+- Accounts with several configurations: one configuration per device
+- Configuration list: create, enable/disable, delete, reload from the panel
+- Exit order is now per configuration
+- A device keeps its own configuration across reinstalls
+- The panel address and email stay in the sign-in form after a failed attempt
+- New launcher, notification and TV banner icons
