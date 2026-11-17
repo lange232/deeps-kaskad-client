@@ -1,0 +1,6 @@
+What's new:
+- deeps kaskad brand line above the title on the main screens
+- Settings and configurations screens drawn as panel-style sections
+- Configurations screen is management only: no import, no reconnect on tap
+- Configuration actions: save to file, share, copy
+- One exit order entry point instead of three
