@@ -1,0 +1,4 @@
+What's new:
+- New application icon: the deeps kaskad wordmark on two lines
+- Application name in capitals: DEEPS KASKAD
+- Settings rows no longer touch the screen edges

@@ -108,7 +108,7 @@ configure<ApplicationExtension> {
 
         debug {
             applicationIdSuffix = ".debug"
-            resValue("string", "app_name", "deeps kaskad Debug")
+            resValue("string", "app_name", "DEEPS KASKAD DEBUG")
             isDebuggable = true
             manifestPlaceholders["providerAuthority"] = "${Constants.APP_NAME}.provider.debug"
             buildConfigField(
@@ -121,7 +121,7 @@ configure<ApplicationExtension> {
         create(Constants.NIGHTLY) {
             initWith(buildTypes.getByName(Constants.RELEASE))
             applicationIdSuffix = ".nightly"
-            resValue("string", "app_name", "deeps kaskad Nightly")
+            resValue("string", "app_name", "DEEPS KASKAD NIGHTLY")
             manifestPlaceholders["providerAuthority"] = "${Constants.APP_NAME}.provider.nightly"
             buildConfigField(
                 "String",
