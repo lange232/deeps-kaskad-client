@@ -40,11 +40,14 @@ import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 @Composable
-fun PanelExitsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) {
+fun PanelExitsScreen(
+    configId: Int,
+    viewModel: SharedAppViewModel = koinActivityViewModel(),
+) {
     val navController = LocalNavController.current
     val exits by viewModel.panelExits.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) { viewModel.loadPanelExits() }
+    LaunchedEffect(configId) { viewModel.loadPanelExits(configId) }
 
     Column(
         horizontalAlignment = Alignment.Start,
@@ -129,7 +132,7 @@ fun PanelExitsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) {
                 leading = { Icon(Icons.Outlined.Save, contentDescription = null) },
                 title = stringResource(R.string.save),
                 onClick = {
-                    viewModel.savePanelExitOrder()
+                    viewModel.savePanelExitOrder(configId)
                     navController.pop()
                 },
             )

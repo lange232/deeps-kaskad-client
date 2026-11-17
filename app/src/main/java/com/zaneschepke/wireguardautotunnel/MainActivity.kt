@@ -758,9 +758,9 @@ class MainActivity : AppCompatActivity() {
                                                 entry<Route.Logs> { LogsScreen() }
                                                 entry<Route.Support> { SupportScreen() }
                                                 entry<Route.License> { LicenseScreen() }
-                                                entry<Route.PanelExits> { PanelExitsScreen() }
+                                                entry<Route.PanelExits> { key -> PanelExitsScreen(key.configId) }
                                                 entry<Route.PanelConfigs> { PanelConfigsScreen() }
-                                                entry<Route.PanelSubnets> { PanelSubnetsScreen() }
+                                                entry<Route.PanelSubnets> { key -> PanelSubnetsScreen(key.configId) }
                                                 entry<Route.Donate> { DonateScreen() }
                                                 entry<Route.Addresses> { AddressesScreen() }
                                                 entry<Route.PreferredTunnel> { key ->

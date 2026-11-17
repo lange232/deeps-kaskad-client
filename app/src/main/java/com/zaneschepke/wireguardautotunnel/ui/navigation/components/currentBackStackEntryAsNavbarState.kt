@@ -175,7 +175,7 @@ fun currentRouteAsNavbarState(
                         topTitle = context.getString(R.string.licenses),
                     )
                 }
-                PanelExits -> {
+                is PanelExits -> {
                     NavbarState(
                         topLeading = { TvBackButton { navController.pop() } },
                         showBottomItems = true,
@@ -189,7 +189,7 @@ fun currentRouteAsNavbarState(
                         topTitle = context.getString(R.string.panel_configs),
                     )
                 }
-                PanelSubnets -> {
+                is PanelSubnets -> {
                     NavbarState(
                         topLeading = { TvBackButton { navController.pop() } },
                         showBottomItems = true,

@@ -39,11 +39,14 @@ import org.koin.compose.viewmodel.koinActivityViewModel
  * `.conf`, because the enabled subnets change `AllowedIPs` and DNS.
  */
 @Composable
-fun PanelSubnetsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) {
+fun PanelSubnetsScreen(
+    configId: Int,
+    viewModel: SharedAppViewModel = koinActivityViewModel(),
+) {
     val navController = LocalNavController.current
     val subnets by viewModel.panelSubnets.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) { viewModel.loadPanelSubnets() }
+    LaunchedEffect(configId) { viewModel.loadPanelSubnets(configId) }
 
     Column(
         horizontalAlignment = Alignment.Start,
@@ -90,7 +93,7 @@ fun PanelSubnetsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                 leading = { Icon(Icons.Outlined.Save, contentDescription = null) },
                 title = stringResource(R.string.save),
                 onClick = {
-                    viewModel.savePanelSubnets()
+                    viewModel.savePanelSubnets(configId)
                     navController.pop()
                 },
             )

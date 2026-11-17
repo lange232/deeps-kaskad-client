@@ -1067,9 +1067,8 @@ class SharedAppViewModel(
 
     // ------------------------------------------------------------- panel exits
 
-    fun loadPanelExits() = intent {
+    fun loadPanelExits(configId: Int) = intent {
         val session = panelSessionStore.session.value ?: return@intent
-        val configId = panelSessionStore.selectedConfigId.value
         _panelExits.value = null
         try {
             _panelExits.value = panelApi.fetchExits(session.server, session.token, configId)
@@ -1081,9 +1080,8 @@ class SharedAppViewModel(
         }
     }
 
-    fun loadPanelSubnets() = intent {
+    fun loadPanelSubnets(configId: Int) = intent {
         val session = panelSessionStore.session.value ?: return@intent
-        val configId = panelSessionStore.selectedConfigId.value
         _panelSubnets.value = null
         try {
             _panelSubnets.value = panelApi.fetchSubnets(session.server, session.token, configId)
@@ -1107,10 +1105,9 @@ class SharedAppViewModel(
      * Saves the enabled subnets and refreshes the `.conf` of the linked tunnel: subnets change
      * `AllowedIPs` and DNS, so the device would otherwise keep the old routes.
      */
-    fun savePanelSubnets() = intent {
+    fun savePanelSubnets(configId: Int) = intent {
         val session = panelSessionStore.session.value ?: return@intent
         val subnets = _panelSubnets.value ?: return@intent
-        val configId = panelSessionStore.selectedConfigId.value
         try {
             panelApi.setSubnets(
                 server = session.server,
@@ -1118,7 +1115,7 @@ class SharedAppViewModel(
                 configId = configId,
                 subnetIds = subnets.filter { it.enabled }.map { it.id },
             )
-            if (configId != null) refreshLinkedTunnelConf(session, configId)
+            refreshLinkedTunnelConf(session, configId)
             postSideEffect(
                 GlobalSideEffect.Snackbar(
                     StringValue.StringResource(R.string.panel_subnets_saved),
@@ -1156,14 +1153,14 @@ class SharedAppViewModel(
         _panelExits.value = exits
     }
 
-    fun savePanelExitOrder() = intent {
+    fun savePanelExitOrder(configId: Int) = intent {
         val session = panelSessionStore.session.value ?: return@intent
         val exits = _panelExits.value ?: return@intent
         try {
             panelApi.setExitOrder(
                 server = session.server,
                 token = session.token,
-                configId = panelSessionStore.selectedConfigId.value,
+                configId = configId,
                 exitIds = exits.map { it.id },
             )
             postSideEffect(

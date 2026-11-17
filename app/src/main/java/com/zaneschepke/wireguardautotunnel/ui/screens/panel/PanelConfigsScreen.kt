@@ -122,16 +122,6 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                 onClick = { createDialog = true },
             )
             SurfaceRow(
-                leading = { Icon(Icons.Outlined.Lan, contentDescription = null) },
-                title = stringResource(R.string.panel_subnets),
-                onClick = { navController.push(Route.PanelSubnets) },
-            )
-            SurfaceRow(
-                leading = { Icon(Icons.Outlined.Public, contentDescription = null) },
-                title = stringResource(R.string.panel_exits),
-                onClick = { navController.push(Route.PanelExits) },
-            )
-            SurfaceRow(
                 leading = { Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null) },
                 title = stringResource(R.string.panel_sign_out),
                 onClick = {
@@ -155,6 +145,22 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
     actionsTarget?.let { config ->
         ModalBottomSheet(onDismissRequest = { actionsTarget = null }) {
             Column(modifier = Modifier.padding(bottom = 24.dp)) {
+                SurfaceRow(
+                    leading = { Icon(Icons.Outlined.Lan, contentDescription = null) },
+                    title = stringResource(R.string.panel_subnets),
+                    onClick = {
+                        actionsTarget = null
+                        navController.push(Route.PanelSubnets(config.id))
+                    },
+                )
+                SurfaceRow(
+                    leading = { Icon(Icons.Outlined.Public, contentDescription = null) },
+                    title = stringResource(R.string.panel_exits),
+                    onClick = {
+                        actionsTarget = null
+                        navController.push(Route.PanelExits(config.id))
+                    },
+                )
                 SurfaceRow(
                     leading = { Icon(Icons.Outlined.Save, contentDescription = null) },
                     title = stringResource(R.string.panel_config_save),
