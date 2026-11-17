@@ -624,7 +624,7 @@ class MainActivity : AppCompatActivity() {
                                 Column(
                                     modifier =
                                         Modifier.fillMaxSize()
-                                            .background(MaterialTheme.colorScheme.surface)
+                                            .background(MaterialTheme.colorScheme.background)
                                             .padding(
                                                 top = padding.calculateTopPadding().plus(8.dp),
                                                 bottom = padding.calculateBottomPadding(),
