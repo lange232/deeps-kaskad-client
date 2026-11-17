@@ -32,6 +32,7 @@ import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
 import com.zaneschepke.wireguardautotunnel.ui.common.label.GroupLabel
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.PanelChip
 import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
 import com.zaneschepke.wireguardautotunnel.ui.theme.AlertRed
 import com.zaneschepke.wireguardautotunnel.ui.theme.SilverTree
@@ -89,14 +90,12 @@ fun PanelExitsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) {
                             title = exit.comment.ifBlank { exit.name },
                             description = {
                                 val name = exit.name
-                                val rtt = exit.rttMs?.let { "${it.toInt()} ms" }
-                                DescriptionText(
-                                    listOfNotNull(
-                                            if (!exit.comment.isBlank()) name else null,
-                                            rtt,
-                                        )
-                                        .joinToString(" · "),
-                                )
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    if (!exit.comment.isBlank()) {
+                                        DescriptionText(name)
+                                    }
+                                    exit.rttMs?.let { PanelChip("${it.toInt()} ms") }
+                                }
                             },
                             trailing = { modifier ->
                                 Row {

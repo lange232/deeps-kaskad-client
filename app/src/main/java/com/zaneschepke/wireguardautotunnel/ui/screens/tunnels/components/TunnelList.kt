@@ -58,6 +58,7 @@ import com.zaneschepke.wireguardautotunnel.ui.LocalIsAndroidTV
 import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
 import com.zaneschepke.wireguardautotunnel.ui.common.ExpandingRowListItem
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.MonoText
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SwitchWithDivider
 import com.zaneschepke.wireguardautotunnel.ui.common.scroll.appScrollbar
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
@@ -472,6 +473,7 @@ private fun ListRow(
     }
 }
 
+@Composable
 private fun tunnelRowDescription(
     tunnel: TunnelConfig,
     uiState: TunnelsUiState,
@@ -479,9 +481,16 @@ private fun tunnelRowDescription(
     val entryName =
         tunnel.entryTunnelId?.let { id -> uiState.tunnels.firstOrNull { it.id == id }?.name }
     val latency = uiState.pingLatencies[tunnel.id]
-    if (entryName == null && latency == null) return null
+    val endpoint =
+        remember(tunnel.quickConfig) {
+            runCatching { tunnel.getConfig().peers.firstOrNull()?.endpoint }.getOrNull()
+        }
+    if (entryName == null && latency == null && endpoint == null) return null
     return {
         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (endpoint != null) {
+                MonoText(endpoint)
+            }
             if (entryName != null) {
                 Text(
                     text = stringResource(R.string.via_entry, entryName),

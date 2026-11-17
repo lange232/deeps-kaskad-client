@@ -2,6 +2,7 @@ package com.zaneschepke.wireguardautotunnel.ui.common.panel
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -101,4 +102,65 @@ fun MonoText(
         color = color,
         modifier = modifier,
     )
+}
+
+/** Small status label, like the panel's subtle badges. */
+@Composable
+fun PanelChip(
+    text: String,
+    modifier: Modifier = Modifier,
+    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        color = contentColor,
+        maxLines = 1,
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(KaskadShapes.sm))
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+                .padding(horizontal = 6.dp, vertical = 2.dp),
+    )
+}
+
+/** Button in the panel's style: filled for the main action, outlined for the rest. */
+@Composable
+fun PanelButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    filled: Boolean = true,
+) {
+    val shape = RoundedCornerShape(KaskadShapes.md)
+    val contentColor =
+        if (filled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+    val content =
+        @Composable {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (enabled) contentColor else MaterialTheme.colorScheme.outline,
+            )
+        }
+    Box(
+        modifier =
+            modifier
+                .clip(shape)
+                .then(
+                    if (filled) Modifier.background(MaterialTheme.colorScheme.primary)
+                    else
+                        Modifier.border(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.24f),
+                            shape,
+                        )
+                )
+                .clickable(enabled = enabled, onClick = onClick)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+        contentAlignment = androidx.compose.ui.Alignment.Center,
+    ) {
+        content()
+    }
 }
