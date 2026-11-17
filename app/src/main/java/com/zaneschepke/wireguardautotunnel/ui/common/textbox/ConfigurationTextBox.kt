@@ -44,10 +44,10 @@ fun ConfigurationTextBox(
         CustomTextField(
             isError = isError,
             textStyle =
-                MaterialTheme.typography.bodySmall.copy(
+                MaterialTheme.typography.bodyMedium.copy(
                     color = MaterialTheme.colorScheme.onSurface,
                 ),
-            modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 48.dp),
+            modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 44.dp),
             value = value,
             visualTransformation = visualTransformation,
             singleLine = singleLine,

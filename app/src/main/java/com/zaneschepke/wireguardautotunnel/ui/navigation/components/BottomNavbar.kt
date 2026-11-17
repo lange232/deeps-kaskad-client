@@ -20,6 +20,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
@@ -35,9 +36,20 @@ import com.zaneschepke.wireguardautotunnel.ui.theme.SilverTree
 fun BottomNavbar(isAutoTunnelActive: Boolean, currentTab: Tab, onTabSelected: (Tab) -> Unit) {
     val isTv = LocalIsAndroidTV.current
     val rippleTheme = LocalRippleConfiguration.current
+    val hairline = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f)
     val theme = remember { if (isTv) rippleTheme else null }
     FlexibleBottomAppBar(
-        containerColor = MaterialTheme.colorScheme.surface,
+        modifier =
+            Modifier.drawBehind {
+                val stroke = 1.dp.toPx()
+                drawLine(
+                    color = hairline,
+                    start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                    end = androidx.compose.ui.geometry.Offset(size.width, 0f),
+                    strokeWidth = stroke,
+                )
+            },
+        containerColor = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onSurface,
         content = {
             val arrangement = BottomAppBarDefaults.FlexibleFixedHorizontalArrangement
