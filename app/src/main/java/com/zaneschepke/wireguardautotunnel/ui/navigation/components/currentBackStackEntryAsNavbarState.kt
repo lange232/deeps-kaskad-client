@@ -61,7 +61,7 @@ import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.Logs
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.Monitoring
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.Notifications
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.PanelConfigs
-import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.PanelExits
+import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.PanelRouting
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.PreferredTunnel
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.ProxySettings
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.Security
@@ -104,6 +104,7 @@ fun currentRouteAsNavbarState(
                 AutoTunnel -> {
                     NavbarState(
                         showBottomItems = true,
+                        showBrand = true,
                         topTitle =
                             if (!globalState.isLocationDisclosureShown) null
                             else {
@@ -173,11 +174,11 @@ fun currentRouteAsNavbarState(
                         topTitle = context.getString(R.string.licenses),
                     )
                 }
-                PanelExits -> {
+                is PanelRouting -> {
                     NavbarState(
                         topLeading = { TvBackButton { navController.pop() } },
                         showBottomItems = true,
-                        topTitle = context.getString(R.string.panel_exits),
+                        topTitle = context.getString(R.string.panel_routing),
                     )
                 }
                 PanelConfigs -> {
@@ -231,6 +232,7 @@ fun currentRouteAsNavbarState(
                 Settings -> {
                     NavbarState(
                         showBottomItems = true,
+                        showBrand = true,
                         topTitle = context.getString(R.string.settings),
                     )
                 }
@@ -382,6 +384,7 @@ fun currentRouteAsNavbarState(
                 Tunnels -> {
                     val selecting = globalState.selectedTunnelCount > 0
                     NavbarState(
+                        showBrand = !selecting && !globalState.isReorderMode,
                         topLeading =
                             when {
                                 globalState.isReorderMode -> {

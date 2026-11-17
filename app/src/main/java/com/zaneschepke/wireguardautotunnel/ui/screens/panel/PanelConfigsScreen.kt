@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Lan
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Save
@@ -42,7 +43,9 @@ import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
 import com.zaneschepke.wireguardautotunnel.ui.common.button.ThemedSwitch
 import com.zaneschepke.wireguardautotunnel.ui.common.dialog.InfoDialog
-import com.zaneschepke.wireguardautotunnel.ui.common.label.GroupLabel
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.MonoText
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.PanelDivider
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.PanelSection
 import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
 import com.zaneschepke.wireguardautotunnel.ui.common.textbox.ConfigurationTextBox
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
@@ -71,17 +74,13 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.Top),
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {
-        Column {
-            GroupLabel(
-                stringResource(R.string.panel_configs),
+        session?.let {
+            DescriptionText(
+                "${it.server} · ${it.email}",
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            session?.let {
-                DescriptionText(
-                    "${it.server} · ${it.email}",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                )
-            }
+        }
+        PanelSection(title = stringResource(R.string.panel_configs)) {
             val current = configs
             when {
                 current == null ->
@@ -99,11 +98,12 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 else ->
-                    current.forEach { config ->
+                    current.forEachIndexed { index, config ->
+                        if (index > 0) PanelDivider()
                         SurfaceRow(
                             leading = { Icon(Icons.Outlined.Router, contentDescription = null) },
                             title = config.name,
-                            description = { DescriptionText(config.ip) },
+                            description = { MonoText(config.ip) },
                             onClick = { actionsTarget = config },
                             trailing = { _ ->
                                 ThemedSwitch(
@@ -115,16 +115,11 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                     }
             }
         }
-        Column {
+        PanelSection {
             SurfaceRow(
                 leading = { Icon(Icons.Filled.Add, contentDescription = null) },
                 title = stringResource(R.string.panel_config_create),
                 onClick = { createDialog = true },
-            )
-            SurfaceRow(
-                leading = { Icon(Icons.Outlined.Public, contentDescription = null) },
-                title = stringResource(R.string.panel_exits),
-                onClick = { navController.push(Route.PanelExits) },
             )
             SurfaceRow(
                 leading = { Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null) },
@@ -150,6 +145,14 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
     actionsTarget?.let { config ->
         ModalBottomSheet(onDismissRequest = { actionsTarget = null }) {
             Column(modifier = Modifier.padding(bottom = 24.dp)) {
+                SurfaceRow(
+                    leading = { Icon(Icons.Outlined.Public, contentDescription = null) },
+                    title = stringResource(R.string.panel_routing),
+                    onClick = {
+                        actionsTarget = null
+                        navController.push(Route.PanelRouting(config.id))
+                    },
+                )
                 SurfaceRow(
                     leading = { Icon(Icons.Outlined.Save, contentDescription = null) },
                     title = stringResource(R.string.panel_config_save),

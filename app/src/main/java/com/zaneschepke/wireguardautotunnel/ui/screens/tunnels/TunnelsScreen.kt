@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.NetworkCheck
 import androidx.compose.material.icons.rounded.SortByAlpha
@@ -17,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
 import com.zaneschepke.wireguardautotunnel.R
@@ -29,6 +31,7 @@ import com.zaneschepke.wireguardautotunnel.ui.common.functions.rememberFileExpor
 import com.zaneschepke.wireguardautotunnel.ui.common.functions.rememberFileImportLauncherForResult
 import com.zaneschepke.wireguardautotunnel.ui.common.sheet.CustomBottomSheet
 import com.zaneschepke.wireguardautotunnel.ui.common.sheet.SheetOption
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.PanelContainer
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.GroupNameDialog
 import com.zaneschepke.wireguardautotunnel.ui.screens.tunnels.components.GroupSelectionSheet
@@ -358,5 +361,7 @@ fun TunnelsScreen(sharedViewModel: SharedAppViewModel = koinActivityViewModel())
         )
     }
 
-    TunnelList(uiState, Modifier.fillMaxSize(), sharedViewModel)
+    PanelContainer(Modifier.fillMaxSize().padding(horizontal = 12.dp)) {
+        TunnelList(uiState, Modifier.fillMaxSize(), sharedViewModel)
+    }
 }

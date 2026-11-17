@@ -27,9 +27,9 @@ sealed class Route : NavKey {
 
     @Keep @Serializable data object License : Route()
 
-    @Keep @Serializable data object PanelExits : Route()
-
     @Keep @Serializable data object PanelConfigs : Route()
+
+    @Keep @Serializable data class PanelRouting(val configId: Int) : Route()
 
     @Keep
     @Serializable
@@ -191,8 +191,8 @@ enum class Tab(
                 is Route.IPv6,
                 is Route.EntryTunnel,
                 is Route.SplitTunnel,
-                Route.PanelExits,
-                Route.PanelConfigs -> TUNNELS
+                Route.PanelConfigs,
+                is Route.PanelRouting -> TUNNELS
                 is Route.AutoTunnel,
                 Route.WifiDetectionMethod,
                 Route.WifiPreferences,

@@ -117,7 +117,7 @@ import com.zaneschepke.wireguardautotunnel.ui.screens.autotunnel.disclosure.Loca
 import com.zaneschepke.wireguardautotunnel.ui.screens.autotunnel.preferred.PreferredTunnelScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.autotunnel.wifi.WifiSettingsScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.panel.PanelConfigsScreen
-import com.zaneschepke.wireguardautotunnel.ui.screens.panel.PanelExitsScreen
+import com.zaneschepke.wireguardautotunnel.ui.screens.panel.PanelRoutingScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.pin.PinLockScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.SettingsScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.appearance.AppearanceScreen
@@ -624,7 +624,7 @@ class MainActivity : AppCompatActivity() {
                                 Column(
                                     modifier =
                                         Modifier.fillMaxSize()
-                                            .background(MaterialTheme.colorScheme.surface)
+                                            .background(MaterialTheme.colorScheme.background)
                                             .padding(
                                                 top = padding.calculateTopPadding().plus(8.dp),
                                                 bottom = padding.calculateBottomPadding(),
@@ -757,8 +757,8 @@ class MainActivity : AppCompatActivity() {
                                                 entry<Route.Logs> { LogsScreen() }
                                                 entry<Route.Support> { SupportScreen() }
                                                 entry<Route.License> { LicenseScreen() }
-                                                entry<Route.PanelExits> { PanelExitsScreen() }
                                                 entry<Route.PanelConfigs> { PanelConfigsScreen() }
+                                                entry<Route.PanelRouting> { key -> PanelRoutingScreen(key.configId) }
                                                 entry<Route.Donate> { DonateScreen() }
                                                 entry<Route.Addresses> { AddressesScreen() }
                                                 entry<Route.PreferredTunnel> { key ->
