@@ -20,6 +20,7 @@ import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelExit
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelLoginDraft
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelSession
 import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelSessionStore
+import com.zaneschepke.wireguardautotunnel.data.network.panel.PanelSubnet
 import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelConfig
 import com.zaneschepke.wireguardautotunnel.domain.model.TunnelGroup
@@ -802,9 +803,14 @@ class SharedAppViewModel(
     private val _panelExits = MutableStateFlow<List<PanelExit>?>(null)
     val panelExits: StateFlow<List<PanelExit>?> = _panelExits.asStateFlow()
 
+    /** Null while loading; empty when the account has no granted subnets. */
+    private val _panelSubnets = MutableStateFlow<List<PanelSubnet>?>(null)
+    val panelSubnets: StateFlow<List<PanelSubnet>?> = _panelSubnets.asStateFlow()
+
     private fun clearPanelSession() {
         panelSessionStore.clear()
         _panelExits.value = null
+        _panelSubnets.value = null
         _panelConfigs.value = null
     }
 
@@ -1073,6 +1079,72 @@ class SharedAppViewModel(
             Timber.e(e)
             panelUnreachable()
         }
+    }
+
+    fun loadPanelSubnets() = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        val configId = panelSessionStore.selectedConfigId.value
+        _panelSubnets.value = null
+        try {
+            _panelSubnets.value = panelApi.fetchSubnets(session.server, session.token, configId)
+        } catch (e: PanelApiException) {
+            handlePanelError(e)
+        } catch (e: Exception) {
+            Timber.e(e)
+            panelUnreachable()
+        }
+    }
+
+    fun togglePanelSubnet(subnetId: Int) {
+        val subnets = _panelSubnets.value?.toMutableList() ?: return
+        val index = subnets.indexOfFirst { it.id == subnetId }
+        if (index < 0) return
+        subnets[index] = subnets[index].copy(enabled = !subnets[index].enabled)
+        _panelSubnets.value = subnets
+    }
+
+    /**
+     * Saves the enabled subnets and refreshes the `.conf` of the linked tunnel: subnets change
+     * `AllowedIPs` and DNS, so the device would otherwise keep the old routes.
+     */
+    fun savePanelSubnets() = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        val subnets = _panelSubnets.value ?: return@intent
+        val configId = panelSessionStore.selectedConfigId.value
+        try {
+            panelApi.setSubnets(
+                server = session.server,
+                token = session.token,
+                configId = configId,
+                subnetIds = subnets.filter { it.enabled }.map { it.id },
+            )
+            if (configId != null) refreshLinkedTunnelConf(session, configId)
+            postSideEffect(
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.panel_subnets_saved),
+                    ToastType.Success,
+                )
+            )
+        } catch (e: PanelApiException) {
+            handlePanelError(e)
+        } catch (e: Exception) {
+            Timber.e(e)
+            panelUnreachable()
+        }
+    }
+
+    /** Rewrites the tunnel's config from the panel without touching any of its settings. */
+    private suspend fun refreshLinkedTunnelConf(session: PanelSession, configId: Int) {
+        val link = panelConfigLinkRepository.getByConfigId(configId) ?: return
+        val tunnel = tunnelRepository.findByTunnelName(link.tunnelName) ?: return
+        val conf = panelApi.fetchConfig(session.server, session.token, configId)
+        Config.parseQuickString(conf).validate()
+        val activeIds = tunnelCoordinator.backendStatus.firstOrNull()?.activeTunnels?.keys.orEmpty()
+        val wasActive = activeIds.contains(tunnel.id)
+        if (wasActive) tunnelCoordinator.stopTunnel(tunnel.id)
+        val updated = tunnel.copy(quickConfig = conf)
+        tunnelRepository.save(updated)
+        if (wasActive) tunnelCoordinator.startTunnel(updated)
     }
 
     fun movePanelExit(exitId: Int, up: Boolean) {

@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Lan
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Router
 import androidx.compose.material.icons.outlined.Save
@@ -119,6 +120,11 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                 leading = { Icon(Icons.Filled.Add, contentDescription = null) },
                 title = stringResource(R.string.panel_config_create),
                 onClick = { createDialog = true },
+            )
+            SurfaceRow(
+                leading = { Icon(Icons.Outlined.Lan, contentDescription = null) },
+                title = stringResource(R.string.panel_subnets),
+                onClick = { navController.push(Route.PanelSubnets) },
             )
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.Public, contentDescription = null) },

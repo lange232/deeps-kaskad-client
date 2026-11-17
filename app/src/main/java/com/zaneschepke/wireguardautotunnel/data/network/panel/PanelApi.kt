@@ -308,6 +308,51 @@ class PanelApi(context: Context) {
         )
     }
 
+    /** Subnets granted to the account, with their state for this configuration. */
+    suspend fun fetchSubnets(
+        server: String,
+        token: String,
+        configId: Int? = null,
+    ): List<PanelSubnet> {
+        val path =
+            if (configId == null) "/api/me/subnets" else "/api/me/subnets?config_id=$configId"
+        val response =
+            requireOk(
+                client.get(apiUrl(server, path)) {
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
+            )
+        return Json.parseToJsonElement(response.bodyAsText()).jsonArray.map { element ->
+            val subnet = element.jsonObject
+            PanelSubnet(
+                id = subnet.getValue("id").jsonPrimitive.int,
+                name = subnet.getValue("name").jsonPrimitive.content,
+                comment = subnet["comment"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                routes = subnet["routes"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                enabled = subnet["enabled"]?.jsonPrimitive?.booleanOrNull == true,
+            )
+        }
+    }
+
+    /**
+     * Replaces the enabled subnets of a configuration. Unlike the exit order this is a subset:
+     * an empty list disables everything.
+     */
+    suspend fun setSubnets(server: String, token: String, configId: Int?, subnetIds: List<Int>) {
+        requireOk(
+            client.submitForm(
+                url = apiUrl(server, "/api/me/subnets"),
+                formParameters =
+                    Parameters.build {
+                        if (configId != null) append("config_id", configId.toString())
+                        subnetIds.forEach { append("subnet_id", it.toString()) }
+                    },
+            ) {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+        )
+    }
+
     /** Best-effort token revocation; the network result does not matter. */
     suspend fun logout(server: String, token: String) {
         try {
@@ -338,6 +383,14 @@ data class PanelLoginResult(
     val email: String,
     val configs: List<PanelConfig>,
     val supportsConfigs: Boolean,
+)
+
+data class PanelSubnet(
+    val id: Int,
+    val name: String,
+    val comment: String,
+    val routes: String,
+    val enabled: Boolean,
 )
 
 data class PanelExit(

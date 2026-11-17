@@ -118,6 +118,7 @@ import com.zaneschepke.wireguardautotunnel.ui.screens.autotunnel.preferred.Prefe
 import com.zaneschepke.wireguardautotunnel.ui.screens.autotunnel.wifi.WifiSettingsScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.panel.PanelConfigsScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.panel.PanelExitsScreen
+import com.zaneschepke.wireguardautotunnel.ui.screens.panel.PanelSubnetsScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.pin.PinLockScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.SettingsScreen
 import com.zaneschepke.wireguardautotunnel.ui.screens.settings.appearance.AppearanceScreen
@@ -759,6 +760,7 @@ class MainActivity : AppCompatActivity() {
                                                 entry<Route.License> { LicenseScreen() }
                                                 entry<Route.PanelExits> { PanelExitsScreen() }
                                                 entry<Route.PanelConfigs> { PanelConfigsScreen() }
+                                                entry<Route.PanelSubnets> { PanelSubnetsScreen() }
                                                 entry<Route.Donate> { DonateScreen() }
                                                 entry<Route.Addresses> { AddressesScreen() }
                                                 entry<Route.PreferredTunnel> { key ->
