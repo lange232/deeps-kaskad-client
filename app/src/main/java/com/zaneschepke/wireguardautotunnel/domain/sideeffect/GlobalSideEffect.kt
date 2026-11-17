@@ -37,6 +37,15 @@ sealed class GlobalSideEffect {
         GlobalSideEffect()
 
     data class InstallApk(val apk: File) : GlobalSideEffect()
+
+    /** Writes a file into the share directory and opens the system share sheet. */
+    data class ShareFile(
+        val fileName: String,
+        val mimeType: String,
+        val prepareFile: suspend (File) -> Unit,
+    ) : GlobalSideEffect()
+
+    data class CopyToClipboard(val text: String, val message: StringValue) : GlobalSideEffect()
 }
 
 sealed class NotificationPendingAction {

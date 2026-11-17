@@ -928,9 +928,8 @@ class SharedAppViewModel(
     fun createPanelConfig(name: String? = null) = intent {
         val session = panelSessionStore.session.value ?: return@intent
         try {
-            val config = panelApi.createConfig(session.server, session.token, name)
+            panelApi.createConfig(session.server, session.token, name)
             _panelConfigs.value = panelApi.fetchConfigs(session.server, session.token)
-            importPanelConfigLocked(config, session)
         } catch (e: PanelApiException) {
             handlePanelError(e)
         } catch (e: Exception) {
@@ -1004,99 +1003,60 @@ class SharedAppViewModel(
 
     fun selectPanelConfig(configId: Int) = intent { panelSessionStore.selectConfig(configId) }
 
-    fun importPanelConfig(configId: Int) = intent {
-        val session = panelSessionStore.session.value ?: return@intent
-        val config = _panelConfigs.value?.firstOrNull { it.id == configId } ?: return@intent
-        try {
-            importPanelConfigLocked(config, session)
-        } catch (e: PanelApiException) {
-            handlePanelError(e)
-        } catch (e: Exception) {
-            Timber.e(e)
-            panelUnreachable()
-        }
-    }
-
     /**
-     * Re-fetches the `.conf` of a configuration and refreshes the tunnel imported from it, keeping
-     * the tunnel's own settings (split tunnel, position, group, auto-tunnel rules). The panel
-     * renders the config on every request, so this is how a server-side change such as the
-     * keepalive interval reaches an already imported tunnel.
+     * The `.conf` actions never touch the local tunnel: they exist to move a configuration to
+     * another device, and a tunnel is created only once, when signing in.
      */
-    fun reimportPanelConfig(configId: Int) = intent {
-        val session = panelSessionStore.session.value ?: return@intent
-        val link = panelConfigLinkRepository.getByConfigId(configId) ?: return@intent
-        val tunnel = tunnelRepository.findByTunnelName(link.tunnelName) ?: return@intent
-        try {
-            val conf = panelApi.fetchConfig(session.server, session.token, configId)
-            Config.parseQuickString(conf).validate()
-            val activeIds =
-                tunnelCoordinator.backendStatus.firstOrNull()?.activeTunnels?.keys.orEmpty()
-            val wasActive = activeIds.contains(tunnel.id)
-            if (wasActive) tunnelCoordinator.stopTunnel(tunnel.id)
-            val updated = tunnel.copy(quickConfig = conf)
-            tunnelRepository.save(updated)
-            if (wasActive) tunnelCoordinator.startTunnel(updated)
+    fun savePanelConfig(configId: Int) = intent {
+        panelConfigFile(configId)?.let { (name, conf) ->
             postSideEffect(
-                GlobalSideEffect.Snackbar(
-                    StringValue.StringResource(R.string.panel_config_reimported),
-                    ToastType.Success,
+                GlobalSideEffect.ExportFile(
+                    uri = null,
+                    fileName = "$name.conf",
+                    mimeType = "text/plain",
+                    successMessage = StringValue.StringResource(R.string.export_success),
+                    prepareFile = { file -> file.writeText(conf) },
                 ),
             )
-        } catch (e: ConfigParseException) {
-            postSideEffect(GlobalSideEffect.Snackbar(e.asStringValue(), ToastType.Error))
-        } catch (e: PanelApiException) {
-            handlePanelError(e)
-        } catch (e: Exception) {
-            Timber.e(e)
-            panelUnreachable()
         }
     }
 
-    /**
-     * Makes a configuration the running one: imports it when needed, then switches the tunnel —
-     * stops the other active tunnels, starts the one bound to this configuration. This is what a
-     * row tap does, because one device should use one configuration at a time.
-     */
-    fun switchToPanelConfig(configId: Int) = intent {
-        val session = panelSessionStore.session.value ?: return@intent
-        val config = _panelConfigs.value?.firstOrNull { it.id == configId } ?: return@intent
-        try {
-            importPanelConfigLocked(config, session)
-        } catch (e: PanelApiException) {
-            return@intent handlePanelError(e)
-        } catch (e: Exception) {
-            Timber.e(e)
-            return@intent panelUnreachable()
-        }
-
-        val link = panelConfigLinkRepository.getByConfigId(configId) ?: return@intent
-        val tunnel = tunnelRepository.findByTunnelName(link.tunnelName) ?: return@intent
-        val active = tunnelCoordinator.backendStatus.firstOrNull()?.activeTunnels?.keys.orEmpty()
-        active
-            .filter { it != tunnel.id }
-            .forEach { id ->
-                tunnelRepository.getById(id)?.let { tunnelCoordinator.stopTunnel(it.id) }
-            }
-        if (active.contains(tunnel.id)) return@intent
-
-        if (state.tunnelMode == TunnelMode.VPN && !serviceManager.hasVpnPermission()) {
-            return@intent postSideEffect(
-                GlobalSideEffect.RequestVpnPermission(TunnelMode.VPN, tunnel),
-            )
-        }
-        if (
-            !serviceManager.hasNotificationPermission() &&
-                !appStateRepository.isNotificationPermissionRequested()
-        ) {
-            appStateRepository.setNotificationPermissionRequested(true)
-            return@intent postSideEffect(
-                GlobalSideEffect.RequestNotificationPermission(
-                    NotificationPendingAction.StartTunnel(tunnel),
+    fun sharePanelConfig(configId: Int) = intent {
+        panelConfigFile(configId)?.let { (name, conf) ->
+            postSideEffect(
+                GlobalSideEffect.ShareFile(
+                    fileName = "$name.conf",
+                    mimeType = "text/plain",
+                    prepareFile = { file -> file.writeText(conf) },
                 ),
             )
         }
-        tunnelCoordinator.startTunnel(tunnel)
+    }
+
+    fun copyPanelConfig(configId: Int) = intent {
+        panelConfigFile(configId)?.let { (_, conf) ->
+            postSideEffect(
+                GlobalSideEffect.CopyToClipboard(
+                    text = conf,
+                    message = StringValue.StringResource(R.string.panel_config_copied),
+                ),
+            )
+        }
+    }
+
+    private suspend fun panelConfigFile(configId: Int): Pair<String, String>? {
+        val session = panelSessionStore.session.value ?: return null
+        val config = _panelConfigs.value?.firstOrNull { it.id == configId } ?: return null
+        return try {
+            config.name to panelApi.fetchConfig(session.server, session.token, configId)
+        } catch (e: PanelApiException) {
+            handlePanelError(e)
+            null
+        } catch (e: Exception) {
+            Timber.e(e)
+            panelUnreachable()
+            null
+        }
     }
 
     // ------------------------------------------------------------- panel exits

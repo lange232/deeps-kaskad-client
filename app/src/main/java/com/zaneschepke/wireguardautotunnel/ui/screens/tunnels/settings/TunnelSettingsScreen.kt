@@ -108,11 +108,6 @@ fun TunnelSettingsScreen(
                         },
                     onClick = { navController.push(Route.PanelConfigs) },
                 )
-                SurfaceRow(
-                    leading = { Icon(Icons.Outlined.Public, contentDescription = null) },
-                    title = stringResource(R.string.panel_exits),
-                    onClick = { navController.push(Route.PanelExits) },
-                )
             }
         }
         Column {

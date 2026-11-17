@@ -166,6 +166,27 @@ fun Context.installApk(apkFile: File) {
     startActivity(apkInstallIntent(apkFile))
 }
 
+fun Context.shareFile(file: File, mimeType: String) {
+    val uri = FileProvider.getUriForFile(this, BuildConfig.FILE_PROVIDER_AUTHORITY, file)
+    val intent =
+        Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    startActivity(
+        Intent.createChooser(intent, getString(R.string.share))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    )
+}
+
+fun Context.copyToClipboard(text: String) {
+    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+    clipboard.setPrimaryClip(
+        android.content.ClipData.newPlainText(getString(R.string.configuration), text),
+    )
+}
+
 fun Context.launchPlayStoreListing(): Result<Unit> = runCatching {
     val intent =
         Intent(Intent.ACTION_VIEW, "market://details?id=$packageName".toUri()).apply {

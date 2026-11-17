@@ -12,14 +12,17 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Public
-import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Router
+import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,20 +50,19 @@ import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
 import org.koin.compose.viewmodel.koinActivityViewModel
 
 /**
- * Account configurations of the panel. One configuration is one device: the list is the place to
- * create, enable, delete and import them, and the row that belongs to the running tunnel is
- * highlighted.
+ * Account configurations of the panel: one per device. This screen only manages them on the panel —
+ * a tunnel is created once, when signing in through the import sheet.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) {
     val navController = LocalNavController.current
     val configs by viewModel.panelConfigs.collectAsStateWithLifecycle()
-    val links by viewModel.panelLinks.collectAsStateWithLifecycle()
-    val selectedId by viewModel.selectedPanelConfigId.collectAsStateWithLifecycle()
     val session by viewModel.panelSession.collectAsStateWithLifecycle()
 
     var createDialog by rememberSaveable { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<PanelConfig?>(null) }
+    var actionsTarget by remember { mutableStateOf<PanelConfig?>(null) }
 
     LaunchedEffect(Unit) { viewModel.refreshPanelConfigs() }
 
@@ -73,10 +75,6 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
             GroupLabel(
                 stringResource(R.string.panel_configs),
                 modifier = Modifier.padding(horizontal = 16.dp),
-            )
-            DescriptionText(
-                stringResource(R.string.panel_configs_description),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
             session?.let {
                 DescriptionText(
@@ -102,56 +100,16 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                     )
                 else ->
                     current.forEach { config ->
-                        val link = links.firstOrNull { it.configId == config.id }
                         SurfaceRow(
                             leading = { Icon(Icons.Outlined.Router, contentDescription = null) },
                             title = config.name,
-                            description = {
-                                DescriptionText(
-                                    listOfNotNull(
-                                            config.ip.ifBlank { null },
-                                            stringResource(
-                                                if (config.enabled)
-                                                    R.string.panel_config_state_enabled
-                                                else R.string.panel_config_state_disabled,
-                                            ),
-                                            handshakeLabel(config.handshake),
-                                            link?.let {
-                                                stringResource(
-                                                    R.string.panel_config_linked,
-                                                    it.tunnelName,
-                                                )
-                                            },
-                                        )
-                                        .joinToString(" · "),
+                            description = { DescriptionText(config.ip) },
+                            onClick = { actionsTarget = config },
+                            trailing = { _ ->
+                                ThemedSwitch(
+                                    checked = config.enabled,
+                                    onClick = { viewModel.togglePanelConfig(config.id) },
                                 )
-                            },
-                            selected = config.id == selectedId,
-                            onClick = { viewModel.switchToPanelConfig(config.id) },
-                            trailing = { modifier ->
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    ThemedSwitch(
-                                        checked = config.enabled,
-                                        onClick = { viewModel.togglePanelConfig(config.id) },
-                                    )
-                                    IconButton(
-                                        onClick = { viewModel.reimportPanelConfig(config.id) },
-                                    ) {
-                                        Icon(
-                                            Icons.Outlined.Refresh,
-                                            stringResource(R.string.panel_config_reimport),
-                                        )
-                                    }
-                                    IconButton(
-                                        onClick = { deleteTarget = config },
-                                        modifier = modifier,
-                                    ) {
-                                        Icon(
-                                            Icons.Outlined.Delete,
-                                            stringResource(R.string.panel_config_delete),
-                                        )
-                                    }
-                                }
                             },
                         )
                     }
@@ -163,8 +121,6 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                 title = stringResource(R.string.panel_config_create),
                 onClick = { createDialog = true },
             )
-        }
-        Column {
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.Public, contentDescription = null) },
                 title = stringResource(R.string.panel_exits),
@@ -189,6 +145,45 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                 createDialog = false
             },
         )
+    }
+
+    actionsTarget?.let { config ->
+        ModalBottomSheet(onDismissRequest = { actionsTarget = null }) {
+            Column(modifier = Modifier.padding(bottom = 24.dp)) {
+                SurfaceRow(
+                    leading = { Icon(Icons.Outlined.Save, contentDescription = null) },
+                    title = stringResource(R.string.panel_config_save),
+                    onClick = {
+                        viewModel.savePanelConfig(config.id)
+                        actionsTarget = null
+                    },
+                )
+                SurfaceRow(
+                    leading = { Icon(Icons.Outlined.Share, contentDescription = null) },
+                    title = stringResource(R.string.panel_config_share),
+                    onClick = {
+                        viewModel.sharePanelConfig(config.id)
+                        actionsTarget = null
+                    },
+                )
+                SurfaceRow(
+                    leading = { Icon(Icons.Outlined.ContentCopy, contentDescription = null) },
+                    title = stringResource(R.string.panel_config_copy),
+                    onClick = {
+                        viewModel.copyPanelConfig(config.id)
+                        actionsTarget = null
+                    },
+                )
+                SurfaceRow(
+                    leading = { Icon(Icons.Outlined.Delete, contentDescription = null) },
+                    title = stringResource(R.string.panel_config_delete),
+                    onClick = {
+                        deleteTarget = config
+                        actionsTarget = null
+                    },
+                )
+            }
+        }
     }
 
     deleteTarget?.let { config ->
