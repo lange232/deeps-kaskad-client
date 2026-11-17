@@ -1,0 +1,5 @@
+What's new:
+- Configurations screen is management only: no import, no reconnect on tap
+- One exit order entry point instead of three
+- Configuration actions: save to file, share, copy
+- Denser, panel-like look: smaller corners, compact typography
