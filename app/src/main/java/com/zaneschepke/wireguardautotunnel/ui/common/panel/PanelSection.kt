@@ -22,9 +22,9 @@ import com.zaneschepke.wireguardautotunnel.ui.theme.KaskadShapes
 import com.zaneschepke.wireguardautotunnel.ui.theme.KaskadSpacing
 
 /**
- * A block of rows drawn like the panel: one flat card with a hairline border and a small
- * caption above it. Screens built from these read the same as the site instead of Material's
- * floating cards.
+ * A block of rows drawn like the panel: one flat card with a hairline border and a small caption
+ * above it. Screens built from these read the same as the site instead of Material's floating
+ * cards.
  */
 @Composable
 fun PanelSection(

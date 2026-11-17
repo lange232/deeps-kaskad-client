@@ -104,6 +104,7 @@ fun currentRouteAsNavbarState(
                 AutoTunnel -> {
                     NavbarState(
                         showBottomItems = true,
+                        showBrand = true,
                         topTitle =
                             if (!globalState.isLocationDisclosureShown) null
                             else {
@@ -231,6 +232,7 @@ fun currentRouteAsNavbarState(
                 Settings -> {
                     NavbarState(
                         showBottomItems = true,
+                        showBrand = true,
                         topTitle = context.getString(R.string.settings),
                     )
                 }
@@ -382,6 +384,7 @@ fun currentRouteAsNavbarState(
                 Tunnels -> {
                     val selecting = globalState.selectedTunnelCount > 0
                     NavbarState(
+                        showBrand = !selecting && !globalState.isReorderMode,
                         topLeading =
                             when {
                                 globalState.isReorderMode -> {
