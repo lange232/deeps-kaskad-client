@@ -3,11 +3,13 @@ package com.zaneschepke.wireguardautotunnel.ui.theme
 import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RippleConfiguration
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -44,6 +46,16 @@ private val LightColorScheme =
         onSecondaryContainer = ThemeColors.Light.primary,
         outline = ThemeColors.Light.outline,
         onBackground = ThemeColors.Light.onBackground,
+    )
+
+/** Panel-like corners: small radii instead of the Material defaults. */
+private val KaskadMaterialShapes =
+    Shapes(
+        extraSmall = RoundedCornerShape(KaskadShapes.xs),
+        small = RoundedCornerShape(KaskadShapes.sm),
+        medium = RoundedCornerShape(KaskadShapes.md),
+        large = RoundedCornerShape(KaskadShapes.lg),
+        extraLarge = RoundedCornerShape(KaskadShapes.xl),
     )
 
 private val KaskadColorScheme =
@@ -181,7 +193,20 @@ fun WireguardAutoTunnelTheme(theme: Theme = Theme.AUTOMATIC, content: @Composabl
                     ),
         )
 
+    val shapes =
+        when (theme) {
+            Theme.AUTOMATIC,
+            Theme.KASKAD,
+            Theme.KASKAD_LIGHT -> KaskadMaterialShapes
+            else -> MaterialTheme.shapes
+        }
+
     CompositionLocalProvider(LocalRippleConfiguration provides rippleConfig) {
-        MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            shapes = shapes,
+            content = content,
+        )
     }
 }

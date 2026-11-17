@@ -33,6 +33,9 @@ val KaskadPeach = Color(0xFFFAB283)
 val KaskadOrange = Color(0xFFD16427)
 val KaskadOrangeSoft = Color(0xFFFFD8C6)
 val KaskadText = Color(0xFFF2F2F2)
+val KaskadBorderSubtle = Color(0x0FFFFFFF) // 6%
+val KaskadBorder = Color(0x17FFFFFF) // 9%
+val KaskadBorderStrong = Color(0x29FFFFFF) // 16%
 val KaskadTextDark = Color(0xFF161616)
 
 sealed class ThemeColors(
