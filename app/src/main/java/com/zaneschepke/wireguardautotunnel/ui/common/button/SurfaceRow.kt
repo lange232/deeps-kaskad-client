@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.key.Key
@@ -36,6 +37,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import com.zaneschepke.wireguardautotunnel.ui.LocalIsAndroidTV
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.LocalInPanel
 import com.zaneschepke.wireguardautotunnel.ui.theme.Disabled
 
 @Composable
@@ -71,8 +73,11 @@ fun SurfaceRow(
                 .fillMaxWidth()
                 .indication(interactionSource, ripple())
                 .background(
-                    if (!selected) MaterialTheme.colorScheme.surface
-                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    when {
+                        selected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        LocalInPanel.current -> Color.Transparent
+                        else -> MaterialTheme.colorScheme.surface
+                    },
                 )
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .defaultMinSize(minHeight = 42.dp)

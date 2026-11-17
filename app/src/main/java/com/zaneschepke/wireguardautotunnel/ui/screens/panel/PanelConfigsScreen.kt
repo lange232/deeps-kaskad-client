@@ -43,6 +43,7 @@ import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
 import com.zaneschepke.wireguardautotunnel.ui.common.button.ThemedSwitch
 import com.zaneschepke.wireguardautotunnel.ui.common.dialog.InfoDialog
 import com.zaneschepke.wireguardautotunnel.ui.common.panel.MonoText
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.PanelDivider
 import com.zaneschepke.wireguardautotunnel.ui.common.panel.PanelSection
 import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
 import com.zaneschepke.wireguardautotunnel.ui.common.textbox.ConfigurationTextBox
@@ -96,7 +97,8 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 else ->
-                    current.forEach { config ->
+                    current.forEachIndexed { index, config ->
+                        if (index > 0) PanelDivider()
                         SurfaceRow(
                             leading = { Icon(Icons.Outlined.Router, contentDescription = null) },
                             title = config.name,
