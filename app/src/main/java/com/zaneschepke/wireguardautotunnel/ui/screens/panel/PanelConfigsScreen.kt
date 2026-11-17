@@ -42,7 +42,8 @@ import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
 import com.zaneschepke.wireguardautotunnel.ui.common.button.ThemedSwitch
 import com.zaneschepke.wireguardautotunnel.ui.common.dialog.InfoDialog
-import com.zaneschepke.wireguardautotunnel.ui.common.label.GroupLabel
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.MonoText
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.PanelSection
 import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
 import com.zaneschepke.wireguardautotunnel.ui.common.textbox.ConfigurationTextBox
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
@@ -71,17 +72,13 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.Top),
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {
-        Column {
-            GroupLabel(
-                stringResource(R.string.panel_configs),
+        session?.let {
+            DescriptionText(
+                "${it.server} · ${it.email}",
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
-            session?.let {
-                DescriptionText(
-                    "${it.server} · ${it.email}",
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                )
-            }
+        }
+        PanelSection(title = stringResource(R.string.panel_configs)) {
             val current = configs
             when {
                 current == null ->
@@ -103,7 +100,7 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                         SurfaceRow(
                             leading = { Icon(Icons.Outlined.Router, contentDescription = null) },
                             title = config.name,
-                            description = { DescriptionText(config.ip) },
+                            description = { MonoText(config.ip) },
                             onClick = { actionsTarget = config },
                             trailing = { _ ->
                                 ThemedSwitch(
@@ -115,7 +112,7 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
                     }
             }
         }
-        Column {
+        PanelSection {
             SurfaceRow(
                 leading = { Icon(Icons.Filled.Add, contentDescription = null) },
                 title = stringResource(R.string.panel_config_create),

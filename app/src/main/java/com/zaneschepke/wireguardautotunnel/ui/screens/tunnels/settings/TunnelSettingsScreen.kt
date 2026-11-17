@@ -33,7 +33,7 @@ import com.zaneschepke.wireguardautotunnel.domain.enums.TunnelMode
 import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
 import com.zaneschepke.wireguardautotunnel.ui.common.button.ThemedSwitch
-import com.zaneschepke.wireguardautotunnel.ui.common.label.GroupLabel
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.PanelSection
 import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route
 import com.zaneschepke.wireguardautotunnel.ui.screens.panel.formatBytes
@@ -64,11 +64,7 @@ fun TunnelSettingsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.Top),
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {
-        Column {
-            GroupLabel(
-                stringResource(R.string.configuration),
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
+        PanelSection(title = stringResource(R.string.configuration)) {
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.Description, contentDescription = null) },
                 title = stringResource(R.string.view_configuration),
@@ -110,11 +106,7 @@ fun TunnelSettingsScreen(
                 )
             }
         }
-        Column {
-            GroupLabel(
-                stringResource(R.string.general),
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
+        PanelSection(title = stringResource(R.string.general)) {
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.Star, contentDescription = null) },
                 title = stringResource(R.string.primary_tunnel),
@@ -136,11 +128,7 @@ fun TunnelSettingsScreen(
                 onClick = { viewModel.togglePrimaryTunnel() },
             )
         }
-        Column {
-            GroupLabel(
-                stringResource(R.string.multihop),
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
+        PanelSection(title = stringResource(R.string.multihop)) {
             val selectedEntry = uiState.userTunnels.firstOrNull { it.id == tunnel.entryTunnelId }
             val entryLabel = selectedEntry?.name ?: stringResource(R.string.entry_tunnel_none)
             SurfaceRow(
@@ -152,11 +140,7 @@ fun TunnelSettingsScreen(
                 onClick = { navController.push(Route.EntryTunnel(tunnel.id)) },
             )
         }
-        Column {
-            GroupLabel(
-                stringResource(R.string.network),
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
+        PanelSection(title = stringResource(R.string.network)) {
             SurfaceRow(
                 leading = {
                     Icon(
@@ -217,11 +201,7 @@ fun TunnelSettingsScreen(
                 )
             }
         }
-        Column {
-            GroupLabel(
-                stringResource(R.string.automation),
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
+        PanelSection(title = stringResource(R.string.automation)) {
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.Dns, contentDescription = null) },
                 title = stringResource(R.string.ddns_auto_update),
