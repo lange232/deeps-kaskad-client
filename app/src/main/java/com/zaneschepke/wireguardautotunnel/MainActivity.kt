@@ -152,9 +152,11 @@ import com.zaneschepke.wireguardautotunnel.ui.theme.Straw
 import com.zaneschepke.wireguardautotunnel.ui.theme.WireguardAutoTunnelTheme
 import com.zaneschepke.wireguardautotunnel.util.FileUtils
 import com.zaneschepke.wireguardautotunnel.util.StringValue
+import com.zaneschepke.wireguardautotunnel.util.extensions.copyToClipboard
 import com.zaneschepke.wireguardautotunnel.util.extensions.installApk
 import com.zaneschepke.wireguardautotunnel.util.extensions.isRunningOnTv
 import com.zaneschepke.wireguardautotunnel.util.extensions.openWebUrl
+import com.zaneschepke.wireguardautotunnel.util.extensions.shareFile
 import com.zaneschepke.wireguardautotunnel.util.permission.LocalNetworkPermissionHelper
 import com.zaneschepke.wireguardautotunnel.viewmodel.ConfigEditViewModel
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
@@ -181,6 +183,7 @@ class MainActivity : AppCompatActivity() {
     private val tunnelRepository: TunnelRepository by inject()
     private val networkMonitor: NetworkMonitor by inject()
     private val fileExportCoordinator: FileExportCoordinator by inject()
+    private val fileUtils: FileUtils by inject()
     private val notificationService: NotificationService by inject()
     private val databaseBackup: DatabaseBackup by inject()
 
@@ -431,6 +434,26 @@ class MainActivity : AppCompatActivity() {
                         is GlobalSideEffect.LaunchUrl -> context.openWebUrl(sideEffect.url)
                         is GlobalSideEffect.InstallApk -> context.installApk(sideEffect.apk)
                         is GlobalSideEffect.ExportFile -> startExport(sideEffect)
+                        is GlobalSideEffect.ShareFile ->
+                            lifecycleScope.launch {
+                                fileUtils
+                                    .createNewShareFile(sideEffect.fileName)
+                                    .onSuccess { file ->
+                                        try {
+                                            sideEffect.prepareFile(file)
+                                            context.shareFile(file, sideEffect.mimeType)
+                                        } finally {
+                                            file.delete()
+                                        }
+                                    }
+                                    .onFailure { Timber.e(it, "Failed to prepare share file") }
+                            }
+                        is GlobalSideEffect.CopyToClipboard -> {
+                            context.copyToClipboard(sideEffect.text)
+                            snackbarChannel.send(
+                                GlobalSideEffect.Snackbar(sideEffect.message, ToastType.Success),
+                            )
+                        }
                     }
                 }
             }
