@@ -76,3 +76,6 @@ app/release/output.json
 
 # rendered icon previews
 /artwork/preview/
+
+# local agent instructions, not for the public repo
+/AGENTS.md
