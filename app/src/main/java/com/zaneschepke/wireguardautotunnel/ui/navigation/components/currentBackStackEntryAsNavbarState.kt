@@ -61,8 +61,7 @@ import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.Logs
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.Monitoring
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.Notifications
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.PanelConfigs
-import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.PanelSubnets
-import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.PanelExits
+import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.PanelRouting
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.PreferredTunnel
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.ProxySettings
 import com.zaneschepke.wireguardautotunnel.ui.navigation.Route.Security
@@ -175,11 +174,11 @@ fun currentRouteAsNavbarState(
                         topTitle = context.getString(R.string.licenses),
                     )
                 }
-                is PanelExits -> {
+                is PanelRouting -> {
                     NavbarState(
                         topLeading = { TvBackButton { navController.pop() } },
                         showBottomItems = true,
-                        topTitle = context.getString(R.string.panel_exits),
+                        topTitle = context.getString(R.string.panel_routing),
                     )
                 }
                 PanelConfigs -> {
@@ -187,13 +186,6 @@ fun currentRouteAsNavbarState(
                         topLeading = { TvBackButton { navController.pop() } },
                         showBottomItems = true,
                         topTitle = context.getString(R.string.panel_configs),
-                    )
-                }
-                is PanelSubnets -> {
-                    NavbarState(
-                        topLeading = { TvBackButton { navController.pop() } },
-                        showBottomItems = true,
-                        topTitle = context.getString(R.string.panel_subnets),
                     )
                 }
                 LocationDisclosure -> {

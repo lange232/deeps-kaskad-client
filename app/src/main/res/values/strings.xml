@@ -171,6 +171,10 @@
     <string name="panel_exits_auto">No exits assigned; routing is automatic.</string>
     <string name="panel_exit_order_saved">Exit order updated</string>
     <string name="error_panel_outdated">This panel is outdated: update the server to use accounts with several configurations</string>
+    <string name="panel_routing_saved">Routing updated</string>
+    <string name="panel_routing">Routing</string>
+    <string name="panel_routing_exits">Internet exits</string>
+    <string name="panel_routing_subnets">Subnets</string>
     <string name="panel_subnets">Subnets</string>
     <string name="panel_subnets_empty">No subnets granted to this account</string>
     <string name="panel_subnets_saved">Subnets updated</string>

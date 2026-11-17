@@ -1144,6 +1144,44 @@ class SharedAppViewModel(
         if (wasActive) tunnelCoordinator.startTunnel(updated)
     }
 
+    /** Saves both halves of a configuration's routing: enabled subnets and the exit order. */
+    fun savePanelRouting(configId: Int) = intent {
+        val session = panelSessionStore.session.value ?: return@intent
+        val exits = _panelExits.value
+        val subnets = _panelSubnets.value
+        try {
+            subnets?.let { list ->
+                panelApi.setSubnets(
+                    server = session.server,
+                    token = session.token,
+                    configId = configId,
+                    subnetIds = list.filter { it.enabled }.map { it.id },
+                )
+            }
+            exits?.let { list ->
+                panelApi.setExitOrder(
+                    server = session.server,
+                    token = session.token,
+                    configId = configId,
+                    exitIds = list.map { it.id },
+                )
+            }
+            // Subnets change AllowedIPs and DNS, so the tunnel needs the new .conf.
+            refreshLinkedTunnelConf(session, configId)
+            postSideEffect(
+                GlobalSideEffect.Snackbar(
+                    StringValue.StringResource(R.string.panel_routing_saved),
+                    ToastType.Success,
+                )
+            )
+        } catch (e: PanelApiException) {
+            handlePanelError(e)
+        } catch (e: Exception) {
+            Timber.e(e)
+            panelUnreachable()
+        }
+    }
+
     fun movePanelExit(exitId: Int, up: Boolean) {
         val exits = _panelExits.value?.toMutableList() ?: return
         val index = exits.indexOfFirst { it.id == exitId }

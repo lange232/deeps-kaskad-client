@@ -150,6 +150,10 @@
     <string name="panel_exits_auto">Выходы не назначены, маршрутизация автоматическая.</string>
     <string name="panel_exit_order_saved">Порядок выходов обновлён</string>
     <string name="error_panel_outdated">Панель устарела: обновите сервер, чтобы работать с аккаунтами и конфигурациями</string>
+    <string name="panel_routing_saved">Маршруты обновлены</string>
+    <string name="panel_routing">Маршруты</string>
+    <string name="panel_routing_exits">Интернет-выходы</string>
+    <string name="panel_routing_subnets">Подсети</string>
     <string name="panel_subnets">Подсети</string>
     <string name="panel_subnets_empty">Подсети аккаунту не выданы</string>
     <string name="panel_subnets_saved">Подсети обновлены</string>

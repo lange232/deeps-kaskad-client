@@ -10,9 +10,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.outlined.Lan
+import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material.icons.rounded.Circle
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,56 +32,54 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.zaneschepke.wireguardautotunnel.R
 import com.zaneschepke.wireguardautotunnel.ui.LocalNavController
 import com.zaneschepke.wireguardautotunnel.ui.common.button.SurfaceRow
-import com.zaneschepke.wireguardautotunnel.ui.common.label.GroupLabel
+import com.zaneschepke.wireguardautotunnel.ui.common.button.ThemedSwitch
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.MonoText
 import com.zaneschepke.wireguardautotunnel.ui.common.panel.PanelChip
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.PanelDivider
+import com.zaneschepke.wireguardautotunnel.ui.common.panel.PanelSection
 import com.zaneschepke.wireguardautotunnel.ui.common.text.DescriptionText
 import com.zaneschepke.wireguardautotunnel.ui.theme.AlertRed
 import com.zaneschepke.wireguardautotunnel.ui.theme.SilverTree
 import com.zaneschepke.wireguardautotunnel.viewmodel.SharedAppViewModel
 import org.koin.compose.viewmodel.koinActivityViewModel
 
+/**
+ * Routing of one configuration: its internet exits in order and the subnets it is allowed to
+ * reach. Both live in the configuration, not in the account, and are saved together.
+ */
 @Composable
-fun PanelExitsScreen(
+fun PanelRoutingScreen(
     configId: Int,
     viewModel: SharedAppViewModel = koinActivityViewModel(),
 ) {
     val navController = LocalNavController.current
     val exits by viewModel.panelExits.collectAsStateWithLifecycle()
+    val subnets by viewModel.panelSubnets.collectAsStateWithLifecycle()
 
-    LaunchedEffect(configId) { viewModel.loadPanelExits(configId) }
+    LaunchedEffect(configId) {
+        viewModel.loadPanelExits(configId)
+        viewModel.loadPanelSubnets(configId)
+    }
 
     Column(
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.Top),
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {
-        Column {
-            GroupLabel(
-                stringResource(R.string.panel_exits),
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
-            DescriptionText(
-                stringResource(R.string.panel_exits_description),
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            )
+        PanelSection(title = stringResource(R.string.panel_routing_exits)) {
             val current = exits
             when {
-                current == null ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
-                        horizontalArrangement = Arrangement.Center,
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(32.dp))
-                    }
+                current == null -> LoadingRow()
                 current.isEmpty() ->
                     Text(
                         stringResource(R.string.panel_exits_auto),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
                     )
                 else ->
                     current.forEachIndexed { index, exit ->
+                        if (index > 0) PanelDivider()
                         SurfaceRow(
                             leading = {
                                 Icon(
@@ -92,11 +91,8 @@ fun PanelExitsScreen(
                             },
                             title = exit.comment.ifBlank { exit.name },
                             description = {
-                                val name = exit.name
                                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                    if (!exit.comment.isBlank()) {
-                                        DescriptionText(name)
-                                    }
+                                    if (!exit.comment.isBlank()) DescriptionText(exit.name)
                                     exit.rttMs?.let { PanelChip("${it.toInt()} ms") }
                                 }
                             },
@@ -127,23 +123,56 @@ fun PanelExitsScreen(
                     }
             }
         }
-        Column {
+
+        PanelSection(title = stringResource(R.string.panel_routing_subnets)) {
+            val current = subnets
+            when {
+                current == null -> LoadingRow()
+                current.isEmpty() ->
+                    Text(
+                        stringResource(R.string.panel_subnets_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    )
+                else ->
+                    current.forEachIndexed { index, subnet ->
+                        if (index > 0) PanelDivider()
+                        SurfaceRow(
+                            leading = { Icon(Icons.Outlined.Lan, contentDescription = null) },
+                            title = subnet.comment.ifBlank { subnet.name },
+                            description = { MonoText(subnet.routes) },
+                            onClick = { viewModel.togglePanelSubnet(subnet.id) },
+                            trailing = { _ ->
+                                ThemedSwitch(
+                                    checked = subnet.enabled,
+                                    onClick = { viewModel.togglePanelSubnet(subnet.id) },
+                                )
+                            },
+                        )
+                    }
+            }
+        }
+
+        PanelSection {
             SurfaceRow(
                 leading = { Icon(Icons.Outlined.Save, contentDescription = null) },
                 title = stringResource(R.string.save),
                 onClick = {
-                    viewModel.savePanelExitOrder(configId)
-                    navController.pop()
-                },
-            )
-            SurfaceRow(
-                leading = { Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null) },
-                title = stringResource(R.string.panel_sign_out),
-                onClick = {
-                    viewModel.panelSignOut()
+                    viewModel.savePanelRouting(configId)
                     navController.pop()
                 },
             )
         }
+    }
+}
+
+@Composable
+private fun LoadingRow() {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        CircularProgressIndicator(modifier = Modifier.size(32.dp))
     }
 }

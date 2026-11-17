@@ -146,19 +146,11 @@ fun PanelConfigsScreen(viewModel: SharedAppViewModel = koinActivityViewModel()) 
         ModalBottomSheet(onDismissRequest = { actionsTarget = null }) {
             Column(modifier = Modifier.padding(bottom = 24.dp)) {
                 SurfaceRow(
-                    leading = { Icon(Icons.Outlined.Lan, contentDescription = null) },
-                    title = stringResource(R.string.panel_subnets),
-                    onClick = {
-                        actionsTarget = null
-                        navController.push(Route.PanelSubnets(config.id))
-                    },
-                )
-                SurfaceRow(
                     leading = { Icon(Icons.Outlined.Public, contentDescription = null) },
-                    title = stringResource(R.string.panel_exits),
+                    title = stringResource(R.string.panel_routing),
                     onClick = {
                         actionsTarget = null
-                        navController.push(Route.PanelExits(config.id))
+                        navController.push(Route.PanelRouting(config.id))
                     },
                 )
                 SurfaceRow(
